@@ -1,0 +1,25 @@
+Package: endoSignatureR
+Title: Leakage-Safe Gene Signature Discovery for Small RNA-seq Cohorts
+Version: 0.0.0.9000
+Authors@R: 
+    person("Andrew", "Wong", , "andrew.wong@example.com", role = c("aut", "cre"))
+Description: A pipeline for discovering small, interpretable gene signatures 
+    from bulk RNA-seq with binary phenotypes in small cohorts. Enforces best 
+    practices including nested cross-validation, in-fold preprocessing, stability 
+    selection, and calibration. Demonstrated on GSE201926 endometrial lesion data.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+Imports: 
+    glmnet,
+    ggplot2,
+    SummarizedExperiment,
+    readr,
+    dplyr
