@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style type="text/css">
+@font-face {
+font-family: octicons-link;
+src: url(data:font/woff;charset=utf-8;base64,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) format('woff');
+}
+body {
+-webkit-text-size-adjust: 100%;
+text-size-adjust: 100%;
+color: #333;
+font-family: "Helvetica Neue", Helvetica, "Segoe UI", Arial, freesans, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+font-size: 16px;
+line-height: 1.6;
+word-wrap: break-word;
+}
+a {
+background-color: transparent;
+}
+a:active,
+a:hover {
+outline: 0;
+}
+strong {
+font-weight: bold;
+}
+h1 {
+font-size: 2em;
+margin: 0.67em 0;
+}
+img {
+border: 0;
+}
+hr {
+box-sizing: content-box;
+height: 0;
+}
+pre {
+overflow: auto;
+}
+code,
+kbd,
+pre {
+font-family: monospace, monospace;
+font-size: 1em;
+}
+input {
+color: inherit;
+font: inherit;
+margin: 0;
+}
+html input[disabled] {
+cursor: default;
+}
+input {
+line-height: normal;
+}
+input[type="checkbox"] {
+box-sizing: border-box;
+padding: 0;
+}
+table {
+border-collapse: collapse;
+border-spacing: 0;
+}
+td,
+th {
+padding: 0;
+}
+* {
+box-sizing: border-box;
+}
+input {
+font: 13px / 1.4 Helvetica, arial, nimbussansl, liberationsans, freesans, clean, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+a {
+color: #4078c0;
+text-decoration: none;
+}
+a:hover,
+a:active {
+text-decoration: underline;
+}
+hr {
+height: 0;
+margin: 15px 0;
+overflow: hidden;
+background: transparent;
+border: 0;
+border-bottom: 1px solid #ddd;
+}
+hr:before {
+display: table;
+content: "";
+}
+hr:after {
+display: table;
+clear: both;
+content: "";
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+margin-top: 15px;
+margin-bottom: 15px;
+line-height: 1.1;
+}
+h1 {
+font-size: 30px;
+}
+h2 {
+font-size: 21px;
+}
+h3 {
+font-size: 16px;
+}
+h4 {
+font-size: 14px;
+}
+h5 {
+font-size: 12px;
+}
+h6 {
+font-size: 11px;
+}
+blockquote {
+margin: 0;
+}
+ul,
+ol {
+padding: 0;
+margin-top: 0;
+margin-bottom: 0;
+}
+ol ol,
+ul ol {
+list-style-type: lower-roman;
+}
+ul ul ol,
+ul ol ol,
+ol ul ol,
+ol ol ol {
+list-style-type: lower-alpha;
+}
+dd {
+margin-left: 0;
+}
+code {
+font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+font-size: 12px;
+}
+pre {
+margin-top: 0;
+margin-bottom: 0;
+font: 12px Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+.select::-ms-expand {
+opacity: 0;
+}
+.octicon {
+font: normal normal normal 16px/1 octicons-link;
+display: inline-block;
+text-decoration: none;
+text-rendering: auto;
+-webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale;
+-webkit-user-select: none;
+-moz-user-select: none;
+-ms-user-select: none;
+user-select: none;
+}
+.octicon-link:before {
+content: '\f05c';
+}
+.markdown-body:before {
+display: table;
+content: "";
+}
+.markdown-body:after {
+display: table;
+clear: both;
+content: "";
+}
+.markdown-body>*:first-child {
+margin-top: 0 !important;
+}
+.markdown-body>*:last-child {
+margin-bottom: 0 !important;
+}
+a:not([href]) {
+color: inherit;
+text-decoration: none;
+}
+.anchor {
+display: inline-block;
+padding-right: 2px;
+margin-left: -18px;
+}
+.anchor:focus {
+outline: none;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+margin-top: 1em;
+margin-bottom: 16px;
+font-weight: bold;
+line-height: 1.4;
+}
+h1 .octicon-link,
+h2 .octicon-link,
+h3 .octicon-link,
+h4 .octicon-link,
+h5 .octicon-link,
+h6 .octicon-link {
+color: #000;
+vertical-align: middle;
+visibility: hidden;
+}
+h1:hover .anchor,
+h2:hover .anchor,
+h3:hover .anchor,
+h4:hover .anchor,
+h5:hover .anchor,
+h6:hover .anchor {
+text-decoration: none;
+}
+h1:hover .anchor .octicon-link,
+h2:hover .anchor .octicon-link,
+h3:hover .anchor .octicon-link,
+h4:hover .anchor .octicon-link,
+h5:hover .anchor .octicon-link,
+h6:hover .anchor .octicon-link {
+visibility: visible;
+}
+h1 {
+padding-bottom: 0.3em;
+font-size: 2.25em;
+line-height: 1.2;
+border-bottom: 1px solid #eee;
+}
+h1 .anchor {
+line-height: 1;
+}
+h2 {
+padding-bottom: 0.3em;
+font-size: 1.75em;
+line-height: 1.225;
+border-bottom: 1px solid #eee;
+}
+h2 .anchor {
+line-height: 1;
+}
+h3 {
+font-size: 1.5em;
+line-height: 1.43;
+}
+h3 .anchor {
+line-height: 1.2;
+}
+h4 {
+font-size: 1.25em;
+}
+h4 .anchor {
+line-height: 1.2;
+}
+h5 {
+font-size: 1em;
+}
+h5 .anchor {
+line-height: 1.1;
+}
+h6 {
+font-size: 1em;
+color: #777;
+}
+h6 .anchor {
+line-height: 1.1;
+}
+p,
+blockquote,
+ul,
+ol,
+dl,
+table,
+pre {
+margin-top: 0;
+margin-bottom: 16px;
+}
+hr {
+height: 4px;
+padding: 0;
+margin: 16px 0;
+background-color: #e7e7e7;
+border: 0 none;
+}
+ul,
+ol {
+padding-left: 2em;
+}
+ul ul,
+ul ol,
+ol ol,
+ol ul {
+margin-top: 0;
+margin-bottom: 0;
+}
+li>p {
+margin-top: 16px;
+}
+dl {
+padding: 0;
+}
+dl dt {
+padding: 0;
+margin-top: 16px;
+font-size: 1em;
+font-style: italic;
+font-weight: bold;
+}
+dl dd {
+padding: 0 16px;
+margin-bottom: 16px;
+}
+blockquote {
+padding: 0 15px;
+color: #777;
+border-left: 4px solid #ddd;
+}
+blockquote>:first-child {
+margin-top: 0;
+}
+blockquote>:last-child {
+margin-bottom: 0;
+}
+table {
+display: block;
+width: 100%;
+overflow: auto;
+word-break: normal;
+word-break: keep-all;
+}
+table th {
+font-weight: bold;
+}
+table th,
+table td {
+padding: 6px 13px;
+border: 1px solid #ddd;
+}
+table tr {
+background-color: #fff;
+border-top: 1px solid #ccc;
+}
+table tr:nth-child(2n) {
+background-color: #f8f8f8;
+}
+img {
+max-width: 100%;
+box-sizing: content-box;
+background-color: #fff;
+}
+code {
+padding: 0;
+padding-top: 0.2em;
+padding-bottom: 0.2em;
+margin: 0;
+font-size: 85%;
+background-color: rgba(0,0,0,0.04);
+border-radius: 3px;
+}
+code:before,
+code:after {
+letter-spacing: -0.2em;
+content: "\00a0";
+}
+pre>code {
+padding: 0;
+margin: 0;
+font-size: 100%;
+word-break: normal;
+white-space: pre;
+background: transparent;
+border: 0;
+}
+.highlight {
+margin-bottom: 16px;
+}
+.highlight pre,
+pre {
+padding: 16px;
+overflow: auto;
+font-size: 85%;
+line-height: 1.45;
+background-color: #f7f7f7;
+border-radius: 3px;
+}
+.highlight pre {
+margin-bottom: 0;
+word-break: normal;
+}
+pre {
+word-wrap: normal;
+}
+pre code {
+display: inline;
+max-width: initial;
+padding: 0;
+margin: 0;
+overflow: initial;
+line-height: inherit;
+word-wrap: normal;
+background-color: transparent;
+border: 0;
+}
+pre code:before,
+pre code:after {
+content: normal;
+}
+kbd {
+display: inline-block;
+padding: 3px 5px;
+font-size: 11px;
+line-height: 10px;
+color: #555;
+vertical-align: middle;
+background-color: #fcfcfc;
+border: solid 1px #ccc;
+border-bottom-color: #bbb;
+border-radius: 3px;
+box-shadow: inset 0 -1px 0 #bbb;
+}
+.pl-c {
+color: #969896;
+}
+.pl-c1,
+.pl-s .pl-v {
+color: #0086b3;
+}
+.pl-e,
+.pl-en {
+color: #795da3;
+}
+.pl-s .pl-s1,
+.pl-smi {
+color: #333;
+}
+.pl-ent {
+color: #63a35c;
+}
+.pl-k {
+color: #a71d5d;
+}
+.pl-pds,
+.pl-s,
+.pl-s .pl-pse .pl-s1,
+.pl-sr,
+.pl-sr .pl-cce,
+.pl-sr .pl-sra,
+.pl-sr .pl-sre {
+color: #183691;
+}
+.pl-v {
+color: #ed6a43;
+}
+.pl-id {
+color: #b52a1d;
+}
+.pl-ii {
+background-color: #b52a1d;
+color: #f8f8f8;
+}
+.pl-sr .pl-cce {
+color: #63a35c;
+font-weight: bold;
+}
+.pl-ml {
+color: #693a17;
+}
+.pl-mh,
+.pl-mh .pl-en,
+.pl-ms {
+color: #1d3e81;
+font-weight: bold;
+}
+.pl-mq {
+color: #008080;
+}
+.pl-mi {
+color: #333;
+font-style: italic;
+}
+.pl-mb {
+color: #333;
+font-weight: bold;
+}
+.pl-md {
+background-color: #ffecec;
+color: #bd2c00;
+}
+.pl-mi1 {
+background-color: #eaffea;
+color: #55a532;
+}
+.pl-mdr {
+color: #795da3;
+font-weight: bold;
+}
+.pl-mo {
+color: #1d3e81;
+}
+kbd {
+display: inline-block;
+padding: 3px 5px;
+font: 11px Consolas, "Liberation Mono", Menlo, Courier, monospace;
+line-height: 10px;
+color: #555;
+vertical-align: middle;
+background-color: #fcfcfc;
+border: solid 1px #ccc;
+border-bottom-color: #bbb;
+border-radius: 3px;
+box-shadow: inset 0 -1px 0 #bbb;
+}
+.task-list-item {
+list-style-type: none;
+}
+.task-list-item+.task-list-item {
+margin-top: 3px;
+}
+.task-list-item input {
+margin: 0 0.35em 0.25em -1.6em;
+vertical-align: middle;
+}
+:checked+.radio-label {
+z-index: 1;
+position: relative;
+border-color: #4078c0;
+}
+.sourceLine {
+display: inline-block;
+}
+code .kw { color: #000000; }
+code .dt { color: #ed6a43; }
+code .dv { color: #009999; }
+code .bn { color: #009999; }
+code .fl { color: #009999; }
+code .ch { color: #009999; }
+code .st { color: #183691; }
+code .co { color: #969896; }
+code .ot { color: #0086b3; }
+code .al { color: #a61717; }
+code .fu { color: #63a35c; }
+code .er { color: #a61717; background-color: #e3d2d2; }
+code .wa { color: #000000; }
+code .cn { color: #008080; }
+code .sc { color: #008080; }
+code .vs { color: #183691; }
+code .ss { color: #183691; }
+code .im { color: #000000; }
+code .va {color: #008080; }
+code .cf { color: #000000; }
+code .op { color: #000000; }
+code .bu { color: #000000; }
+code .ex { color: #000000; }
+code .pp { color: #999999; }
+code .at { color: #008080; }
+code .do { color: #969896; }
+code .an { color: #008080; }
+code .cv { color: #008080; }
+code .in { color: #008080; }
+</style>
+<style>
+body {
+box-sizing: border-box;
+min-width: 200px;
+max-width: 980px;
+margin: 0 auto;
+padding: 45px;
+padding-top: 0px;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+<h1 id="endosignaturer">EndoSignatureR</h1>
+<p>Endometrial RNA-seq Signature Discovery, Classification, and
+Visualization.</p>
+<!-- badges: start -->
+
+<p><a href="https://github.com/amcwong/endoSignatureR/issues"><img role="img" aria-label="GitHub issues" src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI5MCIgaGVpZ2h0PSIyMCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJpc3N1ZXM6IDAgb3BlbiI+PHRpdGxlPmlzc3VlczogMCBvcGVuPC90aXRsZT48bGluZWFyR3JhZGllbnQgaWQ9InMiIHgyPSIwIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjYmJiIiBzdG9wLW9wYWNpdHk9Ii4xIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLW9wYWNpdHk9Ii4xIi8+PC9saW5lYXJHcmFkaWVudD48Y2xpcFBhdGggaWQ9InIiPjxyZWN0IHdpZHRoPSI5MCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNmZmYiLz48L2NsaXBQYXRoPjxnIGNsaXAtcGF0aD0idXJsKCNyKSI+PHJlY3Qgd2lkdGg9IjQzIiBoZWlnaHQ9IjIwIiBmaWxsPSIjNTU1Ii8+PHJlY3QgeD0iNDMiIHdpZHRoPSI0NyIgaGVpZ2h0PSIyMCIgZmlsbD0iIzRjMSIvPjxyZWN0IHdpZHRoPSI5MCIgaGVpZ2h0PSIyMCIgZmlsbD0idXJsKCNzKSIvPjwvZz48ZyBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iVmVyZGFuYSxHZW5ldmEsRGVqYVZ1IFNhbnMsc2Fucy1zZXJpZiIgdGV4dC1yZW5kZXJpbmc9Imdlb21ldHJpY1ByZWNpc2lvbiIgZm9udC1zaXplPSIxMTAiPjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSIyMjUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjMzMCI+aXNzdWVzPC90ZXh0Pjx0ZXh0IHg9IjIyNSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iMzMwIj5pc3N1ZXM8L3RleHQ+PHRleHQgYXJpYS1oaWRkZW49InRydWUiIHg9IjY1NSIgeT0iMTUwIiBmaWxsPSIjMDEwMTAxIiBmaWxsLW9wYWNpdHk9Ii4zIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgdGV4dExlbmd0aD0iMzcwIj4wIG9wZW48L3RleHQ+PHRleHQgeD0iNjU1IiB5PSIxNDAiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiBmaWxsPSIjZmZmIiB0ZXh0TGVuZ3RoPSIzNzAiPjAgb3BlbjwvdGV4dD48L2c+PC9zdmc+" alt="GitHub issues" /></a><br />
+<a href="./LICENSE"><img role="img" aria-label="License" src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI3OCIgaGVpZ2h0PSIyMCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJsaWNlbnNlOiBNSVQiPjx0aXRsZT5saWNlbnNlOiBNSVQ8L3RpdGxlPjxsaW5lYXJHcmFkaWVudCBpZD0icyIgeDI9IjAiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiYmIiIHN0b3Atb3BhY2l0eT0iLjEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iLjEiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iciI+PHJlY3Qgd2lkdGg9Ijc4IiBoZWlnaHQ9IjIwIiByeD0iMyIgZmlsbD0iI2ZmZiIvPjwvY2xpcFBhdGg+PGcgY2xpcC1wYXRoPSJ1cmwoI3IpIj48cmVjdCB3aWR0aD0iNDciIGhlaWdodD0iMjAiIGZpbGw9IiM1NTUiLz48cmVjdCB4PSI0NyIgd2lkdGg9IjMxIiBoZWlnaHQ9IjIwIiBmaWxsPSIjOTdjYTAwIi8+PHJlY3Qgd2lkdGg9Ijc4IiBoZWlnaHQ9IjIwIiBmaWxsPSJ1cmwoI3MpIi8+PC9nPjxnIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJWZXJkYW5hLEdlbmV2YSxEZWphVnUgU2FucyxzYW5zLXNlcmlmIiB0ZXh0LXJlbmRlcmluZz0iZ2VvbWV0cmljUHJlY2lzaW9uIiBmb250LXNpemU9IjExMCI+PHRleHQgYXJpYS1oaWRkZW49InRydWUiIHg9IjI0NSIgeT0iMTUwIiBmaWxsPSIjMDEwMTAxIiBmaWxsLW9wYWNpdHk9Ii4zIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgdGV4dExlbmd0aD0iMzcwIj5saWNlbnNlPC90ZXh0Pjx0ZXh0IHg9IjI0NSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iMzcwIj5saWNlbnNlPC90ZXh0Pjx0ZXh0IGFyaWEtaGlkZGVuPSJ0cnVlIiB4PSI2MTUiIHk9IjE1MCIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIHRleHRMZW5ndGg9IjIxMCI+TUlUPC90ZXh0Pjx0ZXh0IHg9IjYxNSIgeT0iMTQwIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgZmlsbD0iI2ZmZiIgdGV4dExlbmd0aD0iMjEwIj5NSVQ8L3RleHQ+PC9nPjwvc3ZnPg==" alt="License" /></a><br />
+<img role="img" aria-label="GitHub language count" src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4NCIgaGVpZ2h0PSIyMCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJsYW5ndWFnZXM6IDIiPjx0aXRsZT5sYW5ndWFnZXM6IDI8L3RpdGxlPjxsaW5lYXJHcmFkaWVudCBpZD0icyIgeDI9IjAiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiYmIiIHN0b3Atb3BhY2l0eT0iLjEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iLjEiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iciI+PHJlY3Qgd2lkdGg9Ijg0IiBoZWlnaHQ9IjIwIiByeD0iMyIgZmlsbD0iI2ZmZiIvPjwvY2xpcFBhdGg+PGcgY2xpcC1wYXRoPSJ1cmwoI3IpIj48cmVjdCB3aWR0aD0iNjciIGhlaWdodD0iMjAiIGZpbGw9IiM1NTUiLz48cmVjdCB4PSI2NyIgd2lkdGg9IjE3IiBoZWlnaHQ9IjIwIiBmaWxsPSIjMDA3ZWM2Ii8+PHJlY3Qgd2lkdGg9Ijg0IiBoZWlnaHQ9IjIwIiBmaWxsPSJ1cmwoI3MpIi8+PC9nPjxnIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJWZXJkYW5hLEdlbmV2YSxEZWphVnUgU2FucyxzYW5zLXNlcmlmIiB0ZXh0LXJlbmRlcmluZz0iZ2VvbWV0cmljUHJlY2lzaW9uIiBmb250LXNpemU9IjExMCI+PHRleHQgYXJpYS1oaWRkZW49InRydWUiIHg9IjM0NSIgeT0iMTUwIiBmaWxsPSIjMDEwMTAxIiBmaWxsLW9wYWNpdHk9Ii4zIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgdGV4dExlbmd0aD0iNTcwIj5sYW5ndWFnZXM8L3RleHQ+PHRleHQgeD0iMzQ1IiB5PSIxNDAiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiBmaWxsPSIjZmZmIiB0ZXh0TGVuZ3RoPSI1NzAiPmxhbmd1YWdlczwvdGV4dD48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iNzQ1IiB5PSIxNTAiIGZpbGw9IiMwMTAxMDEiIGZpbGwtb3BhY2l0eT0iLjMiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiB0ZXh0TGVuZ3RoPSI3MCI+MjwvdGV4dD48dGV4dCB4PSI3NDUiIHk9IjE0MCIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIGZpbGw9IiNmZmYiIHRleHRMZW5ndGg9IjcwIj4yPC90ZXh0PjwvZz48L3N2Zz4=" alt="GitHub language count" /><br />
+<img role="img" aria-label="GitHub commit activity (branch)" src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNDgiIGhlaWdodD0iMjAiIHJvbGU9ImltZyIgYXJpYS1sYWJlbD0iY29tbWl0IGFjdGl2aXR5OiAxOC95ZWFyIj48dGl0bGU+Y29tbWl0IGFjdGl2aXR5OiAxOC95ZWFyPC90aXRsZT48bGluZWFyR3JhZGllbnQgaWQ9InMiIHgyPSIwIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjYmJiIiBzdG9wLW9wYWNpdHk9Ii4xIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLW9wYWNpdHk9Ii4xIi8+PC9saW5lYXJHcmFkaWVudD48Y2xpcFBhdGggaWQ9InIiPjxyZWN0IHdpZHRoPSIxNDgiIGhlaWdodD0iMjAiIHJ4PSIzIiBmaWxsPSIjZmZmIi8+PC9jbGlwUGF0aD48ZyBjbGlwLXBhdGg9InVybCgjcikiPjxyZWN0IHdpZHRoPSI5NSIgaGVpZ2h0PSIyMCIgZmlsbD0iIzU1NSIvPjxyZWN0IHg9Ijk1IiB3aWR0aD0iNTMiIGhlaWdodD0iMjAiIGZpbGw9IiMwMDdlYzYiLz48cmVjdCB3aWR0aD0iMTQ4IiBoZWlnaHQ9IjIwIiBmaWxsPSJ1cmwoI3MpIi8+PC9nPjxnIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJWZXJkYW5hLEdlbmV2YSxEZWphVnUgU2FucyxzYW5zLXNlcmlmIiB0ZXh0LXJlbmRlcmluZz0iZ2VvbWV0cmljUHJlY2lzaW9uIiBmb250LXNpemU9IjExMCI+PHRleHQgYXJpYS1oaWRkZW49InRydWUiIHg9IjQ4NSIgeT0iMTUwIiBmaWxsPSIjMDEwMTAxIiBmaWxsLW9wYWNpdHk9Ii4zIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgdGV4dExlbmd0aD0iODUwIj5jb21taXQgYWN0aXZpdHk8L3RleHQ+PHRleHQgeD0iNDg1IiB5PSIxNDAiIHRyYW5zZm9ybT0ic2NhbGUoLjEpIiBmaWxsPSIjZmZmIiB0ZXh0TGVuZ3RoPSI4NTAiPmNvbW1pdCBhY3Rpdml0eTwvdGV4dD48dGV4dCBhcmlhLWhpZGRlbj0idHJ1ZSIgeD0iMTIwNSIgeT0iMTUwIiBmaWxsPSIjMDEwMTAxIiBmaWxsLW9wYWNpdHk9Ii4zIiB0cmFuc2Zvcm09InNjYWxlKC4xKSIgdGV4dExlbmd0aD0iNDMwIj4xOC95ZWFyPC90ZXh0Pjx0ZXh0IHg9IjEyMDUiIHk9IjE0MCIgdHJhbnNmb3JtPSJzY2FsZSguMSkiIGZpbGw9IiNmZmYiIHRleHRMZW5ndGg9IjQzMCI+MTgveWVhcjwvdGV4dD48L2c+PC9zdmc+" alt="GitHub commit activity (branch)" /></p>
+<!-- badges: end -->
+
+<h2 id="description">Description</h2>
+<p><code>EndoSignatureR</code> is a domain-specific R package for
+endometrial lesion classification. It ships with a pre-trained PS vs PIS
+gene signature derived from GSE201926 and provides two workflows:</p>
+<ul>
+<li>Rapid Classification (Mode 1): apply the shipped signature to
+unlabeled RNA-seq samples to obtain PS vs PIS predictions with
+confidence.</li>
+<li>Signature Validation (Mode 2): train/validate a new signature on
+labeled cohorts using best practices (in-fold preprocessing, DE
+screening, nested cross-validation, LASSO with calibration, and optional
+stability selection), then compare to the pre-trained signature.</li>
+</ul>
+<p>This package centralizes typical multi-step analyses (QC, DE
+screening, model training, calibration, performance visualization, and
+export of artifacts) into a cohesive, reproducible workflow tailored for
+endometrial tissue.</p>
+<p>The package will be developed and tested on a recent R version and
+platform; see the SessionInfo section below for exact versions captured
+during validation.</p>
+<h2 id="installation">Installation</h2>
+<p>To install the latest version of the package:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;devtools&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;devtools&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;amcwong/endoSignatureR&quot;</span>, <span class="at">build_vignettes =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;endoSignatureR&quot;</span>)</span></code></pre></div>
+<p>To run the Shiny app:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">runEndoSignatureR</span>()</span></code></pre></div>
+<h2 id="overview">Overview</h2>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">ls</span>(<span class="st">&quot;package:endoSignatureR&quot;</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">data</span>(<span class="at">package =</span> <span class="st">&quot;endoSignatureR&quot;</span>) <span class="co"># optional</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">browseVignettes</span>(<span class="st">&quot;endoSignatureR&quot;</span>)</span></code></pre></div>
+<p><code>EndoSignatureR</code> provides core functions aligned with the
+plan:</p>
+<ol style="list-style-type: decimal">
+<li><code>esr_validateEndometrial(X, pheno, annot = NULL, label_col = &quot;group&quot;)</code>:
+endometrial-specific schema/ID checks; returns cleaned objects and
+issues table.</li>
+<li><code>esr_loadPretrainedSignature()</code>: load the shipped PS vs
+PIS signature from GSE201926.</li>
+<li><code>esr_classifyEndometrial(X_new, signature = NULL, threshold = 0.5, confidence = TRUE)</code>:
+apply pre-trained signature to new samples; predictions +
+confidence.</li>
+<li><code>esr_trainEndometrialSignature(...)</code>: train a new
+signature using in-fold transforms, DE screening, nested CV, LASSO,
+calibration, and optional stability selection.</li>
+<li><code>esr_compareSignatures(pretrained_result, new_result)</code>:
+compare pre-trained vs new signature performance.</li>
+<li>Export/report helpers: <code>esr_exportSignature(...)</code>,
+<code>esr_reportEndometrial(...)</code>.</li>
+</ol>
+<p>Plotting helpers (examples):</p>
+<ul>
+<li>QC/EDA: <code>plotEndometrialPCA</code>,
+<code>plotEndometrialLibsize</code>,
+<code>plotEndometrialZeros</code></li>
+<li>DE/Signature: <code>plotEndometrialMA</code>,
+<code>plotEndometrialVolcano</code>,
+<code>plotEndometrialHeatmap</code>,
+<code>plotEndometrialCoefLollipop</code>,
+<code>plotEndometrialStabilityBars</code></li>
+<li>Performance: <code>plotEndometrialROC</code>,
+<code>plotEndometrialPR</code>, <code>plotEndometrialCalibration</code>,
+<code>plotEndometrialComparison</code></li>
+</ul>
+<p>An overview of the package is illustrated below.</p>
+<p><img role="img" src="./inst/extdata/Workflow.png" /></p>
+<h2 id="contributions">Contributions</h2>
+<p>The author of the package is Andrew WOng. The author designed and
+implemented the endometrial-specific workflows and functions listed
+above, integrating established methods (DE screening, LASSO via glmnet,
+nested cross-validation) into a cohesive package for PS vs PIS
+classification and validation.</p>
+<p>Generative AI tools (e.g., OpenAI ChatGPT) were used for
+branstorming, code completions, debugging, and drafting where noted; all
+outputs were reviewed and validated by the author.</p>
+<h2 id="references">References</h2>
+<ul>
+<li><p>R Core Team (2025). <em>R: A Language and Environment for
+Statistical Computing</em>. R Foundation for Statistical Computing,
+Vienna, Austria. <a href="https://www.R-project.org/">https://www.R-project.org/</a>.</p></li>
+<li><p>Wickham, H. (2016). <em>ggplot2: Elegant Graphics for Data
+Analysis</em>. Springer-Verlag, New York.</p></li>
+<li><p>Wickham, H., Hester, J., &amp; Chang, W. (2024). <em>devtools:
+Tools to Make Developing R Packages Easier</em>. R package. <a href="https://CRAN.R-project.org/package=devtools">https://CRAN.R-project.org/package=devtools</a>.</p></li>
+<li><p>Love, M. I., Huber, W., &amp; Anders, S. (2014). Moderated
+estimation of fold change and dispersion for RNA-seq data with DESeq2.
+<em>Genome Biology</em>, 15(12), 550. <a href="doi:10.1186/s13059-014-0550-8">doi:10.1186/s13059-014-0550-8</a>.</p></li>
+<li><p>Friedman, J., Hastie, T., &amp; Tibshirani, R. (2010).
+Regularization Paths for Generalized Linear Models via Coordinate
+Descent. <em>Journal of Statistical Software</em>, 33(1), 1–22.
+(glmnet).</p></li>
+<li><p>Robin, X., et al. (2011). pROC: an open-source package for R and
+S+ to analyze and compare ROC curves. <em>BMC Bioinformatics</em>, 12,
+77. <a href="doi:10.1186/1471-2105-12-77">doi:10.1186/1471-2105-12-77</a>.</p></li>
+<li><p>Gu, Z., Eils, R., &amp; Schlesner, M. (2016). Complex heatmaps
+reveal patterns and correlations in multidimensional genomic data.
+<em>Bioinformatics</em>, 32(18), 2847–2849. (ComplexHeatmap).</p></li>
+<li><p>Edgar, R., Domrachev, M., &amp; Lash, A. E. (2002). Gene
+Expression Omnibus: NCBI gene expression and hybridization array data
+repository. <em>Nucleic Acids Research</em>, 30(1), 207–210. <a href="doi:10.1093/nar/30.1.207">doi:10.1093/nar/30.1.207</a>.</p></li>
+<li><p>GEO Series GSE201926. Available from: <a href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE201926">https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE201926</a>.</p></li>
+<li><p>Silva, A. (2019–2025). TestingPackage: R Package Illustrating
+Components of an R package for BCB410H. GitHub. <a href="https://github.com/anjalisilva/TestingPackage">https://github.com/anjalisilva/TestingPackage</a>.</p></li>
+</ul>
+<h2 id="acknowledgements">Acknowledgements</h2>
+<p>This package was developed as part of an assessment for 2025 BCB410H:
+Applied Bioinformatics course at the University of Toronto, Toronto,
+CANADA. <code>EndoSignatureR</code> welcomes issues, enhancement
+requests, and other contributions. To submit an issue, use the GitHub
+issues page for your repository.</p>
+<h2 id="sessioninfo">SessionInfo</h2>
+<p>R version 4.5.1 (2025-06-13) Platform: aarch64-apple-darwin20 Running
+under: macOS Sequoia 15.6.1</p>
+<p>Matrix products: default BLAS:
+/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
+LAPACK:
+/Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib/libRlapack.dylib;
+LAPACK version 3.12.1</p>
+<p>locale: [1]
+en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8</p>
+<p>time zone: America/Toronto tzcode source: internal</p>
+<p>attached base packages: [1] stats graphics grDevices utils datasets
+methods base</p>
+<p>other attached packages: [1] endoSignatureR_0.0.0.9000 usethis_3.2.1
+dplyr_1.1.4 readr_2.1.5<br />
+[5] R.utils_2.13.0 R.oo_1.27.1 R.methodsS3_1.8.2 testthat_3.2.3</p>
+<p>loaded via a namespace (and not attached): [1] httr2_1.2.1
+remotes_2.5.0 rlang_1.1.6<br />
+[4] magrittr_2.0.4 matrixStats_1.5.0 compiler_4.5.1<br />
+[7] roxygen2_7.3.3 callr_3.7.6 vctrs_0.6.5<br />
+[10] stringr_1.5.2 pkgconfig_2.0.3 shape_1.4.6.1<br />
+[13] crayon_1.5.3 fastmap_1.2.0 XVector_0.48.0<br />
+[16] ellipsis_0.3.2 utf8_1.2.6 rmarkdown_2.29<br />
+[19] sessioninfo_1.2.3 tzdb_0.5.0 UCSC.utils_1.4.0<br />
+[22] ps_1.9.1 purrr_1.1.0 bit_4.6.0<br />
+[25] xfun_0.53 gert_2.1.5 glmnet_4.1-10<br />
+[28] cachem_1.1.0 GenomeInfoDb_1.44.3 jsonlite_2.0.0<br />
+[31] DelayedArray_0.34.1 parallel_4.5.1 prettyunits_1.2.0<br />
+[34] R6_2.6.1 stringi_1.8.7 RColorBrewer_1.1-3<br />
+[37] pkgload_1.4.1 GenomicRanges_1.60.0 brio_1.1.5<br />
+[40] Rcpp_1.1.0 SummarizedExperiment_1.38.1 iterators_1.0.14<br />
+[43] knitr_1.50 IRanges_2.42.0 gitcreds_0.1.2<br />
+[46] Matrix_1.7-3 splines_4.5.1 tidyselect_1.2.1<br />
+[49] abind_1.4-8 rstudioapi_0.17.1 yaml_2.3.10<br />
+[52] codetools_0.2-20 curl_7.0.0 processx_3.8.6<br />
+[55] pkgbuild_1.4.8 lattice_0.22-7 tibble_3.3.0<br />
+[58] Biobase_2.68.0 withr_3.0.2 S7_0.2.0<br />
+[61] askpass_1.2.1 evaluate_1.0.5 desc_1.4.3<br />
+[64] survival_3.8-3 xml2_1.4.0 pillar_1.11.1<br />
+[67] BiocManager_1.30.26 MatrixGenerics_1.20.0 whisker_0.4.1<br />
+[70] foreach_1.5.2 stats4_4.5.1 generics_0.1.4<br />
+[73] vroom_1.6.6 rprojroot_2.1.1 credentials_2.0.3<br />
+[76] xopen_1.0.1 hms_1.1.3 S4Vectors_0.46.0<br />
+[79] ggplot2_4.0.0 commonmark_2.0.0 scales_1.4.0<br />
+[82] glue_1.8.0 tools_4.5.1 sys_3.4.3<br />
+[85] fs_1.6.6 grid_4.5.1 gh_1.5.0<br />
+[88] devtools_2.4.6 GenomeInfoDbData_1.2.14 cli_3.6.5<br />
+[91] rappdirs_0.3.3 rcmdcheck_1.4.0 S4Arrays_1.8.1<br />
+[94] gtable_0.3.6 digest_0.6.37 BiocGenerics_0.54.1<br />
+[97] SparseArray_1.8.1 farver_2.1.2 memoise_2.0.1<br />
+[100] htmltools_0.5.8.1 lifecycle_1.0.4 httr_1.4.7<br />
+[103] openssl_2.3.3 bit64_4.6.0-1</p>
+
+</body>
+</html>

@@ -1,3 +1,4 @@
+
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 # EndoSignatureR
@@ -8,12 +9,12 @@ Visualization.
 <!-- badges: start -->
 
 [![GitHub
-issues](https://img.shields.io/github/issues/%3Camcwong%3E/endoSignatureR)](https://github.com/%3Camcwong%3E/endoSignatureR/issues)  
+issues](https://img.shields.io/github/issues/amcwong/endoSignatureR)](https://github.com/amcwong/endoSignatureR/issues)  
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)  
 ![GitHub language
-count](https://img.shields.io/github/languages/count/%3Camcwong%3E/endoSignatureR)  
+count](https://img.shields.io/github/languages/count/amcwong/endoSignatureR)  
 ![GitHub commit activity
-(branch)](https://img.shields.io/github/commit-activity/y/%3Camcwong%3E/endoSignatureR/main)
+(branch)](https://img.shields.io/github/commit-activity/y/amcwong/endoSignatureR/main)
 
 <!-- badges: end -->
 
@@ -45,7 +46,7 @@ during validation.
 
 To install the latest version of the package:
 
-```r
+``` r
 install.packages("devtools")
 library("devtools")
 devtools::install_github("amcwong/endoSignatureR", build_vignettes = TRUE)
@@ -54,13 +55,13 @@ library("endoSignatureR")
 
 To run the Shiny app:
 
-```r
+``` r
 runEndoSignatureR()
 ```
 
 ## Overview
 
-```r
+``` r
 ls("package:endoSignatureR")
 data(package = "endoSignatureR") # optional
 browseVignettes("endoSignatureR")
@@ -112,36 +113,36 @@ reviewed and validated by the author.
 
 ## References
 
-- R Core Team (2025). _R: A Language and Environment for Statistical
-  Computing_. R Foundation for Statistical Computing, Vienna, Austria.
+- R Core Team (2025). *R: A Language and Environment for Statistical
+  Computing*. R Foundation for Statistical Computing, Vienna, Austria.
   <https://www.R-project.org/>.
 
-- Wickham, H. (2016). _ggplot2: Elegant Graphics for Data Analysis_.
+- Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*.
   Springer-Verlag, New York.
 
-- Wickham, H., Hester, J., & Chang, W. (2024). _devtools: Tools to Make
-  Developing R Packages Easier_. R package.
+- Wickham, H., Hester, J., & Chang, W. (2024). *devtools: Tools to Make
+  Developing R Packages Easier*. R package.
   <https://CRAN.R-project.org/package=devtools>.
 
 - Love, M. I., Huber, W., & Anders, S. (2014). Moderated estimation of
-  fold change and dispersion for RNA-seq data with DESeq2. _Genome
-  Biology_, 15(12), 550. <doi:10.1186/s13059-014-0550-8>.
+  fold change and dispersion for RNA-seq data with DESeq2. *Genome
+  Biology*, 15(12), 550. <doi:10.1186/s13059-014-0550-8>.
 
 - Friedman, J., Hastie, T., & Tibshirani, R. (2010). Regularization
-  Paths for Generalized Linear Models via Coordinate Descent. _Journal
-  of Statistical Software_, 33(1), 1–22. (glmnet).
+  Paths for Generalized Linear Models via Coordinate Descent. *Journal
+  of Statistical Software*, 33(1), 1–22. (glmnet).
 
 - Robin, X., et al. (2011). pROC: an open-source package for R and S+ to
-  analyze and compare ROC curves. _BMC Bioinformatics_, 12, 77.
+  analyze and compare ROC curves. *BMC Bioinformatics*, 12, 77.
   <doi:10.1186/1471-2105-12-77>.
 
 - Gu, Z., Eils, R., & Schlesner, M. (2016). Complex heatmaps reveal
   patterns and correlations in multidimensional genomic data.
-  _Bioinformatics_, 32(18), 2847–2849. (ComplexHeatmap).
+  *Bioinformatics*, 32(18), 2847–2849. (ComplexHeatmap).
 
 - Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression
   Omnibus: NCBI gene expression and hybridization array data repository.
-  _Nucleic Acids Research_, 30(1), 207–210. <doi:10.1093/nar/30.1.207>.
+  *Nucleic Acids Research*, 30(1), 207–210. <doi:10.1093/nar/30.1.207>.
 
 - GEO Series GSE201926. Available from:
   <https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE201926>.
