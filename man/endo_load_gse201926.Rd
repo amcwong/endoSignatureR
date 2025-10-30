@@ -6,6 +6,13 @@
 \usage{
 endo_load_gse201926(sample_only = FALSE)
 }
+\arguments{
+\item{sample_only}{Logical; if TRUE, return the bundled demo subset
+(\code{gse201926_sample}) instead of reading full matrices from \code{inst/extdata}.
+
+Loads the complete GSE201926 endometrial lesion RNA-seq dataset
+containing all 39,368 genes across 12 samples (6 PS + 6 PIS).}
+}
 \value{
 List containing:
 \describe{
@@ -15,8 +22,7 @@ List containing:
 }
 }
 \description{
-Loads the complete GSE201926 endometrial lesion RNA-seq dataset
-containing all 39,368 genes across 12 samples (6 PS + 6 PIS).
+Load full GSE201926 dataset
 }
 \examples{
 full_data <- endo_load_gse201926()

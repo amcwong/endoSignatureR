@@ -1,89 +1,9 @@
-# Automatically generated dependency citations
+citHeader("To cite endoSignatureR in publications use:")
 
-
-The downloaded binary packages are in
-	/var/folders/6v/5hr78ttn6bn4hpbxvrxxl76w0000gn/T//RtmplRRQJr/downloaded_packages
-### DESeq2 ###
-To cite package ‘DESeq2’ in publications use:
-
-  Love, M.I., Huber, W., Anders, S. Moderated estimation of fold change and dispersion for RNA-seq
-  data with DESeq2 Genome Biology 15(12):550 (2014)
-
-A BibTeX entry for LaTeX users is
-
-  @Article{,
-    title = {Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2},
-    author = {Michael I. Love and Wolfgang Huber and Simon Anders},
-    year = {2014},
-    journal = {Genome Biology},
-    doi = {10.1186/s13059-014-0550-8},
-    volume = {15},
-    issue = {12},
-    pages = {550},
-  }
-
-
-### glmnet ###
-To cite glmnet in publications use:
-
-  Friedman J, Hastie T, Tibshirani R (2010). “Regularization Paths for Generalized Linear Models via
-  Coordinate Descent.” _Journal of Statistical Software_, *33*(1), 1-22. doi:10.18637/jss.v033.i01
-  <https://doi.org/10.18637/jss.v033.i01>.
-
-If coxnet is used, please also cite:
-
-  Simon N, Friedman J, Hastie T, Tibshirani R (2011). “Regularization Paths for Cox's Proportional
-  Hazards Model via Coordinate Descent.” _Journal of Statistical Software_, *39*(5), 1-13.
-  doi:10.18637/jss.v039.i05 <https://doi.org/10.18637/jss.v039.i05>.
-
-If glmnet is used for generalized linear models, please also cite:
-
-  Tay JK, Narasimhan B, Hastie T (2023). “Elastic Net Regularization Paths for All Generalized Linear
-  Models.” _Journal of Statistical Software_, *106*(1), 1-31. doi:10.18637/jss.v106.i01
-  <https://doi.org/10.18637/jss.v106.i01>.
-
-To see these entries in BibTeX format, use 'print(<citation>, bibtex=TRUE)', 'toBibtex(.)', or set
-'options(citation.bibtex.max=999)'.
-
-
-
-The downloaded binary packages are in
-	/var/folders/6v/5hr78ttn6bn4hpbxvrxxl76w0000gn/T//RtmplRRQJr/downloaded_packages
-### pROC ###
-If you use pROC in published research, please cite the following paper:
-
-  Xavier Robin, Natacha Turck, Alexandre Hainard, Natalia Tiberti, Frédérique Lisacek, Jean-Charles
-  Sanchez and Markus Müller (2011). pROC: an open-source package for R and S+ to analyze and compare
-  ROC curves. BMC Bioinformatics, 12, p. 77.  DOI: 10.1186/1471-2105-12-77
-  <http://www.biomedcentral.com/1471-2105/12/77/>
-
-A BibTeX entry for LaTeX users is
-
-  @Article{,
-    title = {pROC: an open-source package for R and S+ to analyze and compare ROC curves},
-    author = {Xavier Robin and Natacha Turck and Alexandre Hainard and Natalia Tiberti and Frédérique Lisacek and Jean-Charles Sanchez and Markus Müller},
-    year = {2011},
-    journal = {BMC Bioinformatics},
-    volume = {12},
-    pages = {77},
-  }
-
-
-
-The downloaded binary packages are in
-	/var/folders/6v/5hr78ttn6bn4hpbxvrxxl76w0000gn/T//RtmplRRQJr/downloaded_packages
-### ComplexHeatmap ###
-The methods within the code package can be cited as:
-
-  Gu, Z. (2016) Complex heatmaps reveal patterns and correlations in multidimensional genomic data.
-  Bioinformatics.
-
-  Gu, Z. (2022) Complex Heatmap Visualization. iMeta.
-
-This free open-source software implements academic research by the authors and co-workers. If you use
-it, please support the project by citing the appropriate journal articles.
-
-To see these entries in BibTeX format, use 'print(<citation>, bibtex=TRUE)', 'toBibtex(.)', or set
-'options(citation.bibtex.max=999)'.
-
-
+citEntry("manual",
+  title = "endoSignatureR: Endometrial Signature Tools",
+  author = personList(person(given = 'Andrew', family = 'Wong')),
+  year = format(Sys.Date(), '%Y'),
+  note = "R package version 0.0.0.9000",
+  url = 'https://github.com/<org>/EndoSignatureR'
+)

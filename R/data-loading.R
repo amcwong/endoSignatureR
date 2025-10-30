@@ -35,6 +35,9 @@ endo_load_demo <- function() {
 
 #' Load full GSE201926 dataset
 #'
+#' @param sample_only Logical; if TRUE, return the bundled demo subset
+#'   (`gse201926_sample`) instead of reading full matrices from `inst/extdata`.
+#'
 #' Loads the complete GSE201926 endometrial lesion RNA-seq dataset
 #' containing all 39,368 genes across 12 samples (6 PS + 6 PIS).
 #'
@@ -154,6 +157,9 @@ endo_parse_metadata <- function(file_path) {
 
 #' Load gene annotation data
 #'
+#' @param minimal Logical; if TRUE, return the bundled minimal annotation
+#'   (`gse201926_annot_min`) when available; otherwise read the full
+#'   annotation from `inst/extdata`.
 #' Loads the gene annotation file for GSE201926 containing Ensembl gene IDs,
 #' gene symbols, descriptions, and other metadata.
 #'
@@ -170,7 +176,9 @@ endo_parse_metadata <- function(file_path) {
 #'
 #' @examples
 #' annot <- endo_load_annotation()
-#' head(annot[, c("GeneID", "Symbol", "Description")])
+#' # Safely preview a few columns if present
+#' cols <- intersect(c("GeneID", "Symbol", "Description"), names(annot))
+#' head(annot[, cols, drop = FALSE])
 #'
 #' @export
 endo_load_annotation <- function(minimal = TRUE) {

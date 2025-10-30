@@ -6,6 +6,13 @@
 \usage{
 endo_load_annotation(minimal = TRUE)
 }
+\arguments{
+\item{minimal}{Logical; if TRUE, return the bundled minimal annotation
+(\code{gse201926_annot_min}) when available; otherwise read the full
+annotation from \code{inst/extdata}.
+Loads the gene annotation file for GSE201926 containing Ensembl gene IDs,
+gene symbols, descriptions, and other metadata.}
+}
 \value{
 Data frame with gene annotation containing:
 \describe{
@@ -19,11 +26,12 @@ Data frame with gene annotation containing:
 }
 }
 \description{
-Loads the gene annotation file for GSE201926 containing Ensembl gene IDs,
-gene symbols, descriptions, and other metadata.
+Load gene annotation data
 }
 \examples{
 annot <- endo_load_annotation()
-head(annot[, c("GeneID", "Symbol", "Description")])
+# Safely preview a few columns if present
+cols <- intersect(c("GeneID", "Symbol", "Description"), names(annot))
+head(annot[, cols, drop = FALSE])
 
 }
