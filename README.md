@@ -1,26 +1,220 @@
 
-# endoSignatureR
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+# EndoSignatureR
+
+Endometrial RNA-seq Signature Discovery, Classification, and
+Visualization.
 
 <!-- badges: start -->
+
+[![GitHub
+issues](https://img.shields.io/github/issues/%3Cawong%3E/endoSignatureR)](https://github.com/%3Cawong%3E/endoSignatureR/issues)  
+[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)  
+![GitHub language
+count](https://img.shields.io/github/languages/count/%3Cawong%3E/endoSignatureR)  
+![GitHub commit activity
+(branch)](https://img.shields.io/github/commit-activity/y/%3Cawong%3E/endoSignatureR/main)
+
 <!-- badges: end -->
 
-The goal of endoSignatureR is to ...
+## Description
+
+`EndoSignatureR` is a domain-specific R package for endometrial lesion
+classification. It ships with a pre-trained PS vs PIS gene signature
+derived from GSE201926 and provides two workflows:
+
+- Rapid Classification (Mode 1): apply the shipped signature to
+  unlabeled RNA-seq samples to obtain PS vs PIS predictions with
+  confidence.
+- Signature Validation (Mode 2): train/validate a new signature on
+  labeled cohorts using best practices (in-fold preprocessing, DE
+  screening, nested cross-validation, LASSO with calibration, and
+  optional stability selection), then compare to the pre-trained
+  signature.
+
+This package centralizes typical multi-step analyses (QC, DE screening,
+model training, calibration, performance visualization, and export of
+artifacts) into a cohesive, reproducible workflow tailored for
+endometrial tissue.
+
+The package will be developed and tested on a recent R version and
+platform; see the SessionInfo section below for exact versions captured
+during validation.
 
 ## Installation
 
-You can install the development version of endoSignatureR from [GitHub](https://github.com/) with:
+To install the latest version of the package:
 
 ``` r
-# install.packages("devtools")
-# devtools::install_github("amcwong/endoSignatureR")
+install.packages("devtools")
+library("devtools")
+devtools::install_github("<awong>/endoSignatureR", build_vignettes = TRUE)
+library("endoSignatureR")
 ```
 
-## Example
-
-This is a basic example which shows you how to solve a common problem:
+To run the Shiny app:
 
 ``` r
-library(endoSignatureR)
-## basic example code
+runEndoSignatureR()
 ```
 
+## Overview
+
+``` r
+ls("package:endoSignatureR")
+data(package = "endoSignatureR") # optional
+browseVignettes("endoSignatureR")
+```
+
+`EndoSignatureR` provides core functions aligned with the plan:
+
+1.  `esr_validateEndometrial(X, pheno, annot = NULL, label_col = "group")`:
+    endometrial-specific schema/ID checks; returns cleaned objects and
+    issues table.
+2.  `esr_loadPretrainedSignature()`: load the shipped PS vs PIS
+    signature from GSE201926.
+3.  `esr_classifyEndometrial(X_new, signature = NULL, threshold = 0.5, confidence = TRUE)`:
+    apply pre-trained signature to new samples; predictions +
+    confidence.
+4.  `esr_trainEndometrialSignature(...)`: train a new signature using
+    in-fold transforms, DE screening, nested CV, LASSO, calibration, and
+    optional stability selection.
+5.  `esr_compareSignatures(pretrained_result, new_result)`: compare
+    pre-trained vs new signature performance.
+6.  Export/report helpers: `esr_exportSignature(...)`,
+    `esr_reportEndometrial(...)`.
+
+Plotting helpers (examples):
+
+- QC/EDA: `plotEndometrialPCA`, `plotEndometrialLibsize`,
+  `plotEndometrialZeros`
+- DE/Signature: `plotEndometrialMA`, `plotEndometrialVolcano`,
+  `plotEndometrialHeatmap`, `plotEndometrialCoefLollipop`,
+  `plotEndometrialStabilityBars`
+- Performance: `plotEndometrialROC`, `plotEndometrialPR`,
+  `plotEndometrialCalibration`, `plotEndometrialComparison`
+
+An overview of the package is illustrated below.
+
+![](./inst/extdata/Workflow.png)
+
+## Contributions
+
+The author of the package is Andrew WOng. The author designed and
+implemented the endometrial-specific workflows and functions listed
+above, integrating established methods (DE screening, LASSO via glmnet,
+nested cross-validation) into a cohesive package for PS vs PIS
+classification and validation.
+
+Generative AI tools (e.g., OpenAI ChatGPT) were used for branstorming,
+code completions, debugging, and drafting where noted; all outputs were
+reviewed and validated by the author.
+
+## References
+
+- R Core Team (2025). *R: A Language and Environment for Statistical
+  Computing*. R Foundation for Statistical Computing, Vienna, Austria.
+  <https://www.R-project.org/>.
+
+- Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*.
+  Springer-Verlag, New York.
+
+- Wickham, H., Hester, J., & Chang, W. (2024). *devtools: Tools to Make
+  Developing R Packages Easier*. R package.
+  <https://CRAN.R-project.org/package=devtools>.
+
+- Love, M. I., Huber, W., & Anders, S. (2014). Moderated estimation of
+  fold change and dispersion for RNA-seq data with DESeq2. *Genome
+  Biology*, 15(12), 550. <doi:10.1186/s13059-014-0550-8>.
+
+- Friedman, J., Hastie, T., & Tibshirani, R. (2010). Regularization
+  Paths for Generalized Linear Models via Coordinate Descent. *Journal
+  of Statistical Software*, 33(1), 1–22. (glmnet).
+
+- Robin, X., et al. (2011). pROC: an open-source package for R and S+ to
+  analyze and compare ROC curves. *BMC Bioinformatics*, 12, 77.
+  <doi:10.1186/1471-2105-12-77>.
+
+- Gu, Z., Eils, R., & Schlesner, M. (2016). Complex heatmaps reveal
+  patterns and correlations in multidimensional genomic data.
+  *Bioinformatics*, 32(18), 2847–2849. (ComplexHeatmap).
+
+- Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression
+  Omnibus: NCBI gene expression and hybridization array data repository.
+  *Nucleic Acids Research*, 30(1), 207–210. <doi:10.1093/nar/30.1.207>.
+
+- GEO Series GSE201926. Available from:
+  <https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE201926>.
+
+- Silva, A. (2019–2025). TestingPackage: R Package Illustrating
+  Components of an R package for BCB410H. GitHub.
+  <https://github.com/anjalisilva/TestingPackage>.
+
+## Acknowledgements
+
+This package was developed as part of an assessment for 2025 BCB410H:
+Applied Bioinformatics course at the University of Toronto, Toronto,
+CANADA. `EndoSignatureR` welcomes issues, enhancement requests, and
+other contributions. To submit an issue, use the GitHub issues page for
+your repository.
+
+## SessionInfo
+
+R version 4.5.1 (2025-06-13) Platform: aarch64-apple-darwin20 Running
+under: macOS Sequoia 15.6.1
+
+Matrix products: default BLAS:
+/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
+LAPACK:
+/Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib/libRlapack.dylib;
+LAPACK version 3.12.1
+
+locale: \[1\]
+en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+time zone: America/Toronto tzcode source: internal
+
+attached base packages: \[1\] stats graphics grDevices utils datasets
+methods base
+
+other attached packages: \[1\] endoSignatureR_0.0.0.9000 usethis_3.2.1
+dplyr_1.1.4 readr_2.1.5  
+\[5\] R.utils_2.13.0 R.oo_1.27.1 R.methodsS3_1.8.2 testthat_3.2.3
+
+loaded via a namespace (and not attached): \[1\] httr2_1.2.1
+remotes_2.5.0 rlang_1.1.6  
+\[4\] magrittr_2.0.4 matrixStats_1.5.0 compiler_4.5.1  
+\[7\] roxygen2_7.3.3 callr_3.7.6 vctrs_0.6.5  
+\[10\] stringr_1.5.2 pkgconfig_2.0.3 shape_1.4.6.1  
+\[13\] crayon_1.5.3 fastmap_1.2.0 XVector_0.48.0  
+\[16\] ellipsis_0.3.2 utf8_1.2.6 rmarkdown_2.29  
+\[19\] sessioninfo_1.2.3 tzdb_0.5.0 UCSC.utils_1.4.0  
+\[22\] ps_1.9.1 purrr_1.1.0 bit_4.6.0  
+\[25\] xfun_0.53 gert_2.1.5 glmnet_4.1-10  
+\[28\] cachem_1.1.0 GenomeInfoDb_1.44.3 jsonlite_2.0.0  
+\[31\] DelayedArray_0.34.1 parallel_4.5.1 prettyunits_1.2.0  
+\[34\] R6_2.6.1 stringi_1.8.7 RColorBrewer_1.1-3  
+\[37\] pkgload_1.4.1 GenomicRanges_1.60.0 brio_1.1.5  
+\[40\] Rcpp_1.1.0 SummarizedExperiment_1.38.1 iterators_1.0.14  
+\[43\] knitr_1.50 IRanges_2.42.0 gitcreds_0.1.2  
+\[46\] Matrix_1.7-3 splines_4.5.1 tidyselect_1.2.1  
+\[49\] abind_1.4-8 rstudioapi_0.17.1 yaml_2.3.10  
+\[52\] codetools_0.2-20 curl_7.0.0 processx_3.8.6  
+\[55\] pkgbuild_1.4.8 lattice_0.22-7 tibble_3.3.0  
+\[58\] Biobase_2.68.0 withr_3.0.2 S7_0.2.0  
+\[61\] askpass_1.2.1 evaluate_1.0.5 desc_1.4.3  
+\[64\] survival_3.8-3 xml2_1.4.0 pillar_1.11.1  
+\[67\] BiocManager_1.30.26 MatrixGenerics_1.20.0 whisker_0.4.1  
+\[70\] foreach_1.5.2 stats4_4.5.1 generics_0.1.4  
+\[73\] vroom_1.6.6 rprojroot_2.1.1 credentials_2.0.3  
+\[76\] xopen_1.0.1 hms_1.1.3 S4Vectors_0.46.0  
+\[79\] ggplot2_4.0.0 commonmark_2.0.0 scales_1.4.0  
+\[82\] glue_1.8.0 tools_4.5.1 sys_3.4.3  
+\[85\] fs_1.6.6 grid_4.5.1 gh_1.5.0  
+\[88\] devtools_2.4.6 GenomeInfoDbData_1.2.14 cli_3.6.5  
+\[91\] rappdirs_0.3.3 rcmdcheck_1.4.0 S4Arrays_1.8.1  
+\[94\] gtable_0.3.6 digest_0.6.37 BiocGenerics_0.54.1  
+\[97\] SparseArray_1.8.1 farver_2.1.2 memoise_2.0.1  
+\[100\] htmltools_0.5.8.1 lifecycle_1.0.4 httr_1.4.7  
+\[103\] openssl_2.3.3 bit64_4.6.0-1
