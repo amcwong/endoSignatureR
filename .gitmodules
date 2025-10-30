@@ -1,0 +1,3 @@
+[submodule "validation"]
+	path = validation
+	url = git@github.com:amcwong/endoSignatureR-validation-folder.git
