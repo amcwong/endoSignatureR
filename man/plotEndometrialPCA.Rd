@@ -2,16 +2,25 @@
 % Please edit documentation in R/plots.R
 \name{plotEndometrialPCA}
 \alias{plotEndometrialPCA}
-\title{Plot Endometrial PCA (Placeholder)}
+\title{Plot Endometrial PCA}
 \usage{
-plotEndometrialPCA(mat_t)
+plotEndometrialPCA(mat_t, pheno = NULL, group_col = "group")
 }
 \arguments{
 \item{mat_t}{A samples x genes transformed matrix.}
+
+\item{pheno}{Optional data.frame with sample metadata containing a \code{group} column for coloring.}
+
+\item{group_col}{Character scalar; name of the phenotype column for group coloring. Defaults to "group".}
 }
 \value{
-A plot object (placeholder returns NULL).
+A ggplot object showing PC1 vs PC2 colored by group.
 }
 \description{
-Produces a PCA plot for exploratory analysis.
+Produces a PCA plot for exploratory analysis with group coloring.
+}
+\examples{
+data(gse201926_sample)
+mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+plotEndometrialPCA(mat_t, pheno = gse201926_sample$pheno)
 }

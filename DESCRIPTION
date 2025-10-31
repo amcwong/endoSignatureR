@@ -22,7 +22,9 @@ Imports:
     ggplot2,
     SummarizedExperiment,
     readr,
-    dplyr
+    dplyr,
+    scales,
+    stats
 Depends: 
     R (>= 3.5)
 LazyData: true

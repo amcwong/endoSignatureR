@@ -16,8 +16,24 @@ esr_validateEndometrial(X, pheno, annot = NULL, label_col = "group")
 \item{label_col}{Character scalar; name of the phenotype column containing PS/PIS labels. Defaults to "group".}
 }
 \value{
-A list with elements \code{X}, \code{pheno}, \code{annot}, and \code{issues} (data.frame of detected issues). Placeholder implementation for Phase 0.
+A list with elements:
+\describe{
+\item{X}{The input expression matrix (cleaned/converted to matrix)}
+\item{pheno}{The input phenotype data.frame}
+\item{annot}{The input annotation data.frame (or NULL)}
+\item{issues}{A data.frame with columns \code{type} and \code{message} containing detected validation issues}
+}
 }
 \description{
-Performs basic schema checks for endometrial bulk RNA-seq inputs.
+Performs basic schema checks for endometrial bulk RNA-seq inputs including
+ID matching, class imbalance detection, and annotation validation.
+}
+\examples{
+data(gse201926_sample)
+result <- esr_validateEndometrial(
+  gse201926_sample$counts,
+  gse201926_sample$pheno,
+  annot = gse201926_sample$annot
+)
+result$issues
 }
