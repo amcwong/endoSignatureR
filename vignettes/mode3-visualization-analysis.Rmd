@@ -1,0 +1,154 @@
+---
+title: "Exploring and Visualizing Endometrial Data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{mode3-visualization-analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+```{r setup}
+library(endoSignatureR)
+library(ggplot2)
+```
+
+# Mode 3: Visualization & Analysis
+
+This vignette demonstrates the **Mode 3 workflow** (Standalone Visualization & Analysis) using the bundled sample dataset. This workflow enables quality assessment and exploratory analysis before proceeding to signature training or classification tasks.
+
+## Loading Data
+
+The package includes a sample dataset `gse201926_sample` containing 200 genes and 12 samples (6 PS and 6 PIS) for fast examples and testing.
+
+```{r load-data}
+data(gse201926_sample)
+
+# Examine structure
+str(gse201926_sample)
+
+# Check dimensions
+dim(gse201926_sample$counts)
+
+# View sample metadata
+gse201926_sample$pheno
+
+# Check group distribution
+table(gse201926_sample$pheno$group)
+```
+
+## Validation
+
+Before analysis, we validate the data structure using `esr_validateEndometrial()`. This function performs schema checks, ID matching, and class imbalance detection.
+
+```{r validation}
+result <- esr_validateEndometrial(
+  gse201926_sample$counts,
+  gse201926_sample$pheno,
+  annot = gse201926_sample$annot
+)
+
+# Check validation issues
+result$issues
+
+# The validated data is returned in result
+```
+
+The validation function checks:
+- Sample ID matching between expression matrix and phenotype
+- Class balance (warns if classes are highly imbalanced)
+- Gene ID matching with annotation (if provided)
+- Data structure consistency
+
+## Transformation
+
+For exploratory analysis and visualization, we transform raw counts to log1p-CPM (counts per million). This transformation normalizes for library size and applies a log transformation suitable for downstream analysis.
+
+```{r transform}
+mat_t <- esr_transform_log1p_cpm(
+  gse201926_sample$counts,
+  cpm_min = 1,
+  cpm_min_samples = 4
+)
+
+# Transformed matrix: samples x genes
+dim(mat_t)
+```
+
+The transformed matrix has:
+- Rows as samples
+- Columns as genes (filtered by CPM threshold)
+- Values in log1p-CPM space
+
+## Principal Component Analysis (PCA)
+
+We visualize the data structure using PCA to identify patterns and potential batch effects.
+
+```{r pca}
+p_pca <- plotEndometrialPCA(mat_t, pheno = gse201926_sample$pheno)
+print(p_pca)
+```
+
+The PCA plot shows:
+- PC1 vs PC2 with variance explained percentages
+- Points colored and shaped by group (PS vs PIS)
+- Sample count annotation (n = 12 samples)
+- Note: With only 12 samples, separation may be limited - this is expected for small datasets
+
+## Quality Control Plots
+
+### Library Size Distribution
+
+Library size (total read counts per sample) is an important QC metric. Large differences may indicate technical issues.
+
+```{r libsize}
+p_libsize <- plotEndometrialLibsize(
+  gse201926_sample$counts,
+  pheno = gse201926_sample$pheno
+)
+print(p_libsize)
+```
+
+This plot shows library size distribution by group, helping identify potential technical artifacts. All individual samples are displayed as jittered points on top of the boxplots.
+
+### Zero Count Distribution
+
+The percentage of zero counts per gene or per sample can indicate data quality issues or expression patterns.
+
+```{r zeros-gene}
+# Zeros per gene
+p_zeros_gene <- plotEndometrialZeros(gse201926_sample$counts, by = "gene")
+print(p_zeros_gene)
+```
+
+```{r zeros-sample}
+# Zeros per sample
+p_zeros_sample <- plotEndometrialZeros(gse201926_sample$counts, by = "sample")
+print(p_zeros_sample)
+```
+
+The zero count plots help identify:
+- Genes with high dropout rates (per gene plot)
+- Samples with poor sequencing quality (per sample plot)
+- Overall data quality patterns
+
+For this dataset, the per-sample plot shows excellent coverage with zero percentages ranging from 0% to 1% (corresponding to 0-2 genes out of 200).
+
+## Summary
+
+This vignette demonstrated the Mode 3 (Standalone Visualization & Analysis) workflow:
+
+1. **Validation**: Check data structure and identify issues
+2. **Transformation**: Prepare data for visualization (log1p-CPM)
+3. **PCA**: Explore data structure and sample relationships
+4. **QC Plots**: Assess library sizes and zero count distributions
+
+This workflow enables quality assessment and exploratory analysis before proceeding to signature training (Mode 2) or classification tasks (Mode 1).
