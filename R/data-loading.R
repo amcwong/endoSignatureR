@@ -106,17 +106,21 @@ endo_load_gse201926 <- function(sample_only = FALSE) {
 #' }
 #'
 #' @examples
-#' pheno_file <- system.file("extdata", "gse201926_series_matrix.txt", package = "endoSignatureR")
-#' pheno <- endo_parse_metadata(pheno_file)
-#' head(pheno)
+#' # Handle gzipped or plain file
+#' pheno_file_gz <- system.file("extdata", "gse201926_series_matrix.txt.gz", package = "endoSignatureR")
+#' if (nzchar(pheno_file_gz) && file.exists(pheno_file_gz)) {
+#'     pheno <- endo_parse_metadata(pheno_file_gz)
+#'     head(pheno)
+#' }
 #'
 #' @export
 endo_parse_metadata <- function(file_path) {
+    # Check if file exists (gzipped or plain)
     if (!file.exists(file_path)) {
         stop("Series matrix file not found: ", file_path)
     }
 
-    # Read the series matrix file
+    # Read the series matrix file (readLines handles .gz automatically)
     lines <- readLines(file_path)
 
     # Find the data table section
