@@ -9,7 +9,6 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
   comment = "#>"
 )
 ```
@@ -17,3 +16,18 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(endoSignatureR)
 ```
+
+# Introduction
+
+`endoSignatureR` is a package for discovering small, interpretable gene signatures from bulk RNA-seq data with binary phenotypes in small cohorts. The package provides three distinct workflows:
+
+- **Mode 1 (Rapid Classification)**: Apply pre-trained signature to new samples
+- **Mode 2 (Signature Validation)**: Train and validate signatures on labeled data
+- **Mode 3 (Visualization & Analysis)**: Explore and visualize data with QC plots
+
+For detailed workflow demonstrations, see the dedicated vignettes:
+
+- `browseVignettes("endoSignatureR")` - List all available vignettes
+- Mode 3: `vignette("mode3-visualization-analysis", package = "endoSignatureR")`
+- Mode 2: `vignette("mode2-signature-validation", package = "endoSignatureR")` (coming in Phase 2)
+- Mode 1: `vignette("mode1-rapid-classification", package = "endoSignatureR")` (coming in Phase 3)
