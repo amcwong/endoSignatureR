@@ -290,4 +290,278 @@ plotEndometrialZeros <- function(counts, by = c("gene", "sample")) {
     return(p)
 }
 
+#' Plot Endometrial MA Plot
+#'
+#' Visualizes log2 fold change vs mean expression (MA plot) for differential expression results.
+#'
+#' @param de_table A data.frame from `esr_analyzeDifferentialExpression()` with columns: `gene_id`, `log2FC`, `AveExpr`, `FDR`.
+#' @param fdr_threshold Numeric; FDR threshold for significance. Defaults to 0.05.
+#' @param log2fc_threshold Numeric; log2 fold change threshold for large effect. Defaults to 1.
+#' @param highlight_genes Optional character vector of gene IDs to highlight (e.g., with labels).
+#' @param annot_col Optional character scalar; column name in de_table for gene annotations (not yet used).
+#'
+#' @return A ggplot object showing MA plot with significance coloring.
+#'
+#' @examples
+#' data(gse201926_sample)
+#' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+#' de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
+#' plotEndometrialMA(de_table)
+#' @export
+plotEndometrialMA <- function(de_table, fdr_threshold = 0.05,
+                              log2fc_threshold = 1,
+                              highlight_genes = NULL,
+                              annot_col = NULL) {
+    if (!requireNamespace("ggplot2", quietly = TRUE)) {
+        stop("ggplot2 package is required for plotting")
+    }
+
+    # Validate required columns
+    required_cols <- c("gene_id", "log2FC", "AveExpr", "FDR")
+    missing_cols <- setdiff(required_cols, names(de_table))
+    if (length(missing_cols) > 0) {
+        stop(paste0("de_table must contain columns: ", paste(missing_cols, collapse = ", ")))
+    }
+
+    # Validate thresholds
+    if (!is.numeric(fdr_threshold) || fdr_threshold <= 0 || fdr_threshold > 1) {
+        stop("fdr_threshold must be a numeric value between 0 and 1")
+    }
+
+    if (!is.numeric(log2fc_threshold) || log2fc_threshold < 0) {
+        stop("log2fc_threshold must be a non-negative numeric value")
+    }
+
+    # Create significance categories
+    de_table$significant <- with(de_table, {
+        ifelse(FDR < fdr_threshold & abs(log2FC) >= log2fc_threshold, "Significant & Large FC",
+            ifelse(FDR < fdr_threshold & abs(log2FC) < log2fc_threshold, "Significant Only",
+                "Not Significant"
+            )
+        )
+    })
+
+    de_table$significant <- factor(de_table$significant,
+        levels = c("Significant & Large FC", "Significant Only", "Not Significant")
+    )
+
+    # Count genes by category
+    n_sig_large <- sum(de_table$significant == "Significant & Large FC")
+    n_sig_only <- sum(de_table$significant == "Significant Only")
+    n_total <- nrow(de_table)
+
+    # Color palette (color-blind friendly)
+    colors_map <- c(
+        "Significant & Large FC" = "#d62728", # red
+        "Significant Only" = "#ff7f0e", # orange
+        "Not Significant" = "#7f7f7f" # gray
+    )
+
+    # Create plot
+    p <- ggplot2::ggplot(de_table, ggplot2::aes(x = AveExpr, y = log2FC, color = significant)) +
+        ggplot2::geom_point(alpha = 0.6, size = 1.5) +
+        ggplot2::geom_hline(yintercept = log2fc_threshold, linetype = "dashed", color = "gray40", linewidth = 0.5) +
+        ggplot2::geom_hline(yintercept = -log2fc_threshold, linetype = "dashed", color = "gray40", linewidth = 0.5) +
+        ggplot2::geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.3) +
+        ggplot2::scale_color_manual(
+            name = "Significance",
+            values = colors_map,
+            labels = c(
+                paste0("Significant & Large FC (n=", n_sig_large, ")"),
+                paste0("Significant Only (n=", n_sig_only, ")"),
+                paste0("Not Significant (n=", n_total - n_sig_large - n_sig_only, ")")
+            )
+        ) +
+        ggplot2::labs(
+            x = "Mean Expression (log2)",
+            y = "Log2 Fold Change",
+            title = paste0("MA Plot (n = ", n_total, " genes, FDR < ", fdr_threshold, ", |log2FC| >= ", log2fc_threshold, ")")
+        ) +
+        ggplot2::theme_bw() +
+        ggplot2::theme(
+            plot.title = ggplot2::element_text(hjust = 0.5),
+            legend.position = "right"
+        ) +
+        # Add annotation
+        ggplot2::annotate(
+            "text",
+            x = Inf, y = Inf,
+            label = paste0("n = ", n_total, " genes"),
+            hjust = 1.1, vjust = 1.5,
+            size = 3.5,
+            color = "gray40"
+        )
+
+    # Optionally highlight specific genes
+    if (!is.null(highlight_genes)) {
+        de_table_highlight <- de_table[de_table$gene_id %in% highlight_genes, ]
+        if (nrow(de_table_highlight) > 0) {
+            p <- p + ggplot2::geom_point(
+                data = de_table_highlight,
+                ggplot2::aes(x = AveExpr, y = log2FC),
+                color = "black",
+                shape = 21,
+                fill = "yellow",
+                size = 3,
+                stroke = 1.5
+            )
+        }
+    }
+
+    return(p)
+}
+
+#' Plot Endometrial Volcano Plot
+#'
+#' Visualizes -log10(p-value) vs log2 fold change (Volcano plot) for differential expression results.
+#'
+#' @param de_table A data.frame from `esr_analyzeDifferentialExpression()` with columns: `gene_id`, `log2FC`, `FDR`.
+#' @param fdr_threshold Numeric; FDR threshold for significance. Defaults to 0.05.
+#' @param log2fc_threshold Numeric; log2 fold change threshold for large effect. Defaults to 1.
+#' @param highlight_genes Optional character vector of gene IDs to highlight (e.g., with labels).
+#' @param pvalue_col Character scalar; column name for p-values to plot. Defaults to "FDR".
+#' @param log2fc_col Character scalar; column name for log2 fold change. Defaults to "log2FC".
+#'
+#' @return A ggplot object showing Volcano plot with significance coloring.
+#'
+#' @examples
+#' data(gse201926_sample)
+#' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+#' de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
+#' plotEndometrialVolcano(de_table)
+#' @export
+plotEndometrialVolcano <- function(de_table, fdr_threshold = 0.05,
+                                   log2fc_threshold = 1,
+                                   highlight_genes = NULL,
+                                   pvalue_col = "FDR",
+                                   log2fc_col = "log2FC") {
+    if (!requireNamespace("ggplot2", quietly = TRUE)) {
+        stop("ggplot2 package is required for plotting")
+    }
+
+    # Validate required columns
+    required_cols <- c("gene_id", log2fc_col, pvalue_col)
+    missing_cols <- setdiff(required_cols, names(de_table))
+    if (length(missing_cols) > 0) {
+        stop(paste0("de_table must contain columns: ", paste(missing_cols, collapse = ", ")))
+    }
+
+    # Validate thresholds
+    if (!is.numeric(fdr_threshold) || fdr_threshold <= 0 || fdr_threshold > 1) {
+        stop("fdr_threshold must be a numeric value between 0 and 1")
+    }
+
+    if (!is.numeric(log2fc_threshold) || log2fc_threshold < 0) {
+        stop("log2fc_threshold must be a non-negative numeric value")
+    }
+
+    # Extract columns (handle potential column name issues)
+    de_table$log2FC_plot <- de_table[[log2fc_col]]
+    de_table$pvalue_plot <- de_table[[pvalue_col]]
+
+    # Calculate -log10(p-value)
+    de_table$neg_log10_pval <- -log10(de_table$pvalue_plot + 1e-300) # Add small epsilon to avoid log(0)
+
+    # Create significance categories
+    de_table$significant <- with(de_table, {
+        ifelse(pvalue_plot < fdr_threshold & abs(log2FC_plot) >= log2fc_threshold, "Significant & Large FC",
+            ifelse(pvalue_plot < fdr_threshold & abs(log2FC_plot) < log2fc_threshold, "Significant Only",
+                ifelse(pvalue_plot >= fdr_threshold & abs(log2FC_plot) >= log2fc_threshold, "Large FC Only",
+                    "Not Significant"
+                )
+            )
+        )
+    })
+
+    de_table$significant <- factor(de_table$significant,
+        levels = c("Significant & Large FC", "Significant Only", "Large FC Only", "Not Significant")
+    )
+
+    # Count genes by category
+    n_sig_large <- sum(de_table$significant == "Significant & Large FC")
+    n_sig_only <- sum(de_table$significant == "Significant Only")
+    n_large_fc <- sum(de_table$significant == "Large FC Only")
+    n_total <- nrow(de_table)
+
+    # Color palette (color-blind friendly)
+    colors_map <- c(
+        "Significant & Large FC" = "#d62728", # red
+        "Significant Only" = "#ff7f0e", # orange
+        "Large FC Only" = "#2ca02c", # green
+        "Not Significant" = "#7f7f7f" # gray
+    )
+
+    # Create plot
+    p <- ggplot2::ggplot(de_table, ggplot2::aes(x = log2FC_plot, y = neg_log10_pval, color = significant)) +
+        ggplot2::geom_point(alpha = 0.6, size = 1.5) +
+        ggplot2::geom_vline(xintercept = log2fc_threshold, linetype = "dashed", color = "gray40", linewidth = 0.5) +
+        ggplot2::geom_vline(xintercept = -log2fc_threshold, linetype = "dashed", color = "gray40", linewidth = 0.5) +
+        ggplot2::geom_vline(xintercept = 0, linetype = "solid", color = "black", linewidth = 0.3) +
+        ggplot2::geom_hline(yintercept = -log10(fdr_threshold), linetype = "dashed", color = "gray40", linewidth = 0.5) +
+        ggplot2::scale_color_manual(
+            name = "Significance",
+            values = colors_map,
+            labels = c(
+                paste0("Significant & Large FC (n=", n_sig_large, ")"),
+                paste0("Significant Only (n=", n_sig_only, ")"),
+                paste0("Large FC Only (n=", n_large_fc, ")"),
+                paste0("Not Significant (n=", n_total - n_sig_large - n_sig_only - n_large_fc, ")")
+            )
+        ) +
+        ggplot2::labs(
+            x = "Log2 Fold Change",
+            y = paste0("-Log10(", pvalue_col, ")"),
+            title = paste0("Volcano Plot (n = ", n_total, " genes, ", pvalue_col, " < ", fdr_threshold, ", |log2FC| >= ", log2fc_threshold, ")")
+        ) +
+        ggplot2::theme_bw() +
+        ggplot2::theme(
+            plot.title = ggplot2::element_text(hjust = 0.5),
+            legend.position = "right"
+        ) +
+        # Add quadrants annotation
+        ggplot2::annotate(
+            "text",
+            x = -Inf, y = Inf,
+            label = "Down-regulated\nSignificant",
+            hjust = -0.1, vjust = 1.5,
+            size = 3,
+            color = "gray50"
+        ) +
+        ggplot2::annotate(
+            "text",
+            x = Inf, y = Inf,
+            label = "Up-regulated\nSignificant",
+            hjust = 1.1, vjust = 1.5,
+            size = 3,
+            color = "gray50"
+        ) +
+        # Add count annotation
+        ggplot2::annotate(
+            "text",
+            x = Inf, y = -Inf,
+            label = paste0("n = ", n_total, " genes"),
+            hjust = 1.1, vjust = -0.5,
+            size = 3.5,
+            color = "gray40"
+        )
+
+    # Optionally highlight specific genes
+    if (!is.null(highlight_genes)) {
+        de_table_highlight <- de_table[de_table$gene_id %in% highlight_genes, ]
+        if (nrow(de_table_highlight) > 0) {
+            p <- p + ggplot2::geom_point(
+                data = de_table_highlight,
+                ggplot2::aes(x = log2FC_plot, y = neg_log10_pval),
+                color = "black",
+                shape = 21,
+                fill = "yellow",
+                size = 3,
+                stroke = 1.5
+            )
+        }
+    }
+
+    return(p)
+}
+
 # [END]
