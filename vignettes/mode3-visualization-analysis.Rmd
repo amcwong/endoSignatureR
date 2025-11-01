@@ -63,6 +63,7 @@ result$issues
 ```
 
 The validation function checks:
+
 - Sample ID matching between expression matrix and phenotype
 - Class balance (warns if classes are highly imbalanced)
 - Gene ID matching with annotation (if provided)
@@ -84,6 +85,7 @@ dim(mat_t)
 ```
 
 The transformed matrix has:
+
 - Rows as samples
 - Columns as genes (filtered by CPM threshold)
 - Values in log1p-CPM space
@@ -98,6 +100,7 @@ print(p_pca)
 ```
 
 The PCA plot shows:
+
 - PC1 vs PC2 with variance explained percentages
 - Points colored and shaped by group (PS vs PIS)
 - Sample count annotation (n = 12 samples)
@@ -136,11 +139,113 @@ print(p_zeros_sample)
 ```
 
 The zero count plots help identify:
+
 - Genes with high dropout rates (per gene plot)
 - Samples with poor sequencing quality (per sample plot)
 - Overall data quality patterns
 
 For this dataset, the per-sample plot shows excellent coverage with zero percentages ranging from 0% to 1% (corresponding to 0-2 genes out of 200).
+
+## Differential Expression Analysis
+
+Differential expression analysis identifies genes that are significantly different between groups (PS vs PIS in this case). We use `limma` with the transformed data to perform DE analysis.
+
+```{r de-analysis}
+# Perform differential expression analysis
+de_table <- esr_analyzeDifferentialExpression(
+  mat_t,
+  gse201926_sample$pheno,
+  group_col = "group"
+)
+
+# Examine DE table structure
+head(de_table)
+
+# Check number of significant genes (FDR < 0.05)
+n_sig <- sum(de_table$FDR < 0.05)
+cat("Number of significant genes (FDR < 0.05):", n_sig, "out of", nrow(de_table), "genes\n")
+
+# Top 10 genes by absolute log2 fold change
+top_genes <- head(de_table[order(abs(de_table$log2FC), decreasing = TRUE), ], 10)
+print(top_genes[, c("gene_id", "log2FC", "FDR", "pvalue")])
+```
+
+The DE table contains:
+
+- `gene_id`: Gene identifiers
+- `log2FC`: Log2 fold change (PIS vs PS)
+- `pvalue`: Unadjusted p-value
+- `FDR`: False discovery rate-adjusted p-value
+- `AveExpr`: Mean expression across samples
+- `t`: Moderated t-statistic
+
+Results are sorted by FDR (ascending), then by absolute log2FC (descending).
+
+Note: With only 12 samples (6 per group), statistical power is limited. The DE analysis demonstrates the workflow, but results should be interpreted cautiously on such small datasets.
+
+## MA Plot
+
+The MA plot visualizes log2 fold change vs mean expression. This helps identify genes with large fold changes and assess expression-dependent bias.
+
+```{r ma-plot}
+p_ma <- plotEndometrialMA(
+  de_table,
+  fdr_threshold = 0.1,
+  log2fc_threshold = 1
+)
+print(p_ma)
+```
+
+The MA plot shows:
+
+- X-axis: Mean expression (log2) across samples
+- Y-axis: Log2 fold change (PIS vs PS)
+- Colors indicate significance:
+  - **Red**: Significant and large fold change (FDR < 0.05, |log2FC| >= 1)
+  - **Orange**: Significant only (FDR < 0.05, |log2FC| < 1)
+  - **Gray**: Not significant
+- Horizontal dashed lines indicate fold change thresholds (±1)
+
+This plot helps identify:
+
+- Genes with consistent expression changes across expression levels
+- Expression-dependent bias (if points cluster above or below zero at certain expression levels)
+
+## Volcano Plot
+
+The Volcano plot visualizes statistical significance (-log10 FDR) vs biological effect (log2 fold change). This helps identify genes that are both statistically significant and biologically meaningful.
+
+```{r volcano-plot}
+p_volcano <- plotEndometrialVolcano(
+  de_table,
+  fdr_threshold = 0.1,
+  log2fc_threshold = 1
+)
+print(p_volcano)
+```
+
+The Volcano plot shows:
+
+- X-axis: Log2 fold change (PIS vs PS)
+- Y-axis: -Log10(FDR) (statistical significance)
+- Colors indicate significance categories:
+  - **Red**: Significant and large fold change (FDR < 0.05, |log2FC| >= 1)
+  - **Orange**: Significant only (FDR < 0.05, |log2FC| < 1)
+  - **Green**: Large fold change only (FDR >= 0.05, |log2FC| >= 1)
+  - **Gray**: Not significant
+- Vertical dashed lines indicate fold change thresholds (±1)
+- Horizontal dashed line indicates significance threshold (-log10(0.05))
+
+Quadrants represent:
+
+- **Upper left**: Down-regulated significant genes
+- **Upper right**: Up-regulated significant genes
+- **Lower left/right**: Non-significant genes
+
+This plot helps prioritize candidate genes:
+
+- Focus on genes in the upper quadrants (statistically significant)
+- Prioritize genes in the upper right/left corners (significant AND large fold change)
 
 ## Summary
 
@@ -150,5 +255,8 @@ This vignette demonstrated the Mode 3 (Standalone Visualization & Analysis) work
 2. **Transformation**: Prepare data for visualization (log1p-CPM)
 3. **PCA**: Explore data structure and sample relationships
 4. **QC Plots**: Assess library sizes and zero count distributions
+5. **DE Analysis**: Identify differentially expressed genes between groups
+6. **MA Plot**: Visualize fold change vs mean expression
+7. **Volcano Plot**: Visualize significance vs biological effect
 
-This workflow enables quality assessment and exploratory analysis before proceeding to signature training (Mode 2) or classification tasks (Mode 1).
+This workflow enables quality assessment and exploratory analysis before proceeding to signature training (Mode 2) or classification tasks (Mode 1). The DE analysis and visualization steps help identify candidate genes for downstream signature selection (Phase 1.3) or training workflows (Phase 2).
