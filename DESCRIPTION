@@ -24,7 +24,8 @@ Imports:
     readr,
     dplyr,
     scales,
-    stats
+    stats,
+    limma
 Depends: 
     R (>= 3.5)
 LazyData: true

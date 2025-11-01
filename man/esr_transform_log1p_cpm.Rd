@@ -24,5 +24,5 @@ optionally filtering low-expressed genes.
 \examples{
 data(gse201926_sample)
 mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
-dim(mat_t)  # samples x genes
+dim(mat_t) # samples x genes
 }

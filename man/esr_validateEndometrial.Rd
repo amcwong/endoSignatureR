@@ -31,9 +31,9 @@ ID matching, class imbalance detection, and annotation validation.
 \examples{
 data(gse201926_sample)
 result <- esr_validateEndometrial(
-  gse201926_sample$counts,
-  gse201926_sample$pheno,
-  annot = gse201926_sample$annot
+    gse201926_sample$counts,
+    gse201926_sample$pheno,
+    annot = gse201926_sample$annot
 )
 result$issues
 }
