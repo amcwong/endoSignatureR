@@ -19,20 +19,20 @@
 #' @examples
 #' data(gse201926_sample)
 #' result <- esr_validateEndometrial(
-#'   gse201926_sample$counts,
-#'   gse201926_sample$pheno,
-#'   annot = gse201926_sample$annot
+#'     gse201926_sample$counts,
+#'     gse201926_sample$pheno,
+#'     annot = gse201926_sample$annot
 #' )
 #' result$issues
 #' @export
 esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group") {
     issues <- data.frame(type = character(), message = character(), stringsAsFactors = FALSE)
-    
+
     # Convert X to matrix if needed
     if (!is.matrix(X)) {
         X <- as.matrix(X)
     }
-    
+
     # Validate X is numeric
     if (!is.numeric(X)) {
         issues <- rbind(issues, data.frame(
@@ -42,7 +42,7 @@ esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group")
         ))
         return(list(X = X, pheno = pheno, annot = annot, issues = issues))
     }
-    
+
     # Validate X dimensions
     if (nrow(X) == 0 || ncol(X) == 0) {
         issues <- rbind(issues, data.frame(
@@ -52,7 +52,7 @@ esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group")
         ))
         return(list(X = X, pheno = pheno, annot = annot, issues = issues))
     }
-    
+
     # Validate pheno structure
     if (!is.data.frame(pheno)) {
         issues <- rbind(issues, data.frame(
@@ -62,7 +62,7 @@ esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group")
         ))
         return(list(X = X, pheno = pheno, annot = annot, issues = issues))
     }
-    
+
     # Check required columns in pheno
     if (!"sample_id" %in% names(pheno)) {
         issues <- rbind(issues, data.frame(
@@ -71,7 +71,7 @@ esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group")
             stringsAsFactors = FALSE
         ))
     }
-    
+
     if (!label_col %in% names(pheno)) {
         issues <- rbind(issues, data.frame(
             type = "error",
@@ -79,14 +79,14 @@ esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group")
             stringsAsFactors = FALSE
         ))
     }
-    
+
     # Check ID matching between X and pheno
     if ("sample_id" %in% names(pheno) && !is.null(colnames(X))) {
         X_samples <- colnames(X)
         pheno_samples <- pheno$sample_id
         missing_in_pheno <- setdiff(X_samples, pheno_samples)
         missing_in_X <- setdiff(pheno_samples, X_samples)
-        
+
         if (length(missing_in_pheno) > 0) {
             issues <- rbind(issues, data.frame(
                 type = "warning",
@@ -94,7 +94,7 @@ esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group")
                 stringsAsFactors = FALSE
             ))
         }
-        
+
         if (length(missing_in_X) > 0) {
             issues <- rbind(issues, data.frame(
                 type = "warning",
@@ -102,7 +102,7 @@ esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group")
                 stringsAsFactors = FALSE
             ))
         }
-        
+
         # Calculate mapping rate
         if (length(X_samples) > 0 && length(pheno_samples) > 0) {
             mapped <- length(intersect(X_samples, pheno_samples))
@@ -116,37 +116,41 @@ esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group")
             }
         }
     }
-    
+
     # Check class balance
     if (label_col %in% names(pheno)) {
         labels <- pheno[[label_col]]
         label_table <- table(labels)
-        
+
         if (length(label_table) >= 2) {
             proportions <- prop.table(label_table)
             min_prop <- min(proportions)
             max_prop <- max(proportions)
-            
+
             if (min_prop < 0.2) {
                 issues <- rbind(issues, data.frame(
                     type = "warning",
-                    message = paste0("Class imbalance detected: smallest class is ", 
-                                   round(min_prop * 100, 1), "% of samples"),
+                    message = paste0(
+                        "Class imbalance detected: smallest class is ",
+                        round(min_prop * 100, 1), "% of samples"
+                    ),
                     stringsAsFactors = FALSE
                 ))
             }
-            
+
             if (max_prop > 0.8) {
                 issues <- rbind(issues, data.frame(
                     type = "warning",
-                    message = paste0("Class imbalance detected: largest class is ", 
-                                   round(max_prop * 100, 1), "% of samples"),
+                    message = paste0(
+                        "Class imbalance detected: largest class is ",
+                        round(max_prop * 100, 1), "% of samples"
+                    ),
                     stringsAsFactors = FALSE
                 ))
             }
         }
     }
-    
+
     # Validate annot structure if provided
     if (!is.null(annot)) {
         if (!is.data.frame(annot)) {
@@ -171,7 +175,7 @@ esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group")
             }
         }
     }
-    
+
     result <- list(X = X, pheno = pheno, annot = annot, issues = issues)
     return(result)
 }
@@ -191,31 +195,171 @@ esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group")
 #' @examples
 #' data(gse201926_sample)
 #' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
-#' dim(mat_t)  # samples x genes
+#' dim(mat_t) # samples x genes
 #' @export
 esr_transform_log1p_cpm <- function(X, cpm_min = 1, cpm_min_samples = 4) {
     # Convert to matrix if needed
     if (!is.matrix(X)) {
         X <- as.matrix(X)
     }
-    
+
     # Calculate library sizes (column sums)
     lib_sizes <- colSums(X, na.rm = TRUE)
-    
+
     # Calculate CPM (counts per million)
     cpm <- t(t(X) / lib_sizes * 1e6)
-    
+
     # Filter genes with CPM < cpm_min in fewer than cpm_min_samples
     genes_keep <- rowSums(cpm >= cpm_min, na.rm = TRUE) >= cpm_min_samples
-    
+
     # Subset and apply log1p transformation
     cpm_filtered <- cpm[genes_keep, , drop = FALSE]
     mat_t <- log1p(cpm_filtered)
-    
+
     # Transpose to samples x genes format
     mat_t <- t(mat_t)
-    
+
     return(mat_t)
+}
+
+#' Analyze Differential Expression
+#'
+#' Performs differential expression analysis using limma on transformed data
+#' with a design matrix for PS vs PIS comparison.
+#'
+#' @param mat_t A samples x genes transformed matrix (e.g., from `esr_transform_log1p_cpm()`).
+#' @param pheno A data.frame with sample metadata; must include `sample_id` and group column.
+#' @param group_col Character scalar; name of the phenotype column containing PS/PIS labels. Defaults to "group".
+#' @param transform Character scalar; type of transform used (informational only, not used in analysis). Defaults to "log1p-cpm".
+#' @param contrast Character vector or NULL; contrasts to extract. If NULL, defaults to comparing last level vs first level of group. Defaults to NULL.
+#' @param fdr_method Character scalar; method for FDR adjustment. Defaults to "BH" (Benjamini-Hochberg).
+#' @param seed Integer; random seed for reproducibility. Defaults to 123.
+#'
+#' @return A data.frame with columns:
+#' \describe{
+#'   \item{gene_id}{Character; gene identifiers (rownames from mat_t)}
+#'   \item{log2FC}{Numeric; log2 fold change}
+#'   \item{pvalue}{Numeric; unadjusted p-value}
+#'   \item{FDR}{Numeric; FDR-adjusted p-value}
+#'   \item{AveExpr}{Numeric; mean expression across samples}
+#'   \item{t}{Numeric; moderated t-statistic}
+#' }
+#' Results are sorted by FDR (ascending), then by absolute log2FC (descending).
+#'
+#' @examples
+#' data(gse201926_sample)
+#' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+#' de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
+#' head(de_table)
+#' @export
+esr_analyzeDifferentialExpression <- function(mat_t, pheno, group_col = "group",
+                                              transform = "log1p-cpm",
+                                              contrast = NULL,
+                                              fdr_method = "BH",
+                                              seed = 123) {
+    if (!requireNamespace("limma", quietly = TRUE)) {
+        stop("limma package is required for differential expression analysis")
+    }
+
+    # Set seed for reproducibility
+    set.seed(seed)
+
+    # Validate mat_t is a matrix
+    if (!is.matrix(mat_t)) {
+        mat_t <- as.matrix(mat_t)
+    }
+
+    # Validate pheno structure
+    if (!is.data.frame(pheno)) {
+        stop("pheno must be a data.frame")
+    }
+
+    # Check required columns
+    if (!"sample_id" %in% names(pheno)) {
+        stop("pheno must contain a 'sample_id' column")
+    }
+
+    if (!group_col %in% names(pheno)) {
+        stop(paste0("pheno must contain a '", group_col, "' column"))
+    }
+
+    # Check ID matching
+    mat_samples <- rownames(mat_t)
+    pheno_samples <- pheno$sample_id
+
+    if (is.null(mat_samples)) {
+        stop("mat_t must have rownames (sample IDs)")
+    }
+
+    # Match samples
+    common_samples <- intersect(mat_samples, pheno_samples)
+
+    if (length(common_samples) == 0) {
+        stop("No matching sample IDs found between mat_t rownames and pheno$sample_id")
+    }
+
+    # Subset to common samples
+    mat_t_matched <- mat_t[common_samples, , drop = FALSE]
+    pheno_matched <- pheno[pheno$sample_id %in% common_samples, , drop = FALSE]
+
+    # Ensure pheno is ordered to match mat_t
+    pheno_matched <- pheno_matched[match(common_samples, pheno_matched$sample_id), , drop = FALSE]
+
+    # Check sample size per group
+    group_factor <- factor(pheno_matched[[group_col]])
+    group_counts <- table(group_factor)
+
+    if (length(group_counts) < 2) {
+        stop("At least 2 groups are required for differential expression analysis")
+    }
+
+    if (any(group_counts < 2)) {
+        warning("Some groups have fewer than 2 samples; DE analysis may be unreliable")
+    }
+
+    if (any(group_counts < 4)) {
+        warning("Some groups have fewer than 4 samples; DE analysis has limited power")
+    }
+
+    # Create design matrix
+    design <- stats::model.matrix(~group_factor)
+    colnames(design)[1] <- "(Intercept)"
+
+    # Fit linear model
+    fit <- limma::lmFit(t(mat_t_matched), design) # limma expects genes x samples
+    fit <- limma::eBayes(fit)
+
+    # Extract contrasts if specified, otherwise use default (last vs first level)
+    if (!is.null(contrast)) {
+        # User-specified contrasts
+        cont_matrix <- limma::makeContrasts(contrasts = contrast, levels = design)
+        fit2 <- limma::contrasts.fit(fit, cont_matrix)
+        fit2 <- limma::eBayes(fit2)
+
+        # Extract top table
+        top_table <- limma::topTable(fit2, number = Inf, adjust.method = fdr_method, sort.by = "none")
+    } else {
+        # Default: compare last level vs first level
+        # Extract top table for second coefficient (group comparison)
+        top_table <- limma::topTable(fit, coef = 2, number = Inf, adjust.method = fdr_method, sort.by = "none")
+    }
+
+    # Format output
+    de_table <- data.frame(
+        gene_id = rownames(top_table),
+        log2FC = top_table$logFC,
+        pvalue = top_table$P.Value,
+        FDR = top_table$adj.P.Val,
+        AveExpr = top_table$AveExpr,
+        t = top_table$t,
+        stringsAsFactors = FALSE
+    )
+
+    # Sort by FDR (ascending), then by absolute log2FC (descending)
+    de_table <- de_table[order(de_table$FDR, -abs(de_table$log2FC)), ]
+    rownames(de_table) <- NULL
+
+    return(de_table)
 }
 
 # [END]

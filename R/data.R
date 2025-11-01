@@ -1,26 +1,27 @@
 #' GSE201926 Sample Dataset
 #'
-#' A subset of the GSE201926 endometrial lesion RNA-seq dataset containing
-#' 200 most variable genes across 12 samples (6 progestin-sensitive (PS)
+#' The complete GSE201926 endometrial lesion RNA-seq dataset containing
+#' all genes across 12 samples (6 progestin-sensitive (PS)
 #' and 6 progestin-insensitive (PIS) patients).
 #'
 #' @format A list with three components:
 #' \describe{
-#'   \item{counts}{Matrix of raw read counts (200 genes × 12 samples).
-#'     Rows are genes (Ensembl IDs), columns are samples (GSM IDs).}
+#'   \item{counts}{Matrix of raw read counts (39,368 genes × 12 samples).
+#'     Rows are genes (numeric GeneIDs matching the raw counts file), columns are samples (GSM IDs).}
 #'   \item{pheno}{Data frame with sample metadata containing:
 #'     \describe{
 #'       \item{sample_id}{Character vector of sample IDs (GSM6081173-1184)}
 #'       \item{group}{Character vector of group labels (PS/PIS)}
+#'       \item{title}{Character vector of sample titles from GEO}
 #'     }
 #'   }
 #'   \item{annot}{Data frame with gene annotation containing:
 #'     \describe{
-#'       \item{GeneID}{Ensembl gene ID}
+#'       \item{GeneID}{Numeric gene ID (matches counts rownames)}
 #'       \item{Symbol}{Gene symbol}
 #'       \item{Description}{Gene description}
 #'       \item{GeneType}{Type of gene (protein-coding, pseudo, etc.)}
-#'       \item{EnsemblGeneID}{Full Ensembl gene ID}
+#'       \item{EnsemblGeneID}{Full Ensembl gene ID (Ensembl format, e.g., ENSG00000000003)}
 #'       \item{ChrAcc, ChrStart, ChrStop}{Chromosomal coordinates}
 #'       \item{GOFunction, GOProcess, GOComponent}{Gene Ontology terms}
 #'     }
@@ -28,10 +29,9 @@
 #' }
 #'
 #' @details
-#' This dataset is a curated subset of the full GSE201926 dataset, containing
-#' the 200 most variable genes based on variance across all samples. The subset
-#' is designed for fast examples, tests, and vignettes while maintaining the
-#' biological characteristics of the original dataset.
+#' This dataset contains the full GSE201926 dataset loaded from package
+#' extdata files, providing the complete gene expression matrix and annotation
+#' for realistic analysis workflows in examples, tests, and vignettes.
 #'
 #' The original study investigated progestin sensitivity in endometrial lesions
 #' using RNA-seq. Samples were collected from patients with endometrial
@@ -39,7 +39,7 @@
 #' as either progestin-sensitive (PS) or progestin-insensitive (PIS) based
 #' on clinical response.
 #'
-#' Source files used to generate this subset (original names → package names):
+#' Source files used to generate this dataset (original names → package names):
 #' - `GSE201926_raw_counts_GRCh38.p13_NCBI.tsv` → `inst/extdata/gse201926_raw_counts.tsv`
 #' - `Human.GRCh38.p13.annot.tsv` → `inst/extdata/gse201926_annotation.tsv`
 #' - `GSE201926_series_matrix.txt` → `inst/extdata/gse201926_series_matrix.txt`
