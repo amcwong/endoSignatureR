@@ -1,0 +1,307 @@
+---
+title: "Mode 2: Signature Validation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Mode 2: Signature Validation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+```{r setup}
+library(endoSignatureR)
+library(rsample)
+```
+
+# Mode 2: Signature Validation
+
+Mode 2 (Signature Validation) enables training and validating new gene signatures on labeled cohorts using best practices including in-fold preprocessing, DE screening, nested cross-validation, LASSO with calibration, and optional stability selection. This workflow is designed for researchers who want to train their own signatures on new datasets and compare them to the pre-trained signature.
+
+## Overview
+
+Mode 2 provides a comprehensive pipeline for signature training that enforces anti-leakage practices:
+
+1. **Data Preparation**: Load training dataset with balanced labels
+2. **Cross-Validation Splits**: Create stratified CV splits with fixed seeds for reproducibility
+3. **In-Fold Preprocessing**: Apply transforms/filters and gene selection within CV folds only
+4. **Training Pipeline**: Nested CV with glmnet (LASSO/Elastic Net)
+5. **Calibration**: Probability calibration (Platt/Isotonic)
+6. **Stability Selection**: Resampling frequencies for feature selection
+7. **Comparison**: Compare new signature to pre-trained signature
+
+This vignette demonstrates Phase 2.1 functionality: **Data Preparation, Splits, and Anti-leakage Guards**. Future phases will add training, calibration, and comparison features.
+
+## Data Preparation
+
+### Loading the Training Mini Dataset
+
+The `gse201926_trainmini` dataset is a medium-sized subset (800-1500 genes × 12 samples) designed for fast nested CV in vignettes and tests (nested CV <60s). It maintains class balance (6 PS + 6 PIS) and is derived from the full GSE201926 dataset.
+
+```{r load-data}
+data(gse201926_trainmini)
+
+# Examine structure
+str(gse201926_trainmini)
+
+# Check dimensions
+dim(gse201926_trainmini$counts)
+
+# View sample metadata
+gse201926_trainmini$pheno
+
+# Verify class balance
+table(gse201926_trainmini$pheno$group)
+```
+
+### Dataset Characteristics
+
+The training mini dataset:
+- **Counts**: Raw read counts matrix (genes × samples)
+- **Pheno**: Sample metadata with `sample_id`, `group` (PS/PIS), and `title`
+- **Annot**: Gene annotation for selected genes
+- **Class Balance**: Equal distribution of PS and PIS samples
+- **Gene Selection**: Selected based on variance (preferring protein-coding)
+
+## Cross-Validation Splits
+
+### Creating CV Splits with Fixed Seeds
+
+Cross-validation splits are essential for model training and validation. We use stratified K-fold CV to maintain class balance across folds. Fixed seeds ensure reproducibility.
+
+```{r create-splits}
+# Create outer CV splits with fixed seed
+set.seed(12345)
+outer_splits <- rsample::vfold_cv(
+  data = gse201926_trainmini$pheno,
+  v = 3,
+  strata = "group",
+  breaks = 2
+)
+
+# Examine splits
+outer_splits
+```
+
+### Examining Split Structure
+
+Each CV split contains training and testing data. We can extract these using `rsample::training()` and `rsample::testing()`.
+
+```{r examine-splits}
+# Get training/test data for first fold
+train_data <- rsample::training(outer_splits$splits[[1]])
+test_data <- rsample::testing(outer_splits$splits[[1]])
+
+# Check class balance in first fold
+cat("Training set:\n")
+print(table(train_data$group))
+cat("\nTest set:\n")
+print(table(test_data$group))
+
+# Verify all samples are covered
+all_samples <- union(train_data$sample_id, test_data$sample_id)
+cat("\nTotal samples covered:", length(all_samples), "\n")
+```
+
+### Using Pre-computed Demo Splits
+
+For reproducible examples in vignettes and tests, we provide pre-computed splits in `folds_demo`. These splits are created with fixed seeds and stored for fast access.
+
+```{r demo-folds}
+data(folds_demo)
+
+# Check structure
+str(folds_demo)
+
+# Access outer splits
+folds_demo$outer_splits
+
+# Access inner splits for first outer fold
+if (!is.null(folds_demo$inner_splits[[1]])) {
+  head(folds_demo$inner_splits[[1]])
+}
+```
+
+## Anti-leakage Guards
+
+### In-Fold Transformation and Filtering
+
+A critical requirement for valid machine learning workflows is preventing data leakage. In-fold preprocessing ensures that preprocessing parameters are computed from training data only, then applied to test data.
+
+The `esr_transformInFold()` function applies transforms (log1p-CPM) and filters (CPM threshold) within CV folds, computing parameters from training data only.
+
+```{r transform-infold}
+# Transform counts in-fold (anti-leakage)
+result <- esr_transformInFold(
+  split = outer_splits$splits[[1]],
+  counts = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno,
+  transform = "log1p-cpm",
+  cpm_min = 1,
+  cpm_min_samples = 4
+)
+
+# Check structure
+str(result)
+
+# Examine transformed matrices
+cat("Training matrix dimensions:", dim(result$mat_t_train), "\n")
+cat("Test matrix dimensions:", dim(result$mat_t_test), "\n")
+cat("Genes kept:", length(result$genes_keep), "\n")
+
+# Verify same genes in training and test
+identical(colnames(result$mat_t_train), colnames(result$mat_t_test))
+```
+
+### In-Fold Gene Selection
+
+Gene selection must also happen within CV folds to prevent leakage. The `esr_selectDEInFold()` function performs DE analysis on training data only, then selects top-K genes based on DE statistics.
+
+```{r select-infold}
+# First, transform full dataset for DE analysis
+mat_t <- esr_transform_log1p_cpm(gse201926_trainmini$counts)
+
+# Select top genes in-fold (DE method)
+selected_de <- esr_selectDEInFold(
+  split = outer_splits$splits[[1]],
+  mat_t = mat_t,
+  pheno = gse201926_trainmini$pheno,
+  group_col = "group",
+  n = 50,
+  method = "de",
+  seed = 123
+)
+
+cat("Selected genes (DE method):", length(selected_de), "\n")
+head(selected_de)
+
+# Select top genes in-fold (variance method)
+selected_var <- esr_selectDEInFold(
+  split = outer_splits$splits[[1]],
+  mat_t = mat_t,
+  pheno = gse201926_trainmini$pheno,
+  n = 50,
+  method = "variance",
+  seed = 123
+)
+
+cat("\nSelected genes (variance method):", length(selected_var), "\n")
+head(selected_var)
+```
+
+## Split Determinism
+
+### Reproducibility with Fixed Seeds
+
+Fixed seeds ensure that CV splits are reproducible across runs. This is essential for reproducible research and debugging.
+
+```{r split-determinism}
+# Create splits with same seed twice
+set.seed(12345)
+splits1 <- rsample::vfold_cv(
+  data = gse201926_trainmini$pheno,
+  v = 3,
+  strata = "group",
+  breaks = 2
+)
+
+set.seed(12345)
+splits2 <- rsample::vfold_cv(
+  data = gse201926_trainmini$pheno,
+  v = 3,
+  strata = "group",
+  breaks = 2
+)
+
+# Verify splits are identical
+train1 <- sort(rsample::training(splits1$splits[[1]])$sample_id)
+train2 <- sort(rsample::training(splits2$splits[[1]])$sample_id)
+identical(train1, train2)
+```
+
+### In-Fold Preprocessing Determinism
+
+In-fold preprocessing also produces deterministic outputs with fixed seeds.
+
+```{r preprocessing-determinism}
+# Transform in-fold twice with same seed
+set.seed(123)
+result1 <- esr_transformInFold(
+  outer_splits$splits[[1]],
+  gse201926_trainmini$counts,
+  gse201926_trainmini$pheno
+)
+
+set.seed(123)
+result2 <- esr_transformInFold(
+  outer_splits$splits[[1]],
+  gse201926_trainmini$counts,
+  gse201926_trainmini$pheno
+)
+
+# Verify results are identical
+identical(result1$genes_keep, result2$genes_keep)
+identical(result1$mat_t_train, result2$mat_t_train)
+```
+
+## Key Concepts
+
+### Why Anti-leakage Matters
+
+Data leakage occurs when information from test/validation data influences model training or preprocessing decisions. This leads to:
+
+- **Overly optimistic performance estimates**: Models appear to perform better than they actually do
+- **Poor generalization**: Models fail on truly unseen data
+- **Invalid conclusions**: Research findings are not reliable
+
+**In-fold preprocessing prevents leakage by**:
+- Computing CPM filtering parameters from training data only
+- Applying training-based parameters to test data
+- Performing gene selection on training data only
+- Never using test/validation data to inform preprocessing
+
+### Nested Cross-Validation
+
+Nested CV uses:
+- **Outer splits**: For model selection and performance estimation
+- **Inner splits**: For hyperparameter tuning within each outer fold
+
+This ensures that test data in outer folds never influences hyperparameter tuning decisions.
+
+## Next Steps
+
+Phase 2.1 provides the foundation for Mode 2 (Signature Validation). Future phases will add:
+
+- **Phase 2.2**: Core training and tuning with glmnet (LASSO/Elastic Net)
+- **Phase 2.3**: Probability calibration (Platt/Isotonic)
+- **Phase 2.4**: Performance and comparison visualizations
+- **Phase 2.5**: Signature exports and model cards
+
+For now, Phase 2.1 establishes:
+- Training datasets (`gse201926_trainmini`)
+- Pre-computed splits (`folds_demo`)
+- In-fold preprocessing functions (`esr_transformInFold()`, `esr_selectDEInFold()`)
+- Anti-leakage infrastructure
+
+These components ensure that future training workflows maintain best practices for small-sample machine learning.
+
+## Summary
+
+Mode 2 (Signature Validation) provides a comprehensive pipeline for training and validating gene signatures. Phase 2.1 focuses on data preparation, CV splits, and anti-leakage guards:
+
+1. **Data Preparation**: `gse201926_trainmini` provides balanced training data for fast nested CV
+2. **CV Splits**: Stratified splits with fixed seeds for reproducibility
+3. **Anti-leakage**: In-fold preprocessing prevents data leakage
+4. **Determinism**: Fixed seeds ensure reproducible results
+
+These foundations enable future phases to implement core training, calibration, and comparison features while maintaining best practices for small-sample ML.
+
