@@ -10,7 +10,10 @@ if (exists("endo_parse_metadata", envir = asNamespace("endoSignatureR"), mode = 
     endo_parse_metadata <- get("endo_parse_metadata", envir = asNamespace("endoSignatureR"))
 } else if (!exists("endo_parse_metadata", envir = .GlobalEnv)) {
     # Package not loaded and function not in global env, source the R file
-    source("R/data-loading.R")
+    # Source in local environment to avoid polluting global env
+    source_env <- new.env()
+    source("R/data-loading.R", local = source_env)
+    endo_parse_metadata <- get("endo_parse_metadata", envir = source_env)
 }
 
 # Load full raw counts matrix from packaged extdata (supports .gz)
