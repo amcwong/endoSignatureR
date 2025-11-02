@@ -25,7 +25,9 @@ Imports:
     dplyr,
     scales,
     stats,
-    limma
+    limma,
+    ComplexHeatmap,
+    circlize
 Depends: 
     R (>= 3.5)
 LazyData: true

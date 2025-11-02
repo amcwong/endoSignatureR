@@ -45,18 +45,40 @@ This dataset contains the full GSE201926 dataset loaded from package
 extdata files, providing the complete gene expression matrix and annotation
 for realistic analysis workflows in examples, tests, and vignettes.
 
+\strong{Data Structure:}
+\itemize{
+\item \code{counts}: Matrix with numeric GeneIDs as rownames (not Ensembl format).
+Column names (sample IDs) are aligned with \code{pheno$sample_id} for seamless
+downstream analysis.
+\item \code{pheno}: Contains real sample metadata from the GEO series matrix,
+including \code{sample_id}, \code{group} (PS/PIS), and \code{title} columns.
+\item \code{annot}: Full annotation matching all genes in the counts matrix.
+Contains both numeric \code{GeneID} (matches counts rownames) and
+\code{EnsemblGeneID} (Ensembl format) columns.
+}
+
+\strong{Sample ID Alignment:}
+The counts matrix column names are aligned with phenotype \code{sample_id} to
+ensure compatibility with functions like \code{esr_analyzeDifferentialExpression()}
+and other analysis workflows. Both use the same sample IDs from the series
+matrix file.
+
 The original study investigated progestin sensitivity in endometrial lesions
 using RNA-seq. Samples were collected from patients with endometrial
 endometrioid carcinoma or endometrial atypical hyperplasia, and classified
 as either progestin-sensitive (PS) or progestin-insensitive (PIS) based
 on clinical response.
 
-Source files used to generate this dataset (original names → package names):
+\strong{Source Files} (original names → package names):
 \itemize{
 \item \code{GSE201926_raw_counts_GRCh38.p13_NCBI.tsv} → \code{inst/extdata/gse201926_raw_counts.tsv}
 \item \code{Human.GRCh38.p13.annot.tsv} → \code{inst/extdata/gse201926_annotation.tsv}
 \item \code{GSE201926_series_matrix.txt} → \code{inst/extdata/gse201926_series_matrix.txt}
 }
+
+\strong{Builder Script:} \code{data-raw/gse201926_sample.R} loads the full dataset from
+these extdata files, aligns sample IDs between counts and phenotype, and
+saves the complete dataset to \code{data/gse201926_sample.rda}.
 }
 \examples{
 # Load the sample dataset
