@@ -173,12 +173,15 @@ test_that("esr_createAnalysisBundle warns on misaligned components", {
   )
 
   # Should warn but not error
-  expect_warning({
-    bundle <- esr_createAnalysisBundle(
-      counts_t = mat_t,
-      qc_metrics = qc_metrics_bad
-    )
-  }, "No matching sample IDs")
+  expect_warning(
+    {
+      bundle <- esr_createAnalysisBundle(
+        counts_t = mat_t,
+        qc_metrics = qc_metrics_bad
+      )
+    },
+    "No matching sample IDs"
+  )
 })
 
 test_that("complete Mode 3 workflow produces valid bundle", {
@@ -331,9 +334,12 @@ test_that("esr_createAnalysisBundle validates required inputs", {
   data(gse201926_sample)
 
   # Missing counts_t should error
-  expect_error({
-    esr_createAnalysisBundle()
-  }, "counts_t is required")
+  expect_error(
+    {
+      esr_createAnalysisBundle()
+    },
+    "counts_t is required"
+  )
 })
 
 test_that("esr_createAnalysisBundle handles edge cases", {
@@ -341,7 +347,7 @@ test_that("esr_createAnalysisBundle handles edge cases", {
 
   mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
 
-  # Empty de_table should be handled gracefully
+  # Empty de_table should be handled gracefully (warnings expected for misalignment)
   de_table_empty <- data.frame(
     gene_id = character(),
     log2FC = numeric(),
@@ -350,18 +356,21 @@ test_that("esr_createAnalysisBundle handles edge cases", {
   )
 
   expect_no_error({
-    bundle <- esr_createAnalysisBundle(
-      counts_t = mat_t,
-      de_table = de_table_empty
-    )
+    suppressWarnings({
+      bundle <- esr_createAnalysisBundle(
+        counts_t = mat_t,
+        de_table = de_table_empty
+      )
+    })
   })
 
-  # Empty selected_genes should be handled gracefully
+  # Empty selected_genes should be handled gracefully (warnings expected for misalignment)
   expect_no_error({
-    bundle <- esr_createAnalysisBundle(
-      counts_t = mat_t,
-      selected_genes = character(0)
-    )
+    suppressWarnings({
+      bundle <- esr_createAnalysisBundle(
+        counts_t = mat_t,
+        selected_genes = character(0)
+      )
+    })
   })
 })
-
