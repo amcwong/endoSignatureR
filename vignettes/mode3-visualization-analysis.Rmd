@@ -313,7 +313,7 @@ Adding phenotype annotations (e.g., group labels) helps interpret the heatmap pa
 ```{r heatmap-with-pheno}
 # Create heatmap with phenotype annotations
 hm_pheno <- plotEndometrialHeatmap(
-  mat_t, 
+  mat_t,
   genes = top_genes,
   pheno = gse201926_sample$pheno,
   show_row_names = TRUE,
@@ -323,6 +323,7 @@ ComplexHeatmap::draw(hm_pheno)
 ```
 
 The heatmap now includes:
+
 - **Column annotations**: Group labels (PS vs PIS) shown at the top
 - **Row scaling**: Each gene is z-score normalized (mean = 0, SD = 1) to highlight relative expression patterns
 - **Gene names**: Row names are displayed (useful for smaller gene sets)
@@ -389,6 +390,168 @@ When interpreting heatmaps, look for:
 
 For this dataset with only 12 samples, clustering patterns may be limited. With larger datasets, heatmaps become more informative for pattern identification.
 
+## Complete Mode 3 Workflow with Analysis Bundle
+
+The analysis bundle provides a unified structure that packages all Mode 3 outputs together. This makes it easier to pass data between functions, export results, and integrate with Shiny (Phase 4).
+
+### Creating the Analysis Bundle
+
+We can create an analysis bundle that contains all the outputs from the Mode 3 workflow:
+
+```{r bundle-creation}
+# Set seed for reproducibility
+set.seed(123)
+
+# 1. Validation
+validation_result <- esr_validateEndometrial(
+  gse201926_sample$counts,
+  gse201926_sample$pheno,
+  annot = gse201926_sample$annot
+)
+
+# 2. Transformation
+mat_t <- esr_transform_log1p_cpm(validation_result$X)
+
+# 3. QC metrics
+qc_metrics <- esr_computeQCMetrics(
+  counts = validation_result$X,
+  mat_t = mat_t,
+  pheno = validation_result$pheno
+)
+
+# 4. DE analysis
+de_table <- esr_analyzeDifferentialExpression(
+  mat_t,
+  validation_result$pheno,
+  seed = 123
+)
+
+# 5. Gene selection
+selected_genes <- esr_selectTopGenes(
+  de_table = de_table,
+  n = 15,
+  by = "de"
+)
+
+# 6. Create analysis bundle
+bundle <- esr_createAnalysisBundle(
+  counts_t = mat_t,
+  de_table = de_table,
+  selected_genes = selected_genes,
+  qc_metrics = qc_metrics,
+  pheno = validation_result$pheno,
+  annot = validation_result$annot,
+  validation_issues = validation_result$issues
+)
+
+# Check bundle structure
+str(bundle, max.level = 2)
+```
+
+The bundle contains all the outputs from the Mode 3 workflow in a single, organized structure.
+
+### Accessing Bundle Components
+
+Bundle components can be accessed directly:
+
+```{r bundle-access}
+# Access transformed matrix
+dim(bundle$counts_t)
+
+# Access DE table
+head(bundle$de_table)
+
+# Access selected genes
+length(bundle$selected_genes)
+head(bundle$selected_genes)
+
+# Access QC metrics
+head(bundle$qc_metrics)
+
+# Access metadata
+dim(bundle$pheno)
+dim(bundle$annot)
+```
+
+### Using Bundle Components with Plot Functions
+
+All plot functions work seamlessly with bundle components:
+
+```{r bundle-plots}
+# PCA plot
+p_pca <- plotEndometrialPCA(bundle$counts_t, pheno = bundle$pheno)
+print(p_pca)
+
+# MA plot
+p_ma <- plotEndometrialMA(bundle$de_table)
+print(p_ma)
+
+# Volcano plot
+p_volcano <- plotEndometrialVolcano(bundle$de_table)
+print(p_volcano)
+
+# Heatmap with selected genes
+hm <- plotEndometrialHeatmap(
+  bundle$counts_t,
+  genes = bundle$selected_genes,
+  pheno = bundle$pheno,
+  show_row_names = TRUE,
+  scale = "row"
+)
+ComplexHeatmap::draw(hm)
+```
+
+### Exporting Results
+
+The bundle can be saved for reproducibility or shared with collaborators:
+
+```{r bundle-export}
+# Save complete bundle as RDS (R data format)
+# saveRDS(bundle, file = "mode3_analysis_bundle.rds")
+
+# Load bundle later
+# bundle_loaded <- readRDS("mode3_analysis_bundle.rds")
+
+# Export individual components as CSV
+# write.csv(bundle$de_table, file = "de_table.csv", row.names = FALSE)
+# write.csv(bundle$qc_metrics, file = "qc_metrics.csv", row.names = FALSE)
+```
+
+### Bundle Benefits
+
+The analysis bundle provides several advantages:
+
+1. **Unified API**: All Mode 3 outputs in a single, organized structure
+2. **Component Alignment**: Bundle validation ensures sample IDs and gene IDs align across components
+3. **Reproducibility**: Save entire analysis state for later use
+4. **Shiny Integration**: Ready for use in Shiny apps (Phase 4) where data needs to be passed between UI tabs
+5. **Export Flexibility**: Export complete bundle or individual components as needed
+
+### Optional Components
+
+The bundle can be created with any combination of optional components:
+
+```{r bundle-optional}
+# Minimal bundle (only transformed matrix)
+bundle_minimal <- esr_createAnalysisBundle(counts_t = mat_t)
+
+# Bundle with DE results only
+bundle_de <- esr_createAnalysisBundle(
+  counts_t = mat_t,
+  de_table = de_table
+)
+
+# Bundle with selected components
+bundle_custom <- esr_createAnalysisBundle(
+  counts_t = mat_t,
+  selected_genes = selected_genes,
+  qc_metrics = qc_metrics,
+  pheno = gse201926_sample$pheno
+)
+```
+
+Components are validated for alignment when provided, but the bundle can be created with only the required `counts_t` component if desired.
+
 ## Summary
 
 This vignette demonstrated the Mode 3 (Standalone Visualization & Analysis) workflow:
@@ -397,10 +560,12 @@ This vignette demonstrated the Mode 3 (Standalone Visualization & Analysis) work
 2. **Transformation**: Prepare data for visualization (log1p-CPM)
 3. **PCA**: Explore data structure and sample relationships
 4. **QC Plots**: Assess library sizes and zero count distributions
-5. **DE Analysis**: Identify differentially expressed genes between groups
-6. **MA Plot**: Visualize fold change vs mean expression
-7. **Volcano Plot**: Visualize significance vs biological effect
-8. **Gene Selection**: Select top genes by variance, DE, or custom criteria
-9. **Heatmap Visualization**: Create publication-quality heatmaps with phenotype annotations
+5. **QC Metrics**: Compute quality control metrics (library sizes, % zeros)
+6. **DE Analysis**: Identify differentially expressed genes between groups
+7. **MA Plot**: Visualize fold change vs mean expression
+8. **Volcano Plot**: Visualize significance vs biological effect
+9. **Gene Selection**: Select top genes by variance, DE, or custom criteria
+10. **Heatmap Visualization**: Create publication-quality heatmaps with phenotype annotations
+11. **Analysis Bundle**: Package all outputs together for unified API and reproducibility
 
-This workflow enables quality assessment and exploratory analysis before proceeding to signature training (Mode 2) or classification tasks (Mode 1). The DE analysis and visualization steps help identify candidate genes for downstream signature selection (Phase 1.3) or training workflows (Phase 2).
+This workflow enables quality assessment and exploratory analysis before proceeding to signature training (Mode 2) or classification tasks (Mode 1). The DE analysis and visualization steps help identify candidate genes for downstream signature selection (Phase 1.3) or training workflows (Phase 2). The analysis bundle provides a unified structure for exporting results, sharing with collaborators, and integrating with Shiny apps (Phase 4).
