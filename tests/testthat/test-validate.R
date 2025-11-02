@@ -93,3 +93,4 @@ test_that("esr_validateEndometrial handles non-numeric X with error", {
   error_issues <- result$issues[result$issues$type == "error", ]
   expect_gt(nrow(error_issues), 0)
 })
+

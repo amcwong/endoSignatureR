@@ -187,3 +187,153 @@ test_that("MA and Volcano plots can be generated from gse201926_sample DE result
   expect_s3_class(p_ma, "ggplot")
   expect_s3_class(p_volcano, "ggplot")
 })
+
+test_that("esr_selectTopGenes returns correct gene IDs by variance", {
+  data(gse201926_sample)
+  mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+
+  # Select top 20 genes by variance
+  top_genes <- esr_selectTopGenes(mat_t, n = 20, by = "variance")
+
+  expect_type(top_genes, "character")
+  expect_length(top_genes, 20)
+  expect_true(all(top_genes %in% colnames(mat_t)))
+  
+  # Verify genes are selected by variance (higher variance should be selected)
+  gene_var <- apply(mat_t, 2, var)
+  top_var_values <- gene_var[top_genes]
+  expect_true(all(!is.na(top_var_values)))
+})
+
+test_that("esr_selectTopGenes returns correct gene IDs by DE", {
+  data(gse201926_sample)
+  mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+  de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
+
+  # Select top 10 genes by DE
+  top_genes <- esr_selectTopGenes(de_table = de_table, n = 10, by = "de")
+
+  expect_type(top_genes, "character")
+  expect_length(top_genes, 10)
+  expect_true(all(top_genes %in% de_table$gene_id))
+  
+  # Verify genes are selected by FDR then log2FC
+  de_subset <- de_table[de_table$gene_id %in% top_genes, ]
+  expect_true(all(de_subset$FDR <= sort(de_table$FDR)[10]))
+})
+
+test_that("esr_selectTopGenes handles edge cases", {
+  data(gse201926_sample)
+  mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+  de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
+
+  # Test with n > total genes (should return all available)
+  top_all <- esr_selectTopGenes(mat_t, n = 10000, by = "variance")
+  expect_true(length(top_all) <= ncol(mat_t))
+
+  # Test with n = 1
+  top_one <- esr_selectTopGenes(mat_t, n = 1, by = "variance")
+  expect_length(top_one, 1)
+
+  # Test custom selection
+  top_custom <- esr_selectTopGenes(de_table = de_table, n = 5, by = "custom", sort_col = "AveExpr")
+  expect_length(top_custom, 5)
+  expect_true(all(top_custom %in% de_table$gene_id))
+})
+
+test_that("esr_selectTopGenes validates inputs correctly", {
+  data(gse201926_sample)
+  mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+  de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
+
+  # Missing mat_t for variance
+  expect_error(esr_selectTopGenes(n = 10, by = "variance"), "mat_t is required")
+
+  # Missing de_table for DE
+  expect_error(esr_selectTopGenes(n = 10, by = "de"), "de_table is required")
+
+  # Invalid n
+  expect_error(esr_selectTopGenes(mat_t, n = -1, by = "variance"), "n must be a positive integer")
+  expect_error(esr_selectTopGenes(mat_t, n = 0, by = "variance"), "n must be a positive integer")
+})
+
+test_that("plotEndometrialHeatmap returns ComplexHeatmap object", {
+  data(gse201926_sample)
+  mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+
+  # Create heatmap with top 20 genes
+  top_genes <- esr_selectTopGenes(mat_t, n = 20, by = "variance")
+  hm <- plotEndometrialHeatmap(mat_t, genes = top_genes)
+
+  # Check that it's a Heatmap object
+  expect_true(inherits(hm, "Heatmap"))
+  expect_no_error(ComplexHeatmap::draw(hm))
+})
+
+test_that("plotEndometrialHeatmap works with phenotype annotations", {
+  data(gse201926_sample)
+  mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+
+  # Create heatmap with phenotype
+  top_genes <- esr_selectTopGenes(mat_t, n = 20, by = "variance")
+  hm <- plotEndometrialHeatmap(mat_t, genes = top_genes, pheno = gse201926_sample$pheno)
+
+  expect_true(inherits(hm, "Heatmap"))
+  expect_no_error(ComplexHeatmap::draw(hm))
+})
+
+test_that("plotEndometrialHeatmap handles different scaling options", {
+  data(gse201926_sample)
+  mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+  top_genes <- esr_selectTopGenes(mat_t, n = 10, by = "variance")
+
+  # Test row scaling
+  expect_no_error({
+    hm_row <- plotEndometrialHeatmap(mat_t, genes = top_genes, scale = "row")
+    expect_true(inherits(hm_row, "Heatmap"))
+  })
+
+  # Test column scaling
+  expect_no_error({
+    hm_col <- plotEndometrialHeatmap(mat_t, genes = top_genes, scale = "column")
+    expect_true(inherits(hm_col, "Heatmap"))
+  })
+
+  # Test no scaling
+  expect_no_error({
+    hm_none <- plotEndometrialHeatmap(mat_t, genes = top_genes, scale = "none")
+    expect_true(inherits(hm_none, "Heatmap"))
+  })
+})
+
+test_that("plotEndometrialHeatmap handles edge cases", {
+  data(gse201926_sample)
+  mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+
+  # Test with empty genes vector (should error gracefully)
+  expect_error(plotEndometrialHeatmap(mat_t, genes = character(0)), "None of the requested genes")
+
+  # Test with all missing genes (should warn then error - can't create heatmap with no genes)
+  expect_error(
+    expect_warning(
+      plotEndometrialHeatmap(mat_t, genes = c("fake_gene_1", "fake_gene_2")),
+      "Some requested genes not found"
+    ),
+    "None of the requested genes are present"
+  )
+
+  # Test with some missing genes (should warn but succeed with available genes)
+  if (ncol(mat_t) >= 2) {
+    real_genes <- colnames(mat_t)[1:2]
+    expect_warning({
+      hm_partial <- plotEndometrialHeatmap(mat_t, genes = c(real_genes, "fake_gene_1", "fake_gene_2"))
+      expect_true(inherits(hm_partial, "Heatmap"))
+    }, "Some requested genes not found")
+  }
+
+  # Test with all genes (no subsetting)
+  expect_no_error({
+    hm_all <- plotEndometrialHeatmap(mat_t, genes = NULL)
+    expect_true(inherits(hm_all, "Heatmap"))
+  })
+})

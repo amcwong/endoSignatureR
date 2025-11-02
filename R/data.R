@@ -33,16 +33,36 @@
 #' extdata files, providing the complete gene expression matrix and annotation
 #' for realistic analysis workflows in examples, tests, and vignettes.
 #'
+#' **Data Structure:**
+#' - `counts`: Matrix with numeric GeneIDs as rownames (not Ensembl format).
+#'   Column names (sample IDs) are aligned with `pheno$sample_id` for seamless
+#'   downstream analysis.
+#' - `pheno`: Contains real sample metadata from the GEO series matrix,
+#'   including `sample_id`, `group` (PS/PIS), and `title` columns.
+#' - `annot`: Full annotation matching all genes in the counts matrix.
+#'   Contains both numeric `GeneID` (matches counts rownames) and
+#'   `EnsemblGeneID` (Ensembl format) columns.
+#'
+#' **Sample ID Alignment:**
+#' The counts matrix column names are aligned with phenotype `sample_id` to
+#' ensure compatibility with functions like `esr_analyzeDifferentialExpression()`
+#' and other analysis workflows. Both use the same sample IDs from the series
+#' matrix file.
+#'
 #' The original study investigated progestin sensitivity in endometrial lesions
 #' using RNA-seq. Samples were collected from patients with endometrial
 #' endometrioid carcinoma or endometrial atypical hyperplasia, and classified
 #' as either progestin-sensitive (PS) or progestin-insensitive (PIS) based
 #' on clinical response.
 #'
-#' Source files used to generate this dataset (original names → package names):
+#' **Source Files** (original names → package names):
 #' - `GSE201926_raw_counts_GRCh38.p13_NCBI.tsv` → `inst/extdata/gse201926_raw_counts.tsv`
 #' - `Human.GRCh38.p13.annot.tsv` → `inst/extdata/gse201926_annotation.tsv`
 #' - `GSE201926_series_matrix.txt` → `inst/extdata/gse201926_series_matrix.txt`
+#'
+#' **Builder Script:** `data-raw/gse201926_sample.R` loads the full dataset from
+#' these extdata files, aligns sample IDs between counts and phenotype, and
+#' saves the complete dataset to `data/gse201926_sample.rda`.
 #'
 #' @source \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE201926}
 #'

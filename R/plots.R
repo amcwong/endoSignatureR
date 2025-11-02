@@ -564,4 +564,342 @@ plotEndometrialVolcano <- function(de_table, fdr_threshold = 0.05,
     return(p)
 }
 
+#' Select Top Genes by Variance, DE, or Custom Criteria
+#'
+#' Selects top-K genes based on specified criteria (variance, differential expression, or custom sorting).
+#'
+#' @param mat_t A samples × genes transformed matrix (e.g., from `esr_transform_log1p_cpm()`). Required for variance-based selection.
+#' @param de_table Optional data.frame from `esr_analyzeDifferentialExpression()` with columns: `gene_id`, `log2FC`, `FDR`. Required for DE-based selection.
+#' @param n Integer; number of genes to select. Defaults to 50.
+#' @param by Character scalar; selection method: "variance" (default), "de", or "custom".
+#' @param sort_col Character scalar; column name in `de_table` for custom sorting (only used when `by = "custom"`). Defaults to NULL.
+#'
+#' @return Character vector of gene IDs (length `n`, or fewer if fewer genes available).
+#'
+#' @details
+#' Selection methods:
+#' - `by = "variance"`: Selects genes with highest variance across samples (useful for exploratory heatmaps). Requires `mat_t`.
+#' - `by = "de"`: Selects top-K genes from DE table (sorted by FDR ascending, then by absolute log2FC descending). Requires `de_table`.
+#' - `by = "custom"`: Uses `sort_col` to sort genes (ascending order). Requires `de_table` and `sort_col`.
+#'
+#' For variance-based selection, ties in variance are broken deterministically by gene ID (alphabetical order).
+#' For DE-based selection, genes are first sorted by FDR (ascending), then by absolute log2FC (descending).
+#'
+#' @examples
+#' data(gse201926_sample)
+#' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+#'
+#' # Select top 20 genes by variance
+#' top_var <- esr_selectTopGenes(mat_t, n = 20, by = "variance")
+#' head(top_var)
+#'
+#' # Select top 10 genes by DE
+#' de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
+#' top_de <- esr_selectTopGenes(de_table = de_table, n = 10, by = "de")
+#' head(top_de)
+#'
+#' @export
+esr_selectTopGenes <- function(mat_t = NULL, de_table = NULL, n = 50,
+                               by = c("variance", "de", "custom"), sort_col = NULL) {
+    by <- match.arg(by)
+
+    # Validate inputs based on selection method
+    if (by == "variance") {
+        if (is.null(mat_t)) {
+            stop("mat_t is required for variance-based selection")
+        }
+        if (!is.matrix(mat_t) && !is.data.frame(mat_t)) {
+            stop("mat_t must be a matrix or data.frame")
+        }
+        # Convert to matrix if needed
+        if (!is.matrix(mat_t)) {
+            mat_t <- as.matrix(mat_t)
+        }
+    } else if (by == "de" || by == "custom") {
+        if (is.null(de_table)) {
+            stop("de_table is required for DE-based or custom selection")
+        }
+        if (!is.data.frame(de_table)) {
+            stop("de_table must be a data.frame")
+        }
+        if (!"gene_id" %in% names(de_table)) {
+            stop("de_table must contain a 'gene_id' column")
+        }
+    }
+
+    # Validate n
+    if (!is.numeric(n) || n <= 0 || length(n) != 1) {
+        stop("n must be a positive integer")
+    }
+    n <- as.integer(n)
+
+    # Perform selection based on method
+    if (by == "variance") {
+        # Calculate variance per gene (across samples)
+        # mat_t is samples × genes, so we transpose to get genes × samples
+        gene_var <- apply(mat_t, 2, function(x) var(x, na.rm = TRUE))
+
+        # Get gene IDs (column names of mat_t)
+        gene_ids <- colnames(mat_t)
+
+        if (is.null(gene_ids)) {
+            stop("mat_t must have column names (gene IDs)")
+        }
+
+        # Sort by variance (descending), then by gene ID (ascending) for deterministic ties
+        var_df <- data.frame(
+            gene_id = gene_ids,
+            variance = gene_var,
+            stringsAsFactors = FALSE
+        )
+        var_df <- var_df[order(-var_df$variance, var_df$gene_id), ]
+
+        # Select top n
+        n_available <- nrow(var_df)
+        n_select <- min(n, n_available)
+        selected_genes <- var_df$gene_id[1:n_select]
+    } else if (by == "de") {
+        # Validate required columns
+        required_cols <- c("gene_id", "FDR", "log2FC")
+        missing_cols <- setdiff(required_cols, names(de_table))
+        if (length(missing_cols) > 0) {
+            stop(paste0("de_table must contain columns: ", paste(missing_cols, collapse = ", ")))
+        }
+
+        # Sort by FDR (ascending), then by absolute log2FC (descending)
+        de_df <- data.frame(
+            gene_id = de_table$gene_id,
+            FDR = de_table$FDR,
+            abs_log2FC = abs(de_table$log2FC),
+            stringsAsFactors = FALSE
+        )
+        de_df <- de_df[order(de_df$FDR, -de_df$abs_log2FC), ]
+
+        # Select top n
+        n_available <- nrow(de_df)
+        n_select <- min(n, n_available)
+        selected_genes <- de_df$gene_id[1:n_select]
+    } else if (by == "custom") {
+        if (is.null(sort_col)) {
+            stop("sort_col must be specified for custom selection")
+        }
+        if (!sort_col %in% names(de_table)) {
+            stop(paste0("sort_col '", sort_col, "' not found in de_table"))
+        }
+
+        # Sort by sort_col (ascending)
+        de_df <- data.frame(
+            gene_id = de_table$gene_id,
+            sort_value = de_table[[sort_col]],
+            stringsAsFactors = FALSE
+        )
+        de_df <- de_df[order(de_df$sort_value), ]
+
+        # Select top n
+        n_available <- nrow(de_df)
+        n_select <- min(n, n_available)
+        selected_genes <- de_df$gene_id[1:n_select]
+    }
+
+    return(selected_genes)
+}
+
+#' Plot Endometrial Heatmap
+#'
+#' Creates a heatmap visualization of gene expression patterns across samples using ComplexHeatmap.
+#'
+#' @param mat_t A samples × genes transformed matrix (e.g., from `esr_transform_log1p_cpm()`).
+#' @param genes Optional character vector of gene IDs to plot. If NULL, plots all genes. For large matrices, recommend selecting subset (e.g., using `esr_selectTopGenes()`).
+#' @param pheno Optional data.frame with sample metadata for column annotations.
+#' @param group_col Character scalar; name of the phenotype column for group coloring. Defaults to "group".
+#' @param annot_cols Optional character vector of additional annotation column names from pheno to display.
+#' @param cluster_rows Logical; whether to cluster genes (rows). Defaults to TRUE.
+#' @param cluster_cols Logical; whether to cluster samples (columns). Defaults to TRUE.
+#' @param show_row_names Logical; whether to show gene names (rows). Defaults to FALSE (typically set to FALSE for large heatmaps).
+#' @param show_col_names Logical; whether to show sample names (columns). Defaults to TRUE.
+#' @param scale Character scalar; scaling method: "row" (z-score per gene), "column" (z-score per sample), or "none" (no scaling). Defaults to "row".
+#' @param color_palette Optional color palette function (default: color-blind friendly).
+#' @param ... Additional arguments passed to `ComplexHeatmap::Heatmap()`.
+#'
+#' @return A ComplexHeatmap Heatmap object (use `ComplexHeatmap::draw()` to display).
+#'
+#' @details
+#' This function creates publication-quality heatmaps using ComplexHeatmap. For large datasets (e.g., full 39,368 genes),
+#' it is recommended to select a subset of genes (e.g., top-50 by variance or top-K by DE) to ensure readable output.
+#'
+#' Column annotations (e.g., group labels) can be added via the `pheno` parameter.
+#'
+#' @examples
+#' data(gse201926_sample)
+#' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+#'
+#' # Create heatmap with top 20 genes by variance
+#' top_genes <- esr_selectTopGenes(mat_t, n = 20, by = "variance")
+#' p <- plotEndometrialHeatmap(mat_t, genes = top_genes, pheno = gse201926_sample$pheno)
+#' ComplexHeatmap::draw(p)
+#'
+#' # Create heatmap with phenotype annotations
+#' p <- plotEndometrialHeatmap(mat_t,
+#'     genes = top_genes, pheno = gse201926_sample$pheno,
+#'     show_row_names = TRUE, scale = "row"
+#' )
+#' ComplexHeatmap::draw(p)
+#'
+#' @export
+plotEndometrialHeatmap <- function(mat_t, genes = NULL, pheno = NULL,
+                                   group_col = "group", annot_cols = NULL,
+                                   cluster_rows = TRUE, cluster_cols = TRUE,
+                                   show_row_names = FALSE, show_col_names = TRUE,
+                                   scale = c("row", "column", "none"),
+                                   color_palette = NULL, ...) {
+    if (!requireNamespace("ComplexHeatmap", quietly = TRUE)) {
+        stop("ComplexHeatmap package is required for heatmap plotting")
+    }
+
+    scale <- match.arg(scale)
+
+    # Validate mat_t
+    if (!is.matrix(mat_t) && !is.data.frame(mat_t)) {
+        stop("mat_t must be a matrix or data.frame")
+    }
+    if (!is.matrix(mat_t)) {
+        mat_t <- as.matrix(mat_t)
+    }
+
+    # Check that mat_t is samples × genes (rows = samples, cols = genes)
+    if (is.null(rownames(mat_t))) {
+        stop("mat_t must have rownames (sample IDs)")
+    }
+    if (is.null(colnames(mat_t))) {
+        stop("mat_t must have colnames (gene IDs)")
+    }
+
+    # Subset to selected genes if specified
+    if (!is.null(genes)) {
+        if (!is.character(genes)) {
+            stop("genes must be a character vector of gene IDs")
+        }
+
+        # Check which genes are available
+        available_genes <- intersect(genes, colnames(mat_t))
+        missing_genes <- setdiff(genes, colnames(mat_t))
+
+        if (length(missing_genes) > 0) {
+            warning(paste0(
+                "Some requested genes not found in mat_t: ",
+                paste(head(missing_genes, 5), collapse = ", "),
+                if (length(missing_genes) > 5) " ..." else ""
+            ))
+        }
+
+        if (length(available_genes) == 0) {
+            stop("None of the requested genes are present in mat_t")
+        }
+
+        # Subset to available genes
+        mat_t <- mat_t[, available_genes, drop = FALSE]
+        genes <- available_genes # Update to actual available genes
+    }
+
+    # Prepare data for heatmap (genes × samples for ComplexHeatmap)
+    # mat_t is samples × genes, need to transpose to genes × samples
+    mat_heatmap <- t(mat_t)
+
+    # Prepare column annotations if pheno provided
+    col_annot <- NULL
+    if (!is.null(pheno)) {
+        if (!is.data.frame(pheno)) {
+            stop("pheno must be a data.frame")
+        }
+
+        # Check sample ID matching
+        sample_ids <- rownames(mat_t)
+        if (!"sample_id" %in% names(pheno)) {
+            # Try to match by rownames if sample_id not present
+            if (nrow(pheno) == length(sample_ids) &&
+                all(rownames(pheno) %in% sample_ids)) {
+                pheno$sample_id <- rownames(pheno)
+            } else {
+                stop("pheno must contain a 'sample_id' column or rownames must match mat_t rownames")
+            }
+        }
+
+        # Match samples
+        pheno_matched <- pheno[pheno$sample_id %in% sample_ids, , drop = FALSE]
+        if (nrow(pheno_matched) == 0) {
+            warning("No matching samples found between mat_t and pheno; skipping annotations")
+        } else {
+            # Order pheno to match mat_t column order (samples)
+            pheno_matched <- pheno_matched[match(sample_ids, pheno_matched$sample_id), , drop = FALSE]
+
+            # Prepare annotation columns
+            annot_list <- list()
+
+            # Add group annotation if available
+            if (group_col %in% names(pheno_matched)) {
+                annot_list[[group_col]] <- pheno_matched[[group_col]]
+            }
+
+            # Add additional annotations if specified
+            if (!is.null(annot_cols)) {
+                for (col in annot_cols) {
+                    if (col %in% names(pheno_matched)) {
+                        annot_list[[col]] <- pheno_matched[[col]]
+                    } else {
+                        warning(paste0("Annotation column '", col, "' not found in pheno; skipping"))
+                    }
+                }
+            }
+
+            # Create column annotation if we have any annotations
+            if (length(annot_list) > 0) {
+                col_annot <- ComplexHeatmap::HeatmapAnnotation(
+                    df = data.frame(annot_list, stringsAsFactors = FALSE),
+                    col = list(group = c("PS" = "#2ca02c", "PIS" = "#d62728")) # Color-blind friendly colors
+                )
+            }
+        }
+    }
+
+    # Set up color palette if not provided
+    if (is.null(color_palette)) {
+        # Default color-blind friendly palette (blue-white-red)
+        color_palette <- circlize::colorRamp2(
+            breaks = c(-2, 0, 2),
+            colors = c("#0571b0", "#ffffff", "#ca0020")
+        )
+    }
+
+    # Set up scaling
+    if (scale == "row") {
+        # Z-score per gene (row-wise)
+        mat_heatmap_scaled <- t(scale(t(mat_heatmap)))
+    } else if (scale == "column") {
+        # Z-score per sample (column-wise)
+        mat_heatmap_scaled <- scale(mat_heatmap)
+    } else {
+        # No scaling
+        mat_heatmap_scaled <- mat_heatmap
+    }
+
+    # Create heatmap
+    hm <- ComplexHeatmap::Heatmap(
+        matrix = mat_heatmap_scaled,
+        name = if (scale == "none") "Expression" else paste0("Z-score (", scale, ")"),
+        cluster_rows = cluster_rows,
+        cluster_columns = cluster_cols,
+        show_row_names = show_row_names,
+        show_column_names = show_col_names,
+        col = color_palette,
+        top_annotation = col_annot,
+        column_title = paste0(
+            "Heatmap (", ncol(mat_heatmap_scaled), " samples, ",
+            nrow(mat_heatmap_scaled), " genes)"
+        ),
+        ...
+    )
+
+    return(hm)
+}
+
 # [END]
