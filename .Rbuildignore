@@ -5,3 +5,5 @@
 ^LICENSE\.md$
 ^endoSignatureR/validation$
 ^validation$
+^doc$
+^Meta$

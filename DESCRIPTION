@@ -27,7 +27,8 @@ Imports:
     stats,
     limma,
     ComplexHeatmap,
-    circlize
+    circlize,
+    rsample
 Depends: 
     R (>= 3.5)
 LazyData: true

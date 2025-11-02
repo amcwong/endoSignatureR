@@ -5,3 +5,5 @@
 inst/doc
 *.tsv
 validation
+/doc/
+/Meta/
