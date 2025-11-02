@@ -134,12 +134,18 @@ endo_parse_metadata <- function(file_path) {
     # Extract sample IDs from header
     header_line <- lines[data_start + 1]
     sample_ids <- unlist(strsplit(header_line, "\t"))[-1] # Remove first empty element
+    
+    # Clean sample IDs (remove quotes and trim whitespace)
+    # The series matrix file may include quotes as part of the string
+    sample_ids <- trimws(gsub('^"|"$', "", sample_ids))
 
     # Extract sample titles
     title_line_idx <- which(grepl("^!Sample_title", lines))
     if (length(title_line_idx) > 0) {
         title_line <- lines[title_line_idx[1]]
         titles <- unlist(strsplit(title_line, "\t"))[-1]
+        # Clean titles as well
+        titles <- trimws(gsub('^"|"$', "", titles))
     } else {
         titles <- rep(NA_character_, length(sample_ids))
     }
