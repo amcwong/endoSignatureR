@@ -520,31 +520,129 @@ Nested CV provides unbiased performance estimates by:
 
 This ensures that test data never influences hyperparameter tuning decisions.
 
+## Phase 2.3: Probability Calibration and Stability Selection
+
+Phase 2.3 adds probability calibration and stability selection to improve prediction reliability and feature robustness.
+
+### Probability Calibration
+
+Raw model probabilities from LASSO may be miscalibrated (predicted probabilities don't match observed frequencies). Calibration fixes this by adjusting probabilities to better match actual class frequencies.
+
+```{r phase2.3-calibration, eval = TRUE}
+# Train with Platt calibration (default for small n)
+result_platt <- esr_trainEndometrialSignature(
+  X = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno,
+  top_k = 100,
+  outer_folds = NULL,  # Use folds_demo
+  calibration_method = "platt",
+  seed = 123
+)
+
+# Check calibration metrics
+result_platt$metrics$brier_score
+result_platt$metrics$ece
+
+# Compare raw vs calibrated probabilities
+head(result_platt$metrics$predictions[, c("prob", "prob_calibrated", "label")])
+```
+
+**Calibration Methods**:
+
+- **Platt Scaling** (default): Logistic regression on raw probabilities. Suitable for small n (n=12).
+- **Isotonic Regression**: Non-parametric monotonic transformation. More flexible but requires more data.
+
+```{r phase2.3-calibration-methods, eval = FALSE}
+# Try isotonic regression (if you have more data)
+result_isotonic <- esr_trainEndometrialSignature(
+  X = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno,
+  top_k = 100,
+  outer_folds = NULL,
+  calibration_method = "isotonic",
+  seed = 123
+)
+```
+
+**Calibration Metrics**:
+
+- **Brier Score**: Mean squared error between predicted probabilities and binary outcomes (lower is better, 0 = perfect calibration).
+- **Expected Calibration Error (ECE)**: Weighted average of absolute difference between predicted probabilities and observed frequencies within bins (lower is better, 0 = perfect calibration).
+
+### Stability Selection
+
+Stability selection identifies genes that are consistently selected across multiple bootstrap resamples, providing more robust feature selection than single LASSO fits.
+
+```{r phase2.3-stability, eval = TRUE}
+# Train with stability selection enabled
+# For small n (n=12), stability selection is disabled by default
+# Enable it explicitly with fewer resamples for demonstration
+result_stability <- esr_trainEndometrialSignature(
+  X = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno,
+  top_k = 100,
+  outer_folds = NULL,
+  stability_selection = TRUE,
+  stability_resamples = 20,  # Fewer resamples for small n
+  seed = 123
+)
+
+# Check stability frequencies
+head(result_stability$stability$bootstrap_frequency, 10)
+
+# Check stable genes (frequency > 0.7 threshold)
+length(result_stability$stability$stable_genes)
+head(result_stability$stability$stable_genes, 10)
+```
+
+**Stability Selection Features**:
+
+- **Bootstrap Resampling**: Additional resampling beyond outer CV to assess gene selection robustness.
+- **Selection Frequencies**: Proportion of resamples where each gene is selected (non-zero coefficient).
+- **Threshold Filtering**: Filter signature to only include genes with high selection frequency (e.g., > 0.7).
+
+**Note**: For small n (n<20), stability selection is disabled by default because bootstrap resampling on very small datasets produces unstable frequency estimates with high variance. Enable it explicitly if needed, but use fewer resamples (e.g., 20-50) for computational efficiency.
+
+### Combining Calibration and Stability
+
+```{r phase2.3-combined, eval = TRUE}
+# Train with both calibration and stability
+result_combined <- esr_trainEndometrialSignature(
+  X = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno,
+  top_k = 100,
+  outer_folds = NULL,
+  calibration_method = "platt",
+  stability_selection = TRUE,
+  stability_resamples = 20,
+  seed = 123
+)
+
+# Check all metrics
+result_combined$metrics[c("auc", "accuracy", "brier_score", "ece")]
+result_combined$calibration$method
+length(result_combined$stability$stable_genes)
+```
+
 ## Next Steps
 
-Phase 2.2 provides core training and tuning functionality. Future phases will add:
+Phase 2.3 adds calibration and stability selection. Future phases will add:
 
-- **Phase 2.3**: Probability calibration (Platt/Isotonic)
 - **Phase 2.4**: Performance and comparison visualizations
 - **Phase 2.5**: Signature exports and model cards
 
-Phase 2.2 establishes:
-
-- Nested CV training with glmnet (LASSO)
-- Coefficient aggregation (Option 2) for stability
-- Performance metrics from outer CV
-- Deterministic training with fixed seeds
-
 ## Summary
 
-Mode 2 (Signature Validation) provides a comprehensive pipeline for training and validating gene signatures. Phase 2.2 adds core training and tuning:
+Mode 2 (Signature Validation) provides a comprehensive pipeline for training and validating gene signatures. Phases 2.1-2.3 establish:
 
 1. **Data Preparation**: `gse201926_trainmini` provides balanced training data for fast nested CV
 2. **CV Splits**: Stratified splits with fixed seeds for reproducibility (`folds_demo`)
 3. **Anti-leakage**: In-fold preprocessing prevents data leakage (`esr_transformInFold()`, `esr_selectDEInFold()`)
 4. **Core Training**: Nested CV with glmnet (LASSO) for signature training
 5. **Coefficient Aggregation**: Option 2 aggregates coefficients across folds for stability (small n)
-6. **Performance Metrics**: AUC, accuracy, and predictions from outer CV
-7. **Determinism**: Fixed seeds ensure reproducible results
+6. **Probability Calibration**: Platt/Isotonic scaling for reliable predictions
+7. **Stability Selection**: Bootstrap resampling for robust feature selection
+8. **Performance Metrics**: AUC, accuracy, Brier Score, ECE, and predictions from outer CV
+9. **Determinism**: Fixed seeds ensure reproducible results
 
-Phase 2.2 establishes core training functionality that enables future phases to add calibration, visualization, and export features while maintaining best practices for small-sample ML.
+Phases 2.1-2.3 establish core training, calibration, and stability functionality that enables future phases to add visualization and export features while maintaining best practices for small-sample ML.

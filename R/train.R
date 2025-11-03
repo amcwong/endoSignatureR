@@ -16,6 +16,9 @@
 #' @param lambda_rule Character scalar; λ selection rule. "1se" (1 standard error rule, sparser) or "min" (minimum CV error). Defaults to "1se".
 #' @param min_folds Integer; minimum number of outer folds that must select a gene for consensus. Defaults to 2.
 #' @param aggregation_method Character scalar; method for aggregating coefficients. "mean" or "median". Defaults to "mean".
+#' @param calibration_method Character scalar; probability calibration method. "platt" (Platt scaling, default), "isotonic" (isotonic regression), or "none" (no calibration). Defaults to "platt".
+#' @param stability_selection Logical; whether to perform bootstrap resampling for stability selection. Defaults to FALSE for small n (<20), TRUE for larger datasets.
+#' @param stability_resamples Integer; number of bootstrap resamples for stability selection. Defaults to 100 (or fewer for small n).
 #' @param seed Integer; random seed for reproducibility. Defaults to 123.
 #' @param ... Additional arguments (currently unused; future: alpha for elastic net).
 #'
@@ -35,7 +38,23 @@
 #'     \describe{
 #'       \item{auc}{Numeric scalar; AUC from outer CV predictions (aggregated)}
 #'       \item{accuracy}{Numeric scalar; classification accuracy from outer CV (threshold 0.5)}
-#'       \item{predictions}{Data.frame with columns: sample_id, fold, prob, label, pred}
+#'       \item{brier_score}{Numeric scalar; Brier score for probability calibration (lower is better)}
+#'       \item{ece}{Numeric scalar; Expected Calibration Error (lower is better)}
+#'       \item{predictions}{Data.frame with columns: sample_id, fold, prob, label, pred, prob_calibrated}
+#'     }
+#'   }
+#'   \item{calibration}{List containing:
+#'     \describe{
+#'       \item{method}{Character scalar; calibration method used ("platt", "isotonic", or "none")}
+#'       \item{parameters}{List of calibration parameters per fold}
+#'       \item{metrics}{List with brier_score and ece}
+#'     }
+#'   }
+#'   \item{stability}{List containing:
+#'     \describe{
+#'       \item{selection_frequency}{Named integer vector; selection frequency across outer folds (already in signature)}
+#'       \item{bootstrap_frequency}{Named numeric vector; bootstrap resampling frequencies (if computed)}
+#'       \item{stable_genes}{Character vector; genes above stability threshold}
 #'     }
 #'   }
 #'   \item{splits}{List containing outer/inner splits used (or reference to folds_demo)}
@@ -93,6 +112,9 @@ esr_trainEndometrialSignature <- function(X, pheno,
                                           lambda_rule = c("1se", "min"),
                                           min_folds = 2,
                                           aggregation_method = c("mean", "median"),
+                                          calibration_method = c("platt", "isotonic", "none"),
+                                          stability_selection = NULL,
+                                          stability_resamples = 100,
                                           seed = 123,
                                           ...) {
   # Check required packages
@@ -108,6 +130,7 @@ esr_trainEndometrialSignature <- function(X, pheno,
   outer <- match.arg(outer)
   lambda_rule <- match.arg(lambda_rule)
   aggregation_method <- match.arg(aggregation_method)
+  calibration_method <- match.arg(calibration_method)
 
   # Set seed for reproducibility
   set.seed(seed)
@@ -157,6 +180,17 @@ esr_trainEndometrialSignature <- function(X, pheno,
   # Subset and reorder pheno
   pheno_matched <- pheno[pheno$sample_id %in% common_samples, , drop = FALSE]
   pheno_matched <- pheno_matched[match(common_samples, pheno_matched$sample_id), , drop = FALSE]
+
+  # Set default for stability_selection based on sample size (after matching)
+  n_samples <- length(common_samples)
+  if (is.null(stability_selection)) {
+    stability_selection <- n_samples >= 20
+  }
+
+  # Adjust stability_resamples for small n
+  if (stability_selection && n_samples < 20) {
+    stability_resamples <- min(stability_resamples, 50) # Fewer resamples for small n
+  }
 
   # Verify class balance
   group_counts <- table(pheno_matched$group)
@@ -220,6 +254,8 @@ esr_trainEndometrialSignature <- function(X, pheno,
   outer_signatures <- list()
   inner_cv_results <- list()
   fold_recipes <- list()
+  calibration_params <- list()
+  training_predictions <- list() # For calibration fitting
 
   # Outer CV loop
   for (fold_idx in seq_len(n_outer_folds)) {
@@ -294,28 +330,54 @@ esr_trainEndometrialSignature <- function(X, pheno,
         }
 
         # Use cv.glmnet for λ tuning (handles inner CV internally)
+        n_train_samples <- nrow(mat_t_train_selected)
+
         if (!is.null(inner_splits)) {
           # Manual inner CV if needed, but cv.glmnet is simpler
-          cv_fit <- glmnet::cv.glmnet(
-            x = mat_t_train_selected,
-            y = train_labels,
-            family = "binomial",
-            nfolds = inner_folds,
-            alpha = 1.0, # LASSO
-            standardize = TRUE,
-            type.measure = "auc"
-          )
+          if (n_train_samples < 20) {
+            cv_fit <- suppressWarnings(glmnet::cv.glmnet(
+              x = mat_t_train_selected,
+              y = train_labels,
+              family = "binomial",
+              nfolds = inner_folds,
+              alpha = 1.0, # LASSO
+              standardize = TRUE,
+              type.measure = "auc"
+            ))
+          } else {
+            cv_fit <- glmnet::cv.glmnet(
+              x = mat_t_train_selected,
+              y = train_labels,
+              family = "binomial",
+              nfolds = inner_folds,
+              alpha = 1.0, # LASSO
+              standardize = TRUE,
+              type.measure = "auc"
+            )
+          }
         } else {
           # Use cv.glmnet directly (no manual inner CV)
-          cv_fit <- glmnet::cv.glmnet(
-            x = mat_t_train_selected,
-            y = train_labels,
-            family = "binomial",
-            nfolds = min(inner_folds, nrow(mat_t_train_selected)),
-            alpha = 1.0,
-            standardize = TRUE,
-            type.measure = "auc"
-          )
+          if (n_train_samples < 20) {
+            cv_fit <- suppressWarnings(glmnet::cv.glmnet(
+              x = mat_t_train_selected,
+              y = train_labels,
+              family = "binomial",
+              nfolds = min(inner_folds, nrow(mat_t_train_selected)),
+              alpha = 1.0,
+              standardize = TRUE,
+              type.measure = "auc"
+            ))
+          } else {
+            cv_fit <- glmnet::cv.glmnet(
+              x = mat_t_train_selected,
+              y = train_labels,
+              family = "binomial",
+              nfolds = min(inner_folds, nrow(mat_t_train_selected)),
+              alpha = 1.0,
+              standardize = TRUE,
+              type.measure = "auc"
+            )
+          }
         }
 
         # Select λ based on rule
@@ -337,14 +399,25 @@ esr_trainEndometrialSignature <- function(X, pheno,
         )
 
         # Train final model on full outer training data with selected λ
-        final_fit <- glmnet::glmnet(
-          x = mat_t_train_selected,
-          y = train_labels,
-          family = "binomial",
-          alpha = 1.0,
-          standardize = TRUE,
-          lambda = lambda_selected
-        )
+        if (n_train_samples < 20) {
+          final_fit <- suppressWarnings(glmnet::glmnet(
+            x = mat_t_train_selected,
+            y = train_labels,
+            family = "binomial",
+            alpha = 1.0,
+            standardize = TRUE,
+            lambda = lambda_selected
+          ))
+        } else {
+          final_fit <- glmnet::glmnet(
+            x = mat_t_train_selected,
+            y = train_labels,
+            family = "binomial",
+            alpha = 1.0,
+            standardize = TRUE,
+            lambda = lambda_selected
+          )
+        }
 
         # Extract signature from this fold
         # Use stats::coef() generic (glmnet provides a method)
@@ -368,6 +441,18 @@ esr_trainEndometrialSignature <- function(X, pheno,
           n_genes = length(non_zero_genes)
         )
 
+        # Predict on outer training data (for calibration)
+        train_predictions_prob <- predict(final_fit,
+          newx = mat_t_train_selected,
+          s = lambda_selected,
+          type = "response"
+        )
+        train_predictions_prob <- as.numeric(train_predictions_prob)
+        training_predictions[[fold_idx]] <- list(
+          prob = train_predictions_prob,
+          label = train_labels
+        )
+
         # Predict on outer test data
         # Use stats::predict() generic (glmnet provides a method)
         predictions_prob <- predict(final_fit,
@@ -378,6 +463,46 @@ esr_trainEndometrialSignature <- function(X, pheno,
         predictions_prob <- as.numeric(predictions_prob)
         predictions_binary <- as.integer(predictions_prob >= 0.5)
 
+        # Apply calibration if requested
+        predictions_prob_calibrated <- predictions_prob
+        calibration_params_fold <- NULL
+
+        if (calibration_method != "none") {
+          # Fit calibration model on training predictions
+          if (calibration_method == "platt") {
+            cal_result <- calibrate_platt(train_predictions_prob, train_labels)
+            calibration_params_fold <- cal_result$parameters
+
+            # Apply calibration to test predictions
+            A <- calibration_params_fold["A"]
+            B <- calibration_params_fold["B"]
+            prob_test_adj <- pmax(pmin(predictions_prob, 1 - 1e-15), 1e-15)
+            logit_test <- log(prob_test_adj / (1 - prob_test_adj))
+            logit_cal <- A * logit_test + B
+            predictions_prob_calibrated <- 1 / (1 + exp(-logit_cal))
+            predictions_prob_calibrated <- pmax(pmin(predictions_prob_calibrated, 1), 0)
+          } else if (calibration_method == "isotonic") {
+            cal_result <- calibrate_isotonic(train_predictions_prob, train_labels)
+            iso_fit <- cal_result$parameters$fit
+            calibration_params_fold <- list(fit = iso_fit)
+
+            # Apply isotonic fit to test predictions
+            # Use the isotonic fit to map test probabilities
+            # Interpolate/extrapolate using isotonic fit
+            prob_cal_sorted <- approx(
+              x = iso_fit$x, y = iso_fit$yf,
+              xout = predictions_prob,
+              method = "linear",
+              yleft = min(iso_fit$yf),
+              yright = max(iso_fit$yf),
+              ties = mean
+            )$y
+            predictions_prob_calibrated <- pmax(pmin(prob_cal_sorted, 1), 0)
+          }
+        }
+
+        calibration_params[[fold_idx]] <- calibration_params_fold
+
         # Store predictions
         outer_predictions[[fold_idx]] <- data.frame(
           sample_id = test_sample_ids,
@@ -385,6 +510,7 @@ esr_trainEndometrialSignature <- function(X, pheno,
           prob = predictions_prob,
           label = test_labels,
           pred = predictions_binary,
+          prob_calibrated = predictions_prob_calibrated,
           stringsAsFactors = FALSE
         )
       },
@@ -397,6 +523,7 @@ esr_trainEndometrialSignature <- function(X, pheno,
           prob = numeric(0),
           label = integer(0),
           pred = integer(0),
+          prob_calibrated = numeric(0),
           stringsAsFactors = FALSE
         )
         # Store empty signature for this fold to maintain structure
@@ -427,10 +554,15 @@ esr_trainEndometrialSignature <- function(X, pheno,
       prob = numeric(0),
       label = integer(0),
       pred = integer(0),
+      prob_calibrated = numeric(0),
       stringsAsFactors = FALSE
     )
   } else {
     all_predictions <- do.call(rbind, outer_predictions)
+    # Ensure prob_calibrated exists even if calibration was not performed
+    if (!"prob_calibrated" %in% names(all_predictions)) {
+      all_predictions$prob_calibrated <- all_predictions$prob
+    }
   }
 
   # Compute performance metrics
@@ -472,9 +604,20 @@ esr_trainEndometrialSignature <- function(X, pheno,
   if (nrow(all_predictions) == 0) {
     auc_value <- NA_real_
     accuracy_value <- NA_real_
+    brier_score <- NA_real_
+    ece <- NA_real_
   } else {
     auc_value <- compute_auc(all_predictions$label, all_predictions$prob)
     accuracy_value <- mean(all_predictions$pred == all_predictions$label)
+
+    # Compute calibration metrics
+    if (calibration_method != "none" && "prob_calibrated" %in% names(all_predictions)) {
+      brier_score <- compute_brier_score(all_predictions$label, all_predictions$prob_calibrated)
+      ece <- compute_ece(all_predictions$label, all_predictions$prob_calibrated)
+    } else {
+      brier_score <- compute_brier_score(all_predictions$label, all_predictions$prob)
+      ece <- compute_ece(all_predictions$label, all_predictions$prob)
+    }
   }
 
   # Aggregate signatures across outer folds (Option 2)
@@ -588,6 +731,146 @@ esr_trainEndometrialSignature <- function(X, pheno,
     recipes = fold_recipes
   )
 
+  # Stability selection (bootstrap resampling)
+  bootstrap_frequency <- numeric(0)
+  stable_genes <- character(0)
+
+  if (stability_selection && n_samples >= 10) {
+    # Perform bootstrap resampling for stability selection
+    set.seed(seeds$main + 1000) # Different seed for stability selection
+
+    bootstrap_selections <- list()
+    all_bootstrap_genes <- character(0)
+
+    for (b in seq_len(stability_resamples)) {
+      tryCatch(
+        {
+          # Bootstrap sample (with replacement)
+          boot_indices <- sample(seq_len(n_samples), size = n_samples, replace = TRUE)
+          boot_sample_ids <- common_samples[boot_indices]
+          boot_X <- X[, boot_sample_ids, drop = FALSE]
+          boot_pheno <- pheno_matched[boot_indices, , drop = FALSE]
+
+          # Ensure class balance in bootstrap sample
+          boot_groups <- table(boot_pheno$group)
+          if (length(boot_groups) == 2 && min(boot_groups) >= 2) {
+            # Apply preprocessing (transform + filter)
+            boot_transform_result <- esr_transform_log1p_cpm(
+              boot_X,
+              cpm_min = cpm_min,
+              cpm_min_samples = cpm_min_samples
+            )
+
+            # Select top-K genes via DE (directly, not using in-fold function)
+            boot_mat_t <- boot_transform_result
+            set.seed(seeds$main + b)
+
+            # Perform DE analysis on bootstrap sample
+            boot_de_table <- esr_analyzeDifferentialExpression(
+              boot_mat_t,
+              boot_pheno,
+              group_col = "group",
+              seed = seeds$main + b
+            )
+
+            # Select top-K genes from DE table
+            boot_selected <- esr_selectTopGenes(
+              de_table = boot_de_table,
+              n = top_k,
+              by = "de"
+            )
+
+            # Train glmnet on bootstrap sample
+            boot_labels <- as.integer(boot_pheno$group == groups[2])
+            boot_mat_t_selected <- boot_mat_t[, boot_selected, drop = FALSE]
+
+            if (ncol(boot_mat_t_selected) > 0 && nrow(boot_mat_t_selected) > 0) {
+              # Use cv.glmnet for λ selection
+              n_boot_samples <- nrow(boot_mat_t_selected)
+
+              if (n_boot_samples < 20) {
+                boot_cv_fit <- suppressWarnings(glmnet::cv.glmnet(
+                  x = boot_mat_t_selected,
+                  y = boot_labels,
+                  family = "binomial",
+                  nfolds = min(inner_folds, n_boot_samples),
+                  alpha = 1.0,
+                  standardize = TRUE,
+                  type.measure = "auc"
+                ))
+              } else {
+                boot_cv_fit <- glmnet::cv.glmnet(
+                  x = boot_mat_t_selected,
+                  y = boot_labels,
+                  family = "binomial",
+                  nfolds = min(inner_folds, n_boot_samples),
+                  alpha = 1.0,
+                  standardize = TRUE,
+                  type.measure = "auc"
+                )
+              }
+
+              # Select λ based on rule
+              if (lambda_rule == "1se") {
+                boot_lambda <- boot_cv_fit$lambda.1se
+              } else {
+                boot_lambda <- boot_cv_fit$lambda.min
+              }
+
+              # Train final model
+              if (n_boot_samples < 20) {
+                boot_fit <- suppressWarnings(glmnet::glmnet(
+                  x = boot_mat_t_selected,
+                  y = boot_labels,
+                  family = "binomial",
+                  alpha = 1.0,
+                  standardize = TRUE,
+                  lambda = boot_lambda
+                ))
+              } else {
+                boot_fit <- glmnet::glmnet(
+                  x = boot_mat_t_selected,
+                  y = boot_labels,
+                  family = "binomial",
+                  alpha = 1.0,
+                  standardize = TRUE,
+                  lambda = boot_lambda
+                )
+              }
+
+              # Extract selected genes
+              boot_coef <- coef(boot_fit, s = boot_lambda)
+              boot_coef_vec <- as.numeric(boot_coef)
+              names(boot_coef_vec) <- rownames(boot_coef)
+              boot_selected_genes <- names(boot_coef_vec[-1])[boot_coef_vec[-1] != 0]
+
+              bootstrap_selections[[b]] <- boot_selected_genes
+              all_bootstrap_genes <- unique(c(all_bootstrap_genes, boot_selected_genes))
+            }
+          }
+        },
+        error = function(e) {
+          # Skip this bootstrap sample if it fails
+        }
+      )
+    }
+
+    # Compute bootstrap frequencies
+    if (length(all_bootstrap_genes) > 0) {
+      bootstrap_frequency <- numeric(length(all_bootstrap_genes))
+      names(bootstrap_frequency) <- all_bootstrap_genes
+
+      for (gene in all_bootstrap_genes) {
+        count <- sum(sapply(bootstrap_selections, function(sel) gene %in% sel))
+        bootstrap_frequency[gene] <- count / length(bootstrap_selections)
+      }
+
+      # Identify stable genes (frequency > 0.7 threshold)
+      stability_threshold <- 0.7
+      stable_genes <- names(bootstrap_frequency)[bootstrap_frequency >= stability_threshold]
+    }
+  }
+
   # Build return structure
   result <- list(
     signature = list(
@@ -601,7 +884,22 @@ esr_trainEndometrialSignature <- function(X, pheno,
     metrics = list(
       auc = auc_value,
       accuracy = accuracy_value,
+      brier_score = brier_score,
+      ece = ece,
       predictions = all_predictions
+    ),
+    calibration = list(
+      method = calibration_method,
+      parameters = calibration_params,
+      metrics = list(
+        brier_score = brier_score,
+        ece = ece
+      )
+    ),
+    stability = list(
+      selection_frequency = selection_freq, # Outer fold frequencies (already in signature)
+      bootstrap_frequency = bootstrap_frequency,
+      stable_genes = stable_genes
     ),
     splits = list(
       outer_splits = outer_splits,
@@ -900,6 +1198,146 @@ esr_selectDEInFold <- function(split, mat_t, pheno,
   }
 
   return(selected_genes)
+}
+
+#' Apply Platt Scaling for Probability Calibration
+#'
+#' Fits logistic regression on raw probabilities to map them to calibrated probabilities.
+#' Suitable for small n datasets.
+#'
+#' @param prob_raw Numeric vector; raw probabilities from model.
+#' @param labels Integer vector; binary labels (0/1).
+#' @return List with calibrated probabilities and parameters (A, B).
+#' @keywords internal
+calibrate_platt <- function(prob_raw, labels) {
+  # Avoid edge cases
+  prob_raw <- pmax(pmin(prob_raw, 1 - 1e-15), 1e-15)
+
+  # Fit logistic regression: logit(P) = A * logit(prob_raw) + B
+  logit_raw <- log(prob_raw / (1 - prob_raw))
+
+  # Fit model (suppress warnings for small n < 20)
+  n_samples <- length(labels)
+  if (n_samples < 20) {
+    fit <- suppressWarnings(glm(labels ~ logit_raw, family = binomial(link = "logit")))
+  } else {
+    fit <- glm(labels ~ logit_raw, family = binomial(link = "logit"))
+  }
+
+  if (!is.null(fit$coefficients) && !any(is.na(fit$coefficients))) {
+    A <- as.numeric(fit$coefficients[2])
+    B <- as.numeric(fit$coefficients[1])
+
+    # Apply calibration
+    logit_calibrated <- A * logit_raw + B
+    prob_calibrated <- 1 / (1 + exp(-logit_calibrated))
+
+    return(list(
+      prob_calibrated = prob_calibrated,
+      parameters = c(A = A, B = B)
+    ))
+  } else {
+    # Calibration failed, return raw probabilities
+    return(list(
+      prob_calibrated = prob_raw,
+      parameters = c(A = 1, B = 0)
+    ))
+  }
+}
+
+#' Apply Isotonic Regression for Probability Calibration
+#'
+#' Fits isotonic regression (monotonic transformation) on raw probabilities.
+#' Requires more data than Platt scaling but is more flexible.
+#'
+#' @param prob_raw Numeric vector; raw probabilities from model.
+#' @param labels Integer vector; binary labels (0/1).
+#' @return List with calibrated probabilities and isotonic fit.
+#' @keywords internal
+calibrate_isotonic <- function(prob_raw, labels) {
+  # Sort by raw probabilities
+  ord <- order(prob_raw)
+  prob_raw_sorted <- prob_raw[ord]
+  labels_sorted <- labels[ord]
+
+  # Fit isotonic regression
+  iso_fit <- isoreg(prob_raw_sorted, labels_sorted)
+
+  # Apply calibration
+  prob_calibrated_sorted <- iso_fit$yf
+  prob_calibrated <- numeric(length(prob_raw))
+  prob_calibrated[ord] <- prob_calibrated_sorted
+
+  # Ensure probabilities are in [0, 1]
+  prob_calibrated <- pmax(pmin(prob_calibrated, 1), 0)
+
+  return(list(
+    prob_calibrated = prob_calibrated,
+    parameters = list(fit = iso_fit)
+  ))
+}
+
+#' Compute Brier Score
+#'
+#' Mean squared error between predicted probabilities and binary outcomes.
+#' Lower is better (0 = perfect calibration).
+#'
+#' @param labels Integer vector; binary labels (0/1).
+#' @param probs Numeric vector; predicted probabilities.
+#' @return Numeric scalar; Brier score.
+#' @keywords internal
+compute_brier_score <- function(labels, probs) {
+  if (length(labels) == 0 || length(probs) == 0) {
+    return(NA_real_)
+  }
+  if (length(labels) != length(probs)) {
+    return(NA_real_)
+  }
+
+  mean((labels - probs)^2)
+}
+
+#' Compute Expected Calibration Error (ECE)
+#'
+#' Weighted average of absolute difference between predicted probabilities
+#' and observed frequencies within bins.
+#'
+#' @param labels Integer vector; binary labels (0/1).
+#' @param probs Numeric vector; predicted probabilities.
+#' @param n_bins Integer; number of bins for calibration. Defaults to 10.
+#' @return Numeric scalar; ECE.
+#' @keywords internal
+compute_ece <- function(labels, probs, n_bins = 10) {
+  if (length(labels) == 0 || length(probs) == 0) {
+    return(NA_real_)
+  }
+  if (length(labels) != length(probs)) {
+    return(NA_real_)
+  }
+
+  # Create bins
+  bin_breaks <- seq(0, 1, length.out = n_bins + 1)
+  bin_indices <- cut(probs, breaks = bin_breaks, include.lowest = TRUE)
+
+  # Compute ECE
+  ece <- 0
+  total_samples <- length(labels)
+
+  for (i in seq_len(n_bins)) {
+    bin_mask <- bin_indices == levels(bin_indices)[i]
+    if (sum(bin_mask) > 0) {
+      bin_probs <- probs[bin_mask]
+      bin_labels <- labels[bin_mask]
+
+      mean_prob <- mean(bin_probs)
+      mean_label <- mean(bin_labels)
+
+      bin_weight <- sum(bin_mask) / total_samples
+      ece <- ece + bin_weight * abs(mean_prob - mean_label)
+    }
+  }
+
+  return(ece)
 }
 
 # [END]
