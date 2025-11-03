@@ -66,6 +66,7 @@ table(gse201926_trainmini$pheno$group)
 ### Dataset Characteristics
 
 The training mini dataset:
+
 - **Counts**: Raw read counts matrix (genes × samples)
 - **Pheno**: Sample metadata with `sample_id`, `group` (PS/PIS), and `title`
 - **Annot**: Gene annotation for selected genes
@@ -264,6 +265,7 @@ Data leakage occurs when information from test/validation data influences model 
 - **Invalid conclusions**: Research findings are not reliable
 
 **In-fold preprocessing prevents leakage by**:
+
 - Computing CPM filtering parameters from training data only
 - Applying training-based parameters to test data
 - Performing gene selection on training data only
@@ -272,36 +274,277 @@ Data leakage occurs when information from test/validation data influences model 
 ### Nested Cross-Validation
 
 Nested CV uses:
+
 - **Outer splits**: For model selection and performance estimation
 - **Inner splits**: For hyperparameter tuning within each outer fold
 
 This ensures that test data in outer folds never influences hyperparameter tuning decisions.
 
+## Core Training and Tuning
+
+### Training with Nested Cross-Validation
+
+The `esr_trainEndometrialSignature()` function implements nested CV with glmnet (LASSO) for training PS vs PIS signatures. It uses in-fold preprocessing and coefficient aggregation (Option 2) for stability with small n.
+
+**Note**: With small datasets (n=12), glmnet may produce warnings about "fewer than 8 observations per class". These are expected and reflect the challenge of model training with very small sample sizes. The warnings are suppressed in vignette examples for clarity.
+
+```{r training-example}
+# Load required packages
+library(glmnet)
+library(rsample)
+
+# Load training data and folds
+data(gse201926_trainmini)
+data(folds_demo)
+
+# Train signature with optimized parameters for small n (better class separation)
+# Suppress glmnet warnings about small sample size (expected with n=12)
+set.seed(123)
+result <- suppressWarnings(esr_trainEndometrialSignature(
+  X = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno,
+  top_k = 50,  # Smaller for faster vignette
+  outer_folds = NULL,  # Use folds_demo
+  lambda_rule = "min",  # More genes (better for small n)
+  min_folds = 1,  # Less strict consensus (better for small n)
+  seed = 123
+))
+
+# Examine results
+str(result, max.level = 2)
+```
+
+### Understanding Training Parameters
+
+Key parameters for training:
+
+- **`top_k`**: Number of top genes to select via DE analysis (default: 300)
+- **`lambda_rule`**: λ selection rule - `"1se"` (sparser, default) or `"min"` (more genes, better for small n)
+- **`min_folds`**: Minimum folds that must select a gene for consensus (default: 2 of 3; use 1 for small n to allow genes selected in single folds)
+- **`aggregation_method`**: Method for aggregating coefficients - `"mean"` (default) or `"median"`
+
+**Note for small datasets (n < 20)**: Using `lambda_rule = "min"` and `min_folds = 1` often produces better class separation and more interpretable signatures, as it's less restrictive with sparse models.
+
+```{r training-parameters}
+# Compare lambda rules (using optimized min_folds=1 for better results with small n)
+# Suppress warnings for cleaner output
+set.seed(123)
+result_1se <- suppressWarnings(esr_trainEndometrialSignature(
+  X = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno,
+  top_k = 50,
+  lambda_rule = "1se",
+  min_folds = 1,  # Less strict for small n
+  outer_folds = NULL,
+  seed = 123
+))
+
+set.seed(123)
+result_min <- suppressWarnings(esr_trainEndometrialSignature(
+  X = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno,
+  top_k = 50,
+  lambda_rule = "min",
+  min_folds = 1,  # Less strict for small n
+  outer_folds = NULL,
+  seed = 123
+))
+
+# Compare signature sizes
+cat("1se signature: ", length(result_1se$signature$panel), " genes\n")
+cat("min signature: ", length(result_min$signature$panel), " genes\n")
+
+# Note: Signatures may be empty with very sparse models and strict consensus requirements
+# This is acceptable for small datasets - adjust min_folds or lambda_rule if needed
+```
+
+### Signature Interpretation
+
+The trained signature contains:
+
+- **Panel**: Consensus gene IDs (selected in ≥`min_folds` folds)
+- **Coefficients**: Aggregated LASSO coefficients (mean or median across folds)
+- **Intercept**: Aggregated logistic regression intercept
+- **Selection frequency**: Number of folds that selected each gene
+
+```{r signature-interpretation}
+# Extract signature (using optimized result_min with better class separation)
+signature <- result_min$signature
+
+# Examine signature components
+cat("Panel size: ", length(signature$panel), " genes\n")
+
+if (length(signature$panel) > 0) {
+  cat("Intercept: ", signature$intercept, "\n")
+
+  # View top genes by absolute coefficient
+  if (length(signature$coefficients) > 0) {
+    coef_abs <- abs(signature$coefficients)
+    coef_abs <- sort(coef_abs, decreasing = TRUE)
+    cat("\nTop genes by absolute coefficient:\n")
+    print(head(coef_abs, 10))
+
+    # Check selection frequencies
+    cat("\nSelection frequencies:\n")
+    print(table(signature$selection_frequency))
+  }
+} else {
+  cat("Signature is empty (no consensus genes found).\n")
+  cat("This can happen with very sparse LASSO models (1se rule) and strict consensus requirements (min_folds=2).\n")
+  cat("Try: lambda_rule='min' or min_folds=1 for more genes.\n")
+}
+```
+
+### Coefficient Aggregation (Option 2)
+
+For small n (n=12) and weak signals, coefficient aggregation (Option 2) provides:
+
+- **Lower variance**: Averaging out fold-specific noise
+- **Higher stability**: Requiring consensus across folds
+- **Better generalization**: More robust than single-fold signatures
+
+```{r aggregation-explanation}
+# Compare aggregation methods (using optimized parameters)
+# Suppress warnings for cleaner output
+set.seed(123)
+result_mean <- suppressWarnings(esr_trainEndometrialSignature(
+  X = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno,
+  top_k = 50,
+  lambda_rule = "min",
+  min_folds = 1,
+  aggregation_method = "mean",
+  outer_folds = NULL,
+  seed = 123
+))
+
+set.seed(123)
+result_median <- suppressWarnings(esr_trainEndometrialSignature(
+  X = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno,
+  top_k = 50,
+  lambda_rule = "min",
+  min_folds = 1,
+  aggregation_method = "median",
+  outer_folds = NULL,
+  seed = 123
+))
+
+# Compare consensus genes
+cat("Mean aggregation: ", length(result_mean$signature$panel), " consensus genes\n")
+cat("Median aggregation: ", length(result_median$signature$panel), " consensus genes\n")
+
+# Show selection frequencies
+if (length(result_mean$signature$panel) > 0) {
+  cat("\nSelection frequencies (mean aggregation):\n")
+  print(table(result_mean$signature$selection_frequency))
+} else {
+  cat("\nNo consensus genes found with current parameters.\n")
+  cat("Try reducing min_folds or using lambda_rule='min' for more genes.\n")
+}
+```
+
+### Performance Metrics
+
+Training returns performance metrics from outer CV:
+
+- **AUC**: Area under ROC curve (aggregated across all outer folds)
+- **Accuracy**: Classification accuracy (using threshold 0.5)
+- **Predictions**: Per-sample predictions with probabilities and labels
+
+```{r performance-metrics}
+# Examine performance metrics (using optimized result_min with better class separation)
+metrics <- result_min$metrics
+
+# Check if predictions exist and have data
+has_predictions <- !is.null(metrics$predictions) &&
+                  is.data.frame(metrics$predictions) &&
+                  nrow(metrics$predictions) > 0
+
+if (!has_predictions) {
+  cat("WARNING: No predictions available. This suggests the CV loop may have failed.\n")
+  cat("Possible causes:\n")
+  cat("  - Sample ID mismatches between folds_demo and counts/pheno data\n")
+  cat("  - Errors in in-fold preprocessing (transform or gene selection)\n")
+  cat("  - Insufficient data for model training\n")
+  cat("\nTry re-running the training chunk to regenerate results.\n\n")
+}
+
+# Handle NA metrics gracefully (check length > 0 first to avoid length-zero errors)
+if (length(metrics$auc) > 0 && !is.na(metrics$auc)) {
+  cat("AUC: ", round(metrics$auc, 3), "\n")
+} else {
+  cat("AUC: NA")
+  if (!has_predictions) {
+    cat(" (no predictions available - CV loop may have failed)")
+  } else {
+    cat(" (insufficient class balance in predictions)")
+  }
+  cat("\n")
+}
+
+if (length(metrics$accuracy) > 0 && !is.na(metrics$accuracy)) {
+  cat("Accuracy: ", round(metrics$accuracy, 3), "\n")
+} else {
+  cat("Accuracy: NA")
+  if (!has_predictions) {
+    cat(" (no predictions available - CV loop may have failed)")
+  } else {
+    cat(" (insufficient data for computation)")
+  }
+  cat("\n")
+}
+
+# View predictions (check existence and type first to avoid length-zero errors)
+if (has_predictions) {
+  cat("\nSample predictions:\n")
+  print(head(metrics$predictions, 10))
+
+  # Check prediction distribution
+  cat("\nPrediction probabilities:\n")
+  print(summary(metrics$predictions$prob))
+
+  # Check class balance in predictions
+  cat("\nClass distribution in predictions:\n")
+  print(table(metrics$predictions$label))
+}
+```
+
+### Understanding Nested CV Performance
+
+Nested CV provides unbiased performance estimates by:
+
+1. **Outer CV**: Evaluates model generalization on held-out test sets
+2. **Inner CV**: Tunes hyperparameters (λ selection) within each outer fold
+3. **Aggregation**: Combines predictions across all outer folds for overall metrics
+
+This ensures that test data never influences hyperparameter tuning decisions.
+
 ## Next Steps
 
-Phase 2.1 provides the foundation for Mode 2 (Signature Validation). Future phases will add:
+Phase 2.2 provides core training and tuning functionality. Future phases will add:
 
-- **Phase 2.2**: Core training and tuning with glmnet (LASSO/Elastic Net)
 - **Phase 2.3**: Probability calibration (Platt/Isotonic)
 - **Phase 2.4**: Performance and comparison visualizations
 - **Phase 2.5**: Signature exports and model cards
 
-For now, Phase 2.1 establishes:
-- Training datasets (`gse201926_trainmini`)
-- Pre-computed splits (`folds_demo`)
-- In-fold preprocessing functions (`esr_transformInFold()`, `esr_selectDEInFold()`)
-- Anti-leakage infrastructure
+Phase 2.2 establishes:
 
-These components ensure that future training workflows maintain best practices for small-sample machine learning.
+- Nested CV training with glmnet (LASSO)
+- Coefficient aggregation (Option 2) for stability
+- Performance metrics from outer CV
+- Deterministic training with fixed seeds
 
 ## Summary
 
-Mode 2 (Signature Validation) provides a comprehensive pipeline for training and validating gene signatures. Phase 2.1 focuses on data preparation, CV splits, and anti-leakage guards:
+Mode 2 (Signature Validation) provides a comprehensive pipeline for training and validating gene signatures. Phase 2.2 adds core training and tuning:
 
 1. **Data Preparation**: `gse201926_trainmini` provides balanced training data for fast nested CV
-2. **CV Splits**: Stratified splits with fixed seeds for reproducibility
-3. **Anti-leakage**: In-fold preprocessing prevents data leakage
-4. **Determinism**: Fixed seeds ensure reproducible results
+2. **CV Splits**: Stratified splits with fixed seeds for reproducibility (`folds_demo`)
+3. **Anti-leakage**: In-fold preprocessing prevents data leakage (`esr_transformInFold()`, `esr_selectDEInFold()`)
+4. **Core Training**: Nested CV with glmnet (LASSO) for signature training
+5. **Coefficient Aggregation**: Option 2 aggregates coefficients across folds for stability (small n)
+6. **Performance Metrics**: AUC, accuracy, and predictions from outer CV
+7. **Determinism**: Fixed seeds ensure reproducible results
 
-These foundations enable future phases to implement core training, calibration, and comparison features while maintaining best practices for small-sample ML.
-
+Phase 2.2 establishes core training functionality that enables future phases to add calibration, visualization, and export features while maintaining best practices for small-sample ML.
