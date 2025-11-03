@@ -28,7 +28,8 @@ Imports:
     limma,
     ComplexHeatmap,
     circlize,
-    rsample
+    rsample,
+    jsonlite
 Depends: 
     R (>= 3.5)
 LazyData: true

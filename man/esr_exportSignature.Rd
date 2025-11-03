@@ -2,18 +2,88 @@
 % Please edit documentation in R/export.R
 \name{esr_exportSignature}
 \alias{esr_exportSignature}
-\title{Export Endometrial Signature (Placeholder)}
+\title{Export Endometrial Signature}
 \usage{
-esr_exportSignature(signature, dir = "export")
+esr_exportSignature(
+  signature,
+  result = NULL,
+  dir = "export",
+  formats = c("csv", "json", "md"),
+  include_intercept = TRUE,
+  include_stability = TRUE,
+  ...
+)
 }
 \arguments{
-\item{signature}{Signature object.}
+\item{signature}{List containing signature object (from \code{result$signature} or standalone).
+Must include \code{panel}, \code{coefficients}, and \code{intercept} at minimum.}
 
-\item{dir}{Output directory. Defaults to "export".}
+\item{result}{Optional list from \code{esr_trainEndometrialSignature()}. If provided, extracts
+signature, metrics, calibration, stability, and other metadata for complete export.}
+
+\item{dir}{Character; output directory. Defaults to "export".}
+
+\item{formats}{Character vector; which formats to export: "csv", "json", "md", or "all".
+Defaults to c("csv", "json", "md").}
+
+\item{include_intercept}{Logical; include intercept in CSV export (as separate row).
+Defaults to TRUE.}
+
+\item{include_stability}{Logical; include bootstrap frequencies in CSV if available.
+Defaults to TRUE.}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
-Invisibly, the paths of exported files (placeholder).
+Invisibly, a character vector of paths to exported files.
 }
 \description{
-Exports a signature to common artifact files.
+Exports a trained signature to reproducible artifact files: CSV (signature panel and coefficients),
+JSON (preprocessing recipe and training parameters), and Markdown (model card with provenance and performance).
+}
+\details{
+This function exports three artifact files:
+\itemize{
+\item \strong{endometrial_signature.csv}: Gene panel with coefficients, selection frequencies, and optional bootstrap frequencies
+\item \strong{endometrial_recipe.json}: Preprocessing recipe, training parameters, signature metadata, and reproducibility information
+\item \strong{endometrial_model_card.md}: Model documentation with provenance, performance metrics, limitations, and intended use
+}
+
+If \code{result} is provided, the export includes full metadata (performance metrics, calibration info, stability info).
+If only \code{signature} is provided, the export includes signature information only (model card will be minimal).
+}
+\examples{
+\dontrun{
+library(rsample)
+data(gse201926_trainmini)
+
+# Train signature
+result <- esr_trainEndometrialSignature(
+  X = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno,
+  top_k = 100,
+  seed = 123
+)
+
+# Export all formats
+paths <- esr_exportSignature(
+  signature = result$signature,
+  result = result,
+  dir = tempdir()
+)
+
+# Export only CSV
+esr_exportSignature(
+  signature = result$signature,
+  result = result,
+  formats = "csv",
+  dir = tempdir()
+)
+
+# Export standalone signature (no result)
+esr_exportSignature(
+  signature = result$signature,
+  dir = tempdir()
+)
+}
 }
