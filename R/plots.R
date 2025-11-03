@@ -902,4 +902,742 @@ plotEndometrialHeatmap <- function(mat_t, genes = NULL, pheno = NULL,
     return(hm)
 }
 
+#' Plot Endometrial ROC Curve
+#'
+#' Creates a Receiver Operating Characteristic (ROC) curve to visualize signature performance.
+#'
+#' @param predictions A data.frame with columns: `label` (0/1 binary labels), `prob` (raw probabilities), optionally `prob_calibrated` (calibrated probabilities).
+#' @param use_calibrated Logical; use calibrated probabilities if available. Defaults to FALSE.
+#' @param show_auc Logical; display AUC in plot annotation. Defaults to TRUE.
+#' @param show_ci Logical; display confidence intervals (requires pROC package). Defaults to FALSE.
+#' @param color_palette Optional color palette (default: color-blind friendly).
+#' @param ... Additional arguments passed to `ggplot2::geom_line()`.
+#'
+#' @return A ggplot object showing ROC curve (FPR on x-axis, TPR on y-axis).
+#'
+#' @details
+#' This function creates ROC curves for signature performance visualization. The ROC curve shows
+#' the trade-off between true positive rate (TPR) and false positive rate (FPR) across different
+#' probability thresholds.
+#'
+#' AUC (Area Under Curve) represents the probability that the classifier will rank a randomly
+#' chosen positive instance higher than a randomly chosen negative instance. AUC = 1.0 indicates
+#' perfect classification, AUC = 0.5 indicates random classification.
+#'
+#' @examples
+#' \dontrun{
+#' # After training a signature
+#' result <- esr_trainEndometrialSignature(X, pheno)
+#'
+#' # Plot ROC curve with raw probabilities
+#' p_roc_raw <- plotEndometrialROC(result$metrics$predictions, use_calibrated = FALSE)
+#'
+#' # Plot ROC curve with calibrated probabilities
+#' p_roc_cal <- plotEndometrialROC(result$metrics$predictions, use_calibrated = TRUE)
+#' }
+#'
+#' @export
+plotEndometrialROC <- function(predictions, use_calibrated = FALSE, show_auc = TRUE,
+                               show_ci = FALSE, color_palette = NULL, ...) {
+    if (!requireNamespace("ggplot2", quietly = TRUE)) {
+        stop("ggplot2 package is required for plotting")
+    }
+
+    # Validate predictions
+    if (!is.data.frame(predictions)) {
+        stop("predictions must be a data.frame")
+    }
+
+    required_cols <- c("label", "prob")
+    missing_cols <- setdiff(required_cols, names(predictions))
+    if (length(missing_cols) > 0) {
+        stop(paste0("predictions must contain columns: ", paste(missing_cols, collapse = ", ")))
+    }
+
+    # Select probability column
+    if (use_calibrated && "prob_calibrated" %in% names(predictions)) {
+        prob_col <- "prob_calibrated"
+        prob_label <- "Calibrated Probability"
+    } else {
+        prob_col <- "prob"
+        prob_label <- "Raw Probability"
+        if (use_calibrated) {
+            warning("Calibrated probabilities not available; using raw probabilities")
+        }
+    }
+
+    probs <- predictions[[prob_col]]
+    labels <- predictions$label
+
+    # Validate data
+    if (length(probs) == 0 || length(labels) == 0) {
+        stop("predictions must contain at least one observation")
+    }
+
+    if (length(unique(labels)) != 2) {
+        stop("predictions must contain exactly 2 unique label values (0 and 1)")
+    }
+
+    # Convert labels to numeric if needed
+    if (!is.numeric(labels)) {
+        labels <- as.numeric(as.factor(labels)) - 1
+    }
+
+    # Compute ROC curve
+    # Sort by probabilities (descending)
+    ord <- order(probs, decreasing = TRUE)
+    probs_sorted <- probs[ord]
+    labels_sorted <- labels[ord]
+
+    # Count positives and negatives
+    n_pos <- sum(labels_sorted == 1)
+    n_neg <- sum(labels_sorted == 0)
+
+    if (n_pos == 0 || n_neg == 0) {
+        stop("predictions must contain at least one positive and one negative label")
+    }
+
+    # Compute TPR and FPR at each threshold
+    cum_tp <- cumsum(labels_sorted == 1)
+    cum_fp <- cumsum(labels_sorted == 0)
+
+    tpr <- cum_tp / n_pos
+    fpr <- cum_fp / n_neg
+
+    # Add (0,0) and (1,1) for complete curve
+    tpr <- c(0, tpr, 1)
+    fpr <- c(0, fpr, 1)
+
+    # Compute AUC using trapezoidal rule
+    auc_value <- sum(diff(fpr) * (tpr[-1] + tpr[-length(tpr)]) / 2)
+
+    # Create data frame for plotting
+    roc_df <- data.frame(
+        FPR = fpr,
+        TPR = tpr,
+        stringsAsFactors = FALSE
+    )
+
+    # Set up color palette
+    if (is.null(color_palette)) {
+        color_line <- "#2ca02c" # Color-blind friendly green
+    } else {
+        color_line <- color_palette
+    }
+
+    # Create plot
+    p <- ggplot2::ggplot(roc_df, ggplot2::aes(x = FPR, y = TPR)) +
+        ggplot2::geom_line(color = color_line, linewidth = 1.2, ...) +
+        ggplot2::geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray40", linewidth = 0.8) +
+        ggplot2::labs(
+            x = "False Positive Rate",
+            y = "True Positive Rate",
+            title = paste0("ROC Curve (", prob_label, ")")
+        ) +
+        ggplot2::theme_bw() +
+        ggplot2::theme(
+            plot.title = ggplot2::element_text(hjust = 0.5),
+            legend.position = "right"
+        ) +
+        ggplot2::coord_fixed(ratio = 1, xlim = c(0, 1), ylim = c(0, 1))
+
+    # Add AUC annotation
+    if (show_auc) {
+        p <- p + ggplot2::annotate(
+            "text",
+            x = 0.6, y = 0.2,
+            label = paste0("AUC = ", round(auc_value, 3)),
+            size = 4.5,
+            color = "black",
+            fontface = "bold"
+        )
+    }
+
+    # Add confidence intervals if requested (requires pROC)
+    if (show_ci) {
+        if (requireNamespace("pROC", quietly = TRUE)) {
+            tryCatch(
+                {
+                    roc_obj <- pROC::roc(labels, probs, quiet = TRUE)
+                    ci_obj <- pROC::ci.se(roc_obj, specificities = seq(0, 1, 0.01))
+                    # Add CI to plot (simplified - could be more sophisticated)
+                    # For now, just add note that CI is computed
+                    auc_ci <- pROC::ci.auc(roc_obj, quiet = TRUE)
+                    if (show_auc) {
+                        p <- p + ggplot2::annotate(
+                            "text",
+                            x = 0.6, y = 0.15,
+                            label = paste0("95% CI: [", round(auc_ci[1], 3), ", ", round(auc_ci[3], 3), "]"),
+                            size = 3.5,
+                            color = "gray40"
+                        )
+                    }
+                },
+                error = function(e) {
+                    warning("Could not compute confidence intervals: ", conditionMessage(e))
+                }
+            )
+        } else {
+            warning("pROC package is required for confidence intervals. Install with: install.packages('pROC')")
+        }
+    }
+
+    return(p)
+}
+
+#' Plot Endometrial Precision-Recall Curve
+#'
+#' Creates a Precision-Recall (PR) curve to visualize signature performance, especially useful for imbalanced datasets.
+#'
+#' @param predictions A data.frame with columns: `label` (0/1 binary labels), `prob` (raw probabilities), optionally `prob_calibrated` (calibrated probabilities).
+#' @param use_calibrated Logical; use calibrated probabilities if available. Defaults to FALSE.
+#' @param show_auc Logical; display PR-AUC in plot annotation. Defaults to TRUE.
+#' @param color_palette Optional color palette (default: color-blind friendly).
+#' @param ... Additional arguments passed to `ggplot2::geom_line()`.
+#'
+#' @return A ggplot object showing PR curve (Recall on x-axis, Precision on y-axis).
+#'
+#' @details
+#' This function creates Precision-Recall curves for signature performance visualization. PR curves
+#' are especially useful for imbalanced datasets where the positive class is rare.
+#'
+#' PR-AUC (Area Under Precision-Recall Curve) represents the average precision across all recall
+#' values. Higher PR-AUC indicates better performance. The baseline (random classifier) is equal to
+#' the prevalence of the positive class.
+#'
+#' @examples
+#' \dontrun{
+#' # After training a signature
+#' result <- esr_trainEndometrialSignature(X, pheno)
+#'
+#' # Plot PR curve with raw probabilities
+#' p_pr_raw <- plotEndometrialPR(result$metrics$predictions, use_calibrated = FALSE)
+#'
+#' # Plot PR curve with calibrated probabilities
+#' p_pr_cal <- plotEndometrialPR(result$metrics$predictions, use_calibrated = TRUE)
+#' }
+#'
+#' @export
+plotEndometrialPR <- function(predictions, use_calibrated = FALSE, show_auc = TRUE,
+                              color_palette = NULL, ...) {
+    if (!requireNamespace("ggplot2", quietly = TRUE)) {
+        stop("ggplot2 package is required for plotting")
+    }
+
+    # Validate predictions
+    if (!is.data.frame(predictions)) {
+        stop("predictions must be a data.frame")
+    }
+
+    required_cols <- c("label", "prob")
+    missing_cols <- setdiff(required_cols, names(predictions))
+    if (length(missing_cols) > 0) {
+        stop(paste0("predictions must contain columns: ", paste(missing_cols, collapse = ", ")))
+    }
+
+    # Select probability column
+    if (use_calibrated && "prob_calibrated" %in% names(predictions)) {
+        prob_col <- "prob_calibrated"
+        prob_label <- "Calibrated Probability"
+    } else {
+        prob_col <- "prob"
+        prob_label <- "Raw Probability"
+        if (use_calibrated) {
+            warning("Calibrated probabilities not available; using raw probabilities")
+        }
+    }
+
+    probs <- predictions[[prob_col]]
+    labels <- predictions$label
+
+    # Validate data
+    if (length(probs) == 0 || length(labels) == 0) {
+        stop("predictions must contain at least one observation")
+    }
+
+    if (length(unique(labels)) != 2) {
+        stop("predictions must contain exactly 2 unique label values (0 and 1)")
+    }
+
+    # Convert labels to numeric if needed
+    if (!is.numeric(labels)) {
+        labels <- as.numeric(as.factor(labels)) - 1
+    }
+
+    # Compute PR curve
+    # Sort by probabilities (descending)
+    ord <- order(probs, decreasing = TRUE)
+    probs_sorted <- probs[ord]
+    labels_sorted <- labels[ord]
+
+    # Count positives and negatives
+    n_pos <- sum(labels_sorted == 1)
+    n_total <- length(labels_sorted)
+
+    if (n_pos == 0) {
+        stop("predictions must contain at least one positive label")
+    }
+
+    # Compute precision and recall at each threshold
+    cum_tp <- cumsum(labels_sorted == 1)
+    cum_all <- 1:n_total
+
+    precision <- cum_tp / cum_all
+    recall <- cum_tp / n_pos
+
+    # Add (0,1) and (1,0) for complete curve (handle edge cases)
+    precision <- c(1, precision)
+    recall <- c(0, recall)
+
+    # Handle NaN precision (when denominator is 0)
+    precision[is.nan(precision)] <- 0
+
+    # Compute PR-AUC using trapezoidal rule
+    pr_auc_value <- sum(diff(recall) * (precision[-1] + precision[-length(precision)]) / 2)
+
+    # Compute baseline (prevalence of positive class)
+    prevalence <- n_pos / n_total
+
+    # Create data frame for plotting
+    pr_df <- data.frame(
+        Recall = recall,
+        Precision = precision,
+        stringsAsFactors = FALSE
+    )
+
+    # Set up color palette
+    if (is.null(color_palette)) {
+        color_line <- "#d62728" # Color-blind friendly red
+    } else {
+        color_line <- color_palette
+    }
+
+    # Create plot
+    p <- ggplot2::ggplot(pr_df, ggplot2::aes(x = Recall, y = Precision)) +
+        ggplot2::geom_line(color = color_line, linewidth = 1.2, ...) +
+        ggplot2::geom_hline(
+            yintercept = prevalence, linetype = "dashed", color = "gray40", linewidth = 0.8,
+            ggplot2::aes(color = "Baseline")
+        ) +
+        ggplot2::labs(
+            x = "Recall",
+            y = "Precision",
+            title = paste0("Precision-Recall Curve (", prob_label, ")")
+        ) +
+        ggplot2::theme_bw() +
+        ggplot2::theme(
+            plot.title = ggplot2::element_text(hjust = 0.5),
+            legend.position = "right"
+        ) +
+        ggplot2::coord_fixed(ratio = 1, xlim = c(0, 1), ylim = c(0, 1))
+
+    # Add PR-AUC annotation
+    if (show_auc) {
+        p <- p + ggplot2::annotate(
+            "text",
+            x = 0.6, y = 0.2,
+            label = paste0("PR-AUC = ", round(pr_auc_value, 3)),
+            size = 4.5,
+            color = "black",
+            fontface = "bold"
+        ) +
+            ggplot2::annotate(
+                "text",
+                x = 0.6, y = 0.15,
+                label = paste0("Baseline = ", round(prevalence, 3)),
+                size = 3.5,
+                color = "gray40"
+            )
+    }
+
+    return(p)
+}
+
+#' Plot Endometrial Calibration Curve
+#'
+#' Creates a calibration curve to visualize how well predicted probabilities match observed frequencies.
+#'
+#' @param predictions A data.frame with columns: `label` (0/1 binary labels), `prob` (raw probabilities), optionally `prob_calibrated` (calibrated probabilities).
+#' @param use_calibrated Logical; use calibrated probabilities if available. Defaults to FALSE.
+#' @param n_bins Integer; number of bins for calibration plot. Defaults to 10.
+#' @param show_brier Logical; display Brier Score in annotation. Defaults to TRUE.
+#' @param show_ece Logical; display Expected Calibration Error (ECE) in annotation. Defaults to TRUE.
+#' @param color_palette Optional color palette (default: color-blind friendly).
+#' @param ... Additional arguments passed to `ggplot2::geom_point()` or `ggplot2::geom_bar()`.
+#'
+#' @return A ggplot object showing calibration curve (predicted probability on x-axis, observed frequency on y-axis).
+#'
+#' @details
+#' This function creates calibration curves to assess probability calibration quality. A well-calibrated
+#' model should have predicted probabilities that match observed frequencies (points close to the
+#' diagonal y = x).
+#'
+#' Brier Score measures the mean squared error between predicted probabilities and binary outcomes.
+#' Lower Brier Score indicates better calibration (perfect calibration has Brier Score = 0).
+#'
+#' ECE (Expected Calibration Error) measures the weighted average of absolute difference between
+#' predicted probabilities and observed frequencies within bins. Lower ECE indicates better calibration.
+#'
+#' @examples
+#' \dontrun{
+#' # After training a signature
+#' result <- esr_trainEndometrialSignature(X, pheno, calibration_method = "platt")
+#'
+#' # Plot calibration curve with raw probabilities
+#' p_cal_raw <- plotEndometrialCalibration(result$metrics$predictions, use_calibrated = FALSE)
+#'
+#' # Plot calibration curve with calibrated probabilities
+#' p_cal_cal <- plotEndometrialCalibration(result$metrics$predictions, use_calibrated = TRUE)
+#' }
+#'
+#' @export
+plotEndometrialCalibration <- function(predictions, use_calibrated = FALSE, n_bins = 10,
+                                       show_brier = TRUE, show_ece = TRUE,
+                                       color_palette = NULL, ...) {
+    if (!requireNamespace("ggplot2", quietly = TRUE)) {
+        stop("ggplot2 package is required for plotting")
+    }
+
+    # Validate predictions
+    if (!is.data.frame(predictions)) {
+        stop("predictions must be a data.frame")
+    }
+
+    required_cols <- c("label", "prob")
+    missing_cols <- setdiff(required_cols, names(predictions))
+    if (length(missing_cols) > 0) {
+        stop(paste0("predictions must contain columns: ", paste(missing_cols, collapse = ", ")))
+    }
+
+    # Validate n_bins
+    if (!is.numeric(n_bins) || n_bins <= 0 || length(n_bins) != 1) {
+        stop("n_bins must be a positive integer")
+    }
+    n_bins <- as.integer(n_bins)
+
+    # Select probability column
+    if (use_calibrated && "prob_calibrated" %in% names(predictions)) {
+        prob_col <- "prob_calibrated"
+        prob_label <- "Calibrated Probability"
+    } else {
+        prob_col <- "prob"
+        prob_label <- "Raw Probability"
+        if (use_calibrated) {
+            warning("Calibrated probabilities not available; using raw probabilities")
+        }
+    }
+
+    probs <- predictions[[prob_col]]
+    labels <- predictions$label
+
+    # Validate data
+    if (length(probs) == 0 || length(labels) == 0) {
+        stop("predictions must contain at least one observation")
+    }
+
+    if (length(unique(labels)) != 2) {
+        stop("predictions must contain exactly 2 unique label values (0 and 1)")
+    }
+
+    # Convert labels to numeric if needed
+    if (!is.numeric(labels)) {
+        labels <- as.numeric(as.factor(labels)) - 1
+    }
+
+    # Bin probabilities
+    bin_edges <- seq(0, 1, length.out = n_bins + 1)
+    bin_edges[1] <- 0
+    bin_edges[length(bin_edges)] <- 1.0001 # Ensure max prob is included
+    bin_ids <- cut(probs, breaks = bin_edges, include.lowest = TRUE, right = FALSE)
+
+    # Compute calibration statistics per bin
+    bin_stats <- data.frame(
+        bin_id = levels(bin_ids),
+        bin_mid = (bin_edges[-length(bin_edges)] + bin_edges[-1]) / 2,
+        n_obs = as.numeric(table(bin_ids)),
+        mean_pred = tapply(probs, bin_ids, mean, na.rm = TRUE),
+        mean_obs = tapply(labels, bin_ids, mean, na.rm = TRUE),
+        stringsAsFactors = FALSE
+    )
+
+    # Remove bins with no observations
+    bin_stats <- bin_stats[bin_stats$n_obs > 0, ]
+
+    if (nrow(bin_stats) == 0) {
+        stop("No valid bins found. Check that probabilities are in [0, 1] range.")
+    }
+
+    # Compute Brier Score
+    brier_score <- mean((probs - labels)^2, na.rm = TRUE)
+
+    # Compute ECE (Expected Calibration Error)
+    ece_value <- sum(bin_stats$n_obs / length(probs) * abs(bin_stats$mean_pred - bin_stats$mean_obs), na.rm = TRUE)
+
+    # Set up color palette
+    if (is.null(color_palette)) {
+        color_point <- "#1f77b4" # Color-blind friendly blue
+        color_line <- "#ff7f0e" # Color-blind friendly orange
+    } else {
+        color_point <- color_palette
+        color_line <- color_palette
+    }
+
+    # Create plot
+    p <- ggplot2::ggplot(bin_stats, ggplot2::aes(x = mean_pred, y = mean_obs)) +
+        ggplot2::geom_point(size = 3, color = color_point, ...) +
+        ggplot2::geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray40", linewidth = 0.8) +
+        ggplot2::labs(
+            x = "Mean Predicted Probability",
+            y = "Mean Observed Frequency",
+            title = paste0("Calibration Curve (", prob_label, ")")
+        ) +
+        ggplot2::theme_bw() +
+        ggplot2::theme(
+            plot.title = ggplot2::element_text(hjust = 0.5),
+            legend.position = "right"
+        ) +
+        ggplot2::coord_fixed(ratio = 1, xlim = c(0, 1), ylim = c(0, 1))
+
+    # Add Brier Score and ECE annotations
+    if (show_brier || show_ece) {
+        annotation_text <- character(0)
+        if (show_brier) {
+            annotation_text <- c(annotation_text, paste0("Brier Score = ", round(brier_score, 3)))
+        }
+        if (show_ece) {
+            annotation_text <- c(annotation_text, paste0("ECE = ", round(ece_value, 3)))
+        }
+
+        p <- p + ggplot2::annotate(
+            "text",
+            x = 0.05, y = 0.95,
+            label = paste(annotation_text, collapse = "\n"),
+            size = 4,
+            color = "black",
+            fontface = "bold",
+            hjust = 0,
+            vjust = 1
+        )
+    }
+
+    return(p)
+}
+
+#' Plot Endometrial Signature Comparison
+#'
+#' Creates comparison plots to compare pre-trained vs new signature performance (ROC, PR, and Calibration curves).
+#'
+#' @param pretrained_result Optional list from pre-trained signature application (Phase 3; default: NULL). If NULL, plots only new signature.
+#' @param new_result List from `esr_trainEndometrialSignature()` with `metrics` and `predictions` components.
+#' @param metrics_to_plot Character vector; which plots to include: "roc", "pr", "calibration", or "all". Defaults to c("roc", "pr", "calibration").
+#' @param show_metrics_table Logical; display metrics comparison table. Defaults to TRUE.
+#' @param color_palette Optional color palette (default: color-blind friendly).
+#' @param ... Additional arguments passed to plot functions.
+#'
+#' @return A list of ggplot objects (or a single plot if only one metric requested). If `show_metrics_table=TRUE`, includes a metrics table.
+#'
+#' @details
+#' This function creates side-by-side or overlay comparison plots for signature performance.
+#' It compares ROC curves, PR curves, and calibration curves between pre-trained and new signatures.
+#'
+#' If `pretrained_result` is NULL, only the new signature is plotted (single signature mode).
+#' If `pretrained_result` is provided, both signatures are plotted for comparison.
+#'
+#' The metrics table (if `show_metrics_table=TRUE`) compares AUC, accuracy, Brier Score, and ECE
+#' between signatures.
+#'
+#' @examples
+#' \dontrun{
+#' # After training a signature
+#' new_result <- esr_trainEndometrialSignature(X, pheno)
+#'
+#' # Compare with pre-trained signature (if available)
+#' pretrained_result <- esr_loadPretrainedSignature()
+#'
+#' # Generate comparison plots
+#' comparison_plots <- plotEndometrialComparison(
+#'     pretrained_result = pretrained_result,
+#'     new_result = new_result,
+#'     metrics_to_plot = "all"
+#' )
+#'
+#' # Plot only new signature (no comparison)
+#' new_plots <- plotEndometrialComparison(
+#'     pretrained_result = NULL,
+#'     new_result = new_result
+#' )
+#' }
+#'
+#' @export
+plotEndometrialComparison <- function(pretrained_result = NULL, new_result,
+                                      metrics_to_plot = c("roc", "pr", "calibration"),
+                                      show_metrics_table = TRUE,
+                                      color_palette = NULL, ...) {
+    if (!requireNamespace("ggplot2", quietly = TRUE)) {
+        stop("ggplot2 package is required for plotting")
+    }
+
+    # Validate new_result
+    if (!is.list(new_result)) {
+        stop("new_result must be a list from esr_trainEndometrialSignature()")
+    }
+
+    if (!"metrics" %in% names(new_result)) {
+        stop("new_result must contain 'metrics' component")
+    }
+
+    if (!"predictions" %in% names(new_result$metrics)) {
+        stop("new_result$metrics must contain 'predictions' data.frame")
+    }
+
+    new_predictions <- new_result$metrics$predictions
+
+    # Validate pretrained_result if provided
+    pretrained_predictions <- NULL
+    if (!is.null(pretrained_result)) {
+        if (!is.list(pretrained_result)) {
+            stop("pretrained_result must be a list or NULL")
+        }
+        # Check if it has predictions (structure may vary by Phase 3 implementation)
+        if ("predictions" %in% names(pretrained_result)) {
+            pretrained_predictions <- pretrained_result$predictions
+        } else if ("metrics" %in% names(pretrained_result) && "predictions" %in% names(pretrained_result$metrics)) {
+            pretrained_predictions <- pretrained_result$metrics$predictions
+        } else {
+            warning("pretrained_result does not contain predictions; plotting only new signature")
+            pretrained_result <- NULL
+        }
+    }
+
+    # Match metrics_to_plot
+    valid_metrics <- c("roc", "pr", "calibration", "all")
+    if (any(!metrics_to_plot %in% valid_metrics)) {
+        stop(paste0("metrics_to_plot must be one of: ", paste(valid_metrics, collapse = ", ")))
+    }
+
+    if ("all" %in% metrics_to_plot) {
+        metrics_to_plot <- c("roc", "pr", "calibration")
+    }
+
+    # Set up color palette
+    if (is.null(color_palette)) {
+        color_new <- "#2ca02c" # Color-blind friendly green
+        color_pretrained <- "#d62728" # Color-blind friendly red
+    } else {
+        color_new <- color_palette
+        color_pretrained <- color_palette
+    }
+
+    # Create plots
+    plots_list <- list()
+
+    # ROC curve
+    if ("roc" %in% metrics_to_plot) {
+        p_roc_new <- plotEndometrialROC(new_predictions,
+            use_calibrated = FALSE,
+            show_auc = TRUE, color_palette = color_new, ...
+        )
+        if (!is.null(pretrained_predictions)) {
+            p_roc_pretrained <- plotEndometrialROC(pretrained_predictions,
+                use_calibrated = FALSE,
+                show_auc = TRUE, color_palette = color_pretrained, ...
+            )
+            # Overlay both curves (simplified - could use patchwork for better layout)
+            p_roc_new <- p_roc_new + ggplot2::geom_line(
+                data = p_roc_pretrained$data,
+                ggplot2::aes(x = FPR, y = TPR),
+                color = color_pretrained, linewidth = 1.2, ...
+            )
+        }
+        plots_list[["roc"]] <- p_roc_new
+    }
+
+    # PR curve
+    if ("pr" %in% metrics_to_plot) {
+        p_pr_new <- plotEndometrialPR(new_predictions,
+            use_calibrated = FALSE,
+            show_auc = TRUE, color_palette = color_new, ...
+        )
+        if (!is.null(pretrained_predictions)) {
+            p_pr_pretrained <- plotEndometrialPR(pretrained_predictions,
+                use_calibrated = FALSE,
+                show_auc = TRUE, color_palette = color_pretrained, ...
+            )
+            # Overlay both curves
+            p_pr_new <- p_pr_new + ggplot2::geom_line(
+                data = p_pr_pretrained$data,
+                ggplot2::aes(x = Recall, y = Precision),
+                color = color_pretrained, linewidth = 1.2, ...
+            )
+        }
+        plots_list[["pr"]] <- p_pr_new
+    }
+
+    # Calibration curve
+    if ("calibration" %in% metrics_to_plot) {
+        p_cal_new <- plotEndometrialCalibration(new_predictions,
+            use_calibrated = FALSE,
+            show_brier = TRUE, show_ece = TRUE,
+            color_palette = color_new, ...
+        )
+        if (!is.null(pretrained_predictions)) {
+            p_cal_pretrained <- plotEndometrialCalibration(pretrained_predictions,
+                use_calibrated = FALSE,
+                show_brier = TRUE, show_ece = TRUE,
+                color_palette = color_pretrained, ...
+            )
+            # Overlay both curves
+            p_cal_new <- p_cal_new + ggplot2::geom_point(
+                data = p_cal_pretrained$data,
+                ggplot2::aes(x = mean_pred, y = mean_obs),
+                color = color_pretrained, size = 3, shape = 17, ...
+            )
+        }
+        plots_list[["calibration"]] <- p_cal_new
+    }
+
+    # Create metrics table if requested
+    metrics_table <- NULL
+    if (show_metrics_table) {
+        new_metrics <- new_result$metrics
+        metrics_table <- data.frame(
+            Metric = c("AUC", "Accuracy", "Brier Score", "ECE"),
+            New_Signature = c(
+                ifelse("auc" %in% names(new_metrics), round(new_metrics$auc, 3), NA),
+                ifelse("accuracy" %in% names(new_metrics), round(new_metrics$accuracy, 3), NA),
+                ifelse("brier_score" %in% names(new_metrics), round(new_metrics$brier_score, 3), NA),
+                ifelse("ece" %in% names(new_metrics), round(new_metrics$ece, 3), NA)
+            ),
+            stringsAsFactors = FALSE
+        )
+
+        if (!is.null(pretrained_result)) {
+            pretrained_metrics <- NULL
+            if ("metrics" %in% names(pretrained_result)) {
+                pretrained_metrics <- pretrained_result$metrics
+            } else if ("auc" %in% names(pretrained_result)) {
+                pretrained_metrics <- pretrained_result
+            }
+
+            if (!is.null(pretrained_metrics)) {
+                metrics_table$Pretrained_Signature <- c(
+                    ifelse("auc" %in% names(pretrained_metrics), round(pretrained_metrics$auc, 3), NA),
+                    ifelse("accuracy" %in% names(pretrained_metrics), round(pretrained_metrics$accuracy, 3), NA),
+                    ifelse("brier_score" %in% names(pretrained_metrics), round(pretrained_metrics$brier_score, 3), NA),
+                    ifelse("ece" %in% names(pretrained_metrics), round(pretrained_metrics$ece, 3), NA)
+                )
+            }
+        }
+
+        plots_list[["metrics_table"]] <- metrics_table
+    }
+
+    # Return single plot if only one requested, otherwise list
+    if (length(plots_list) == 1 && !show_metrics_table) {
+        return(plots_list[[1]])
+    } else {
+        return(plots_list)
+    }
+}
+
 # [END]

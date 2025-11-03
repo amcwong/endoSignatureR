@@ -47,7 +47,7 @@ outer_splits <- rsample::vfold_cv(
     data = pheno,
     v = 3,
     strata = "group",
-    breaks = 2  # Minimal strata breaks for small dataset
+    breaks = 2 # Minimal strata breaks for small dataset
 )
 
 message("Created ", nrow(outer_splits), " outer CV splits")
@@ -60,10 +60,10 @@ inner_splits_list <- lapply(1:nrow(outer_splits), function(i) {
     # Get training data for this outer fold
     outer_train <- rsample::training(outer_splits$splits[[i]])
     outer_train_pheno <- outer_train
-    
+
     # Create inner splits on training data only (anti-leakage)
-    set.seed(inner_seed + i)  # Different seed for each outer fold
-    
+    set.seed(inner_seed + i) # Different seed for each outer fold
+
     # Use v=2 or v=3 for inner folds (smaller than outer since training set is smaller)
     # For 8 samples (after leaving 4 out), use v=2 (each fold has 4 samples)
     if (nrow(outer_train) >= 4) {
@@ -77,7 +77,7 @@ inner_splits_list <- lapply(1:nrow(outer_splits), function(i) {
         # If too small, use LOOCV or skip inner splits
         inner_splits <- NULL
     }
-    
+
     return(inner_splits)
 })
 
@@ -85,8 +85,8 @@ inner_splits_list <- lapply(1:nrow(outer_splits), function(i) {
 folds_demo <- list(
     outer_splits = outer_splits,
     inner_splits = inner_splits_list,
-    outer_seed = as.integer(outer_seed),  # Ensure integer type
-    inner_seed = as.integer(inner_seed),  # Ensure integer type
+    outer_seed = as.integer(outer_seed), # Ensure integer type
+    inner_seed = as.integer(inner_seed), # Ensure integer type
     n_outer_folds = nrow(outer_splits),
     n_inner_folds = if (!is.null(inner_splits_list[[1]])) nrow(inner_splits_list[[1]]) else NULL,
     split_type = "vfold_cv",
@@ -103,4 +103,3 @@ message("  - Inner seed: ", folds_demo$inner_seed)
 # Save as package data
 usethis::use_data(folds_demo, overwrite = TRUE, compress = "xz")
 message("Saved folds_demo to data/")
-

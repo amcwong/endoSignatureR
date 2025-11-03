@@ -134,7 +134,7 @@ endo_parse_metadata <- function(file_path) {
     # Extract sample IDs from header
     header_line <- lines[data_start + 1]
     sample_ids <- unlist(strsplit(header_line, "\t"))[-1] # Remove first empty element
-    
+
     # Clean sample IDs (remove quotes and trim whitespace)
     # The series matrix file may include quotes as part of the string
     sample_ids <- trimws(gsub('^"|"$', "", sample_ids))

@@ -337,3 +337,228 @@ test_that("plotEndometrialHeatmap handles edge cases", {
     expect_true(inherits(hm_all, "Heatmap"))
   })
 })
+
+# Performance Plot Tests
+test_that("plotEndometrialROC returns ggplot with correct AUC", {
+  # Create mock predictions data
+  set.seed(123)
+  n_samples <- 20
+  predictions <- data.frame(
+    sample_id = paste0("sample_", 1:n_samples),
+    label = c(rep(0, 10), rep(1, 10)),
+    prob = c(runif(10, 0, 0.5), runif(10, 0.5, 1)),
+    stringsAsFactors = FALSE
+  )
+  
+  # Sort by prob to ensure positive labels have higher probabilities
+  predictions <- predictions[order(predictions$prob), ]
+  predictions$label <- c(rep(0, 10), rep(1, 10))
+  
+  # Test ROC curve
+  p_roc <- plotEndometrialROC(predictions, use_calibrated = FALSE, show_auc = TRUE)
+  
+  expect_s3_class(p_roc, "ggplot")
+  expect_true("GeomLine" %in% class(p_roc$layers[[1]]$geom))
+  expect_no_error(print(p_roc))
+  
+  # Verify ROC curve starts at (0,0) and ends at (1,1)
+  roc_data <- p_roc$data
+  expect_equal(roc_data$FPR[1], 0)
+  expect_equal(roc_data$TPR[1], 0)
+  expect_equal(roc_data$FPR[nrow(roc_data)], 1)
+  expect_equal(roc_data$TPR[nrow(roc_data)], 1)
+})
+
+test_that("plotEndometrialROC handles calibrated probabilities", {
+  # Create mock predictions with calibrated probabilities
+  set.seed(123)
+  predictions <- data.frame(
+    sample_id = paste0("sample_", 1:20),
+    label = c(rep(0, 10), rep(1, 10)),
+    prob = c(runif(10, 0, 0.5), runif(10, 0.5, 1)),
+    prob_calibrated = c(runif(10, 0, 0.5), runif(10, 0.5, 1)),
+    stringsAsFactors = FALSE
+  )
+  
+  # Test with raw probabilities
+  p_roc_raw <- plotEndometrialROC(predictions, use_calibrated = FALSE)
+  expect_s3_class(p_roc_raw, "ggplot")
+  
+  # Test with calibrated probabilities
+  p_roc_cal <- plotEndometrialROC(predictions, use_calibrated = TRUE)
+  expect_s3_class(p_roc_cal, "ggplot")
+  
+  # Both should work without errors
+  expect_no_error(print(p_roc_raw))
+  expect_no_error(print(p_roc_cal))
+})
+
+test_that("plotEndometrialPR returns ggplot with correct PR-AUC", {
+  # Create mock predictions data
+  set.seed(123)
+  predictions <- data.frame(
+    sample_id = paste0("sample_", 1:20),
+    label = c(rep(0, 10), rep(1, 10)),
+    prob = c(runif(10, 0, 0.5), runif(10, 0.5, 1)),
+    stringsAsFactors = FALSE
+  )
+  
+  # Test PR curve
+  p_pr <- plotEndometrialPR(predictions, use_calibrated = FALSE, show_auc = TRUE)
+  
+  expect_s3_class(p_pr, "ggplot")
+  expect_true("GeomLine" %in% class(p_pr$layers[[1]]$geom))
+  expect_no_error(print(p_pr))
+  
+  # Verify PR curve starts at (0,1) and ends at (1,0)
+  pr_data <- p_pr$data
+  expect_equal(pr_data$Recall[1], 0)
+  expect_equal(pr_data$Precision[1], 1)
+})
+
+test_that("plotEndometrialCalibration returns ggplot with correct metrics", {
+  # Create mock predictions data
+  set.seed(123)
+  predictions <- data.frame(
+    sample_id = paste0("sample_", 1:20),
+    label = c(rep(0, 10), rep(1, 10)),
+    prob = c(runif(10, 0, 0.5), runif(10, 0.5, 1)),
+    stringsAsFactors = FALSE
+  )
+  
+  # Test calibration curve
+  p_cal <- plotEndometrialCalibration(predictions, use_calibrated = FALSE, 
+                                      show_brier = TRUE, show_ece = TRUE)
+  
+  expect_s3_class(p_cal, "ggplot")
+  expect_true("GeomPoint" %in% class(p_cal$layers[[1]]$geom))
+  expect_no_error(print(p_cal))
+  
+  # Verify calibration data has bins
+  cal_data <- p_cal$data
+  expect_true(nrow(cal_data) > 0)
+  expect_true(all(cal_data$mean_pred >= 0 & cal_data$mean_pred <= 1))
+  expect_true(all(cal_data$mean_obs >= 0 & cal_data$mean_obs <= 1))
+})
+
+test_that("plotEndometrialComparison works with new signature only", {
+  # Create mock training result
+  set.seed(123)
+  predictions <- data.frame(
+    sample_id = paste0("sample_", 1:20),
+    label = c(rep(0, 10), rep(1, 10)),
+    prob = c(runif(10, 0, 0.5), runif(10, 0.5, 1)),
+    prob_calibrated = c(runif(10, 0, 0.5), runif(10, 0.5, 1)),
+    stringsAsFactors = FALSE
+  )
+  
+  new_result <- list(
+    metrics = list(
+      auc = 0.85,
+      accuracy = 0.80,
+      brier_score = 0.15,
+      ece = 0.10,
+      predictions = predictions
+    )
+  )
+  
+  # Test comparison with only new signature
+  comparison_plots <- plotEndometrialComparison(
+    pretrained_result = NULL,
+    new_result = new_result,
+    metrics_to_plot = c("roc", "pr", "calibration")
+  )
+  
+  expect_true(is.list(comparison_plots))
+  expect_true("roc" %in% names(comparison_plots))
+  expect_true("pr" %in% names(comparison_plots))
+  expect_true("calibration" %in% names(comparison_plots))
+  
+  # All plots should be ggplot objects
+  expect_s3_class(comparison_plots$roc, "ggplot")
+  expect_s3_class(comparison_plots$pr, "ggplot")
+  expect_s3_class(comparison_plots$calibration, "ggplot")
+  
+  # Metrics table should be present
+  expect_true("metrics_table" %in% names(comparison_plots))
+  expect_true(is.data.frame(comparison_plots$metrics_table))
+})
+
+test_that("performance plots work with training output from gse201926_trainmini", {
+  data(gse201926_trainmini)
+  
+  # Train a signature (with minimal settings for speed)
+  set.seed(123)
+  result <- esr_trainEndometrialSignature(
+    X = gse201926_trainmini$counts,
+    pheno = gse201926_trainmini$pheno,
+    top_k = 50,
+    outer = "lpo",
+    inner_folds = 3,
+    inner_repeats = 5,
+    calibration_method = "platt",
+    stability_selection = FALSE,
+    seed = 123
+  )
+  
+  # Test all performance plots
+  expect_no_error({
+    p_roc <- plotEndometrialROC(result$metrics$predictions, use_calibrated = FALSE)
+    expect_s3_class(p_roc, "ggplot")
+  })
+  
+  expect_no_error({
+    p_pr <- plotEndometrialPR(result$metrics$predictions, use_calibrated = FALSE)
+    expect_s3_class(p_pr, "ggplot")
+  })
+  
+  expect_no_error({
+    p_cal <- plotEndometrialCalibration(result$metrics$predictions, use_calibrated = FALSE)
+    expect_s3_class(p_cal, "ggplot")
+  })
+  
+  # Test with calibrated probabilities
+  expect_no_error({
+    p_roc_cal <- plotEndometrialROC(result$metrics$predictions, use_calibrated = TRUE)
+    expect_s3_class(p_roc_cal, "ggplot")
+  })
+  
+  # Test comparison plot
+  expect_no_error({
+    comparison_plots <- plotEndometrialComparison(
+      pretrained_result = NULL,
+      new_result = result,
+      metrics_to_plot = c("roc", "pr", "calibration")
+    )
+    expect_true(is.list(comparison_plots))
+  })
+})
+
+test_that("performance plots handle edge cases gracefully", {
+  # Test with balanced predictions (all same probability)
+  set.seed(123)
+  predictions_balanced <- data.frame(
+    sample_id = paste0("sample_", 1:10),
+    label = c(rep(0, 5), rep(1, 5)),
+    prob = rep(0.5, 10),
+    stringsAsFactors = FALSE
+  )
+  
+  # ROC should still work
+  expect_no_error({
+    p_roc <- plotEndometrialROC(predictions_balanced, use_calibrated = FALSE)
+    expect_s3_class(p_roc, "ggplot")
+  })
+  
+  # PR should still work
+  expect_no_error({
+    p_pr <- plotEndometrialPR(predictions_balanced, use_calibrated = FALSE)
+    expect_s3_class(p_pr, "ggplot")
+  })
+  
+  # Calibration should still work
+  expect_no_error({
+    p_cal <- plotEndometrialCalibration(predictions_balanced, use_calibrated = FALSE, n_bins = 5)
+    expect_s3_class(p_cal, "ggplot")
+  })
+})

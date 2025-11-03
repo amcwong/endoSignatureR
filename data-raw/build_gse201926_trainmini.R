@@ -127,14 +127,16 @@ if (is.null(counts_colnames) || length(counts_colnames) == 0) {
         colnames(counts_matrix) <- pheno_sample_ids_clean
         message("Set counts column names from phenotype sample_id (cleaned)")
     } else {
-        stop("Cannot set column names: phenotype has ", length(pheno_sample_ids_clean), 
-             " samples but counts has ", ncol(counts_matrix), " columns")
+        stop(
+            "Cannot set column names: phenotype has ", length(pheno_sample_ids_clean),
+            " samples but counts has ", ncol(counts_matrix), " columns"
+        )
     }
 } else {
     # Column names exist - clean and align with phenotype
     # Match cleaned phenotype IDs to cleaned column names
     matched_indices <- match(pheno_sample_ids_clean, counts_colnames_clean)
-    
+
     if (any(is.na(matched_indices))) {
         # Some IDs don't match - try without cleaning first
         matched_indices_raw <- match(pheno_full$sample_id, counts_colnames)
@@ -155,12 +157,12 @@ if (is.null(counts_colnames) || length(counts_colnames) == 0) {
             )
         }
     }
-    
+
     # Reorder and rename to match phenotype exactly (use cleaned IDs)
     counts_matrix <- counts_matrix[, matched_indices, drop = FALSE]
     colnames(counts_matrix) <- pheno_sample_ids_clean
     message("Aligned counts column names with phenotype sample_id (cleaned quotes)")
-    
+
     # Also update phenotype to use cleaned sample_id
     pheno_full$sample_id <- pheno_sample_ids_clean
 }
@@ -191,7 +193,7 @@ selected_genes <- names(gene_vars)[1:n_select]
 if (!is.null(annot_full) && "GeneType" %in% names(annot_full)) {
     pc_genes <- annot_full$GeneID[annot_full$GeneType == "protein_coding"]
     pc_genes <- intersect(pc_genes, rownames(counts_full))
-    
+
     if (length(pc_genes) >= 800) {
         # Use protein-coding genes, sorted by variance
         pc_vars <- gene_vars[names(gene_vars) %in% pc_genes]
@@ -235,4 +237,3 @@ message("  - Annot: ", nrow(annot_trainmini), " genes")
 # Save as package data
 usethis::use_data(gse201926_trainmini, overwrite = TRUE, compress = "xz")
 message("Saved gse201926_trainmini to data/")
-
