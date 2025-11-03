@@ -1216,8 +1216,7 @@ plotEndometrialPR <- function(predictions, use_calibrated = FALSE, show_auc = TR
     p <- ggplot2::ggplot(pr_df, ggplot2::aes(x = Recall, y = Precision)) +
         ggplot2::geom_line(color = color_line, linewidth = 1.2, ...) +
         ggplot2::geom_hline(
-            yintercept = prevalence, linetype = "dashed", color = "gray40", linewidth = 0.8,
-            ggplot2::aes(color = "Baseline")
+            yintercept = prevalence, linetype = "dashed", color = "gray40", linewidth = 0.8
         ) +
         ggplot2::labs(
             x = "Recall",

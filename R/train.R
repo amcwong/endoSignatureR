@@ -482,22 +482,39 @@ esr_trainEndometrialSignature <- function(X, pheno,
             predictions_prob_calibrated <- 1 / (1 + exp(-logit_cal))
             predictions_prob_calibrated <- pmax(pmin(predictions_prob_calibrated, 1), 0)
           } else if (calibration_method == "isotonic") {
-            cal_result <- calibrate_isotonic(train_predictions_prob, train_labels)
-            iso_fit <- cal_result$parameters$fit
-            calibration_params_fold <- list(fit = iso_fit)
+            # Isotonic regression requires at least 2 samples
+            if (length(train_predictions_prob) >= 2 && length(unique(train_predictions_prob)) > 1) {
+              cal_result <- calibrate_isotonic(train_predictions_prob, train_labels)
+              iso_fit <- cal_result$parameters$fit
+              calibration_params_fold <- list(fit = iso_fit)
 
-            # Apply isotonic fit to test predictions
-            # Use the isotonic fit to map test probabilities
-            # Interpolate/extrapolate using isotonic fit
-            prob_cal_sorted <- approx(
-              x = iso_fit$x, y = iso_fit$yf,
-              xout = predictions_prob,
-              method = "linear",
-              yleft = min(iso_fit$yf),
-              yright = max(iso_fit$yf),
-              ties = mean
-            )$y
-            predictions_prob_calibrated <- pmax(pmin(prob_cal_sorted, 1), 0)
+              # Apply isotonic fit to test predictions
+              # Check if isotonic fit has sufficient points for interpolation
+              if (!is.null(iso_fit$x) && !is.null(iso_fit$yf) &&
+                length(iso_fit$x) >= 2 && length(iso_fit$yf) >= 2 &&
+                sum(!is.na(iso_fit$x)) >= 2 && sum(!is.na(iso_fit$yf)) >= 2) {
+                # Use the isotonic fit to map test probabilities
+                # Interpolate/extrapolate using isotonic fit
+                prob_cal_sorted <- approx(
+                  x = iso_fit$x, y = iso_fit$yf,
+                  xout = predictions_prob,
+                  method = "linear",
+                  yleft = min(iso_fit$yf, na.rm = TRUE),
+                  yright = max(iso_fit$yf, na.rm = TRUE),
+                  ties = mean
+                )$y
+                predictions_prob_calibrated <- pmax(pmin(prob_cal_sorted, 1), 0)
+              } else {
+                # Insufficient points for interpolation, fall back to raw probabilities
+                # (Can't apply training calibration to test predictions without interpolation)
+                predictions_prob_calibrated <- predictions_prob
+              }
+            } else {
+              # Too few samples or no variation, skip isotonic calibration
+              # Use raw probabilities
+              predictions_prob_calibrated <- predictions_prob
+              calibration_params_fold <- list(fit = NULL, note = "insufficient_data")
+            }
           }
         }
 
@@ -1255,18 +1272,57 @@ calibrate_platt <- function(prob_raw, labels) {
 #' @return List with calibrated probabilities and isotonic fit.
 #' @keywords internal
 calibrate_isotonic <- function(prob_raw, labels) {
+  # Edge case: need at least 2 samples
+  if (length(prob_raw) < 2 || length(unique(prob_raw)) < 2) {
+    return(list(
+      prob_calibrated = prob_raw,
+      parameters = list(fit = NULL, note = "insufficient_data")
+    ))
+  }
+
+  # Remove NA values
+  valid_mask <- !is.na(prob_raw) & !is.na(labels)
+  if (sum(valid_mask) < 2) {
+    return(list(
+      prob_calibrated = prob_raw,
+      parameters = list(fit = NULL, note = "insufficient_valid_data")
+    ))
+  }
+
+  prob_raw_valid <- prob_raw[valid_mask]
+  labels_valid <- labels[valid_mask]
+
   # Sort by raw probabilities
-  ord <- order(prob_raw)
-  prob_raw_sorted <- prob_raw[ord]
-  labels_sorted <- labels[ord]
+  ord <- order(prob_raw_valid)
+  prob_raw_sorted <- prob_raw_valid[ord]
+  labels_sorted <- labels_valid[ord]
 
   # Fit isotonic regression
-  iso_fit <- isoreg(prob_raw_sorted, labels_sorted)
+  iso_fit <- tryCatch(
+    {
+      isoreg(prob_raw_sorted, labels_sorted)
+    },
+    error = function(e) {
+      return(NULL)
+    }
+  )
+
+  if (is.null(iso_fit) || is.null(iso_fit$yf)) {
+    # Isotonic regression failed, return raw probabilities
+    return(list(
+      prob_calibrated = prob_raw,
+      parameters = list(fit = NULL, note = "isotonic_fit_failed")
+    ))
+  }
 
   # Apply calibration
   prob_calibrated_sorted <- iso_fit$yf
-  prob_calibrated <- numeric(length(prob_raw))
-  prob_calibrated[ord] <- prob_calibrated_sorted
+  prob_calibrated_valid <- numeric(length(prob_raw_valid))
+  prob_calibrated_valid[ord] <- prob_calibrated_sorted
+
+  # Map back to full length vector
+  prob_calibrated <- prob_raw # Initialize with original (preserves NAs)
+  prob_calibrated[valid_mask] <- prob_calibrated_valid
 
   # Ensure probabilities are in [0, 1]
   prob_calibrated <- pmax(pmin(prob_calibrated, 1), 0)
