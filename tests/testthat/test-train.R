@@ -11,23 +11,24 @@ test_that("training is deterministic with fixed seed", {
     data(gse201926_trainmini)
 
     # Train signature twice with same seed
+    # Suppress warnings about no consensus genes (expected for small sample sizes)
     set.seed(123)
-    result1 <- esr_trainEndometrialSignature(
+    result1 <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50, # Smaller for faster tests
         outer_folds = NULL, # Use folds_demo
         seed = 123
-    )
+    ))
 
     set.seed(123)
-    result2 <- esr_trainEndometrialSignature(
+    result2 <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         outer_folds = NULL, # Use folds_demo
         seed = 123
-    )
+    ))
 
     # Signatures should be identical (same genes, same coefficients)
     expect_equal(result1$signature$panel, result2$signature$panel)
@@ -49,26 +50,27 @@ test_that("lambda rule 1se produces sparser signature than min", {
     data(gse201926_trainmini)
 
     # Train with 1se rule
+    # Suppress warnings about no consensus genes (expected for small sample sizes)
     set.seed(123)
-    result_1se <- esr_trainEndometrialSignature(
+    result_1se <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         lambda_rule = "1se",
         outer_folds = NULL,
         seed = 123
-    )
+    ))
 
     # Train with min rule
     set.seed(123)
-    result_min <- esr_trainEndometrialSignature(
+    result_min <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         lambda_rule = "min",
         outer_folds = NULL,
         seed = 123
-    )
+    ))
 
     # Verify both produce valid signatures (may be empty for very small datasets)
     # If both are empty, skip the comparison test
@@ -96,14 +98,15 @@ test_that("signature has correct structure", {
     library(rsample)
     data(gse201926_trainmini)
 
+    # Suppress warnings about no consensus genes (expected for small sample sizes)
     set.seed(123)
-    result <- esr_trainEndometrialSignature(
+    result <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         outer_folds = NULL,
         seed = 123
-    )
+    ))
 
     # Verify signature structure
     expect_type(result$signature$panel, "character")
@@ -139,14 +142,15 @@ test_that("coefficients match panel genes", {
     library(rsample)
     data(gse201926_trainmini)
 
+    # Suppress warnings about no consensus genes (expected for small sample sizes)
     set.seed(123)
-    result <- esr_trainEndometrialSignature(
+    result <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         outer_folds = NULL,
         seed = 123
-    )
+    ))
 
     # Extract panel and coefficients
     panel <- result$signature$panel
@@ -170,14 +174,15 @@ test_that("performance metrics are valid", {
     library(rsample)
     data(gse201926_trainmini)
 
+    # Suppress warnings about no consensus genes (expected for small sample sizes)
     set.seed(123)
-    result <- esr_trainEndometrialSignature(
+    result <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         outer_folds = NULL,
         seed = 123
-    )
+    ))
 
     # Extract metrics
     auc <- result$metrics$auc
@@ -211,14 +216,15 @@ test_that("predictions have correct format", {
     library(rsample)
     data(gse201926_trainmini)
 
+    # Suppress warnings about no consensus genes (expected for small sample sizes)
     set.seed(123)
-    result <- esr_trainEndometrialSignature(
+    result <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         outer_folds = NULL,
         seed = 123
-    )
+    ))
 
     predictions <- result$metrics$predictions
 
@@ -248,14 +254,15 @@ test_that("training works with gse201926_trainmini", {
 
     # Train signature
     expect_no_error({
+        # Suppress warnings about no consensus genes (expected for small sample sizes)
         set.seed(123)
-        result <- esr_trainEndometrialSignature(
+        result <- suppressWarnings(esr_trainEndometrialSignature(
             X = gse201926_trainmini$counts,
             pheno = gse201926_trainmini$pheno,
             top_k = 50,
             outer_folds = NULL,
             seed = 123
-        )
+        ))
     })
 
     # Verify signature exists (may be empty for very small datasets with strict consensus)
@@ -280,14 +287,15 @@ test_that("training works with folds_demo", {
 
     # Train signature using folds_demo
     expect_no_error({
+        # Suppress warnings about no consensus genes (expected for small sample sizes)
         set.seed(123)
-        result <- esr_trainEndometrialSignature(
+        result <- suppressWarnings(esr_trainEndometrialSignature(
             X = gse201926_trainmini$counts,
             pheno = gse201926_trainmini$pheno,
             top_k = 50,
             outer_folds = NULL, # Use folds_demo
             seed = 123
-        )
+        ))
     })
 
     # Verify training uses provided splits
@@ -307,8 +315,9 @@ test_that("coefficient aggregation produces consensus genes", {
     library(rsample)
     data(gse201926_trainmini)
 
+    # Suppress warnings about no consensus genes (expected for small sample sizes)
     set.seed(123)
-    result <- esr_trainEndometrialSignature(
+    result <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
@@ -316,7 +325,7 @@ test_that("coefficient aggregation produces consensus genes", {
         aggregation_method = "mean",
         outer_folds = NULL,
         seed = 123
-    )
+    ))
 
     # Verify all panel genes have selection_frequency >= 1 (may be 1 if no consensus found)
     # Note: If no consensus genes found, fallback uses genes from single fold (frequency = 1)
@@ -354,26 +363,27 @@ test_that("aggregation method works with mean and median", {
     data(gse201926_trainmini)
 
     # Train with mean aggregation
+    # Suppress warnings about no consensus genes (expected for small sample sizes)
     set.seed(123)
-    result_mean <- esr_trainEndometrialSignature(
+    result_mean <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         aggregation_method = "mean",
         outer_folds = NULL,
         seed = 123
-    )
+    ))
 
     # Train with median aggregation
     set.seed(123)
-    result_median <- esr_trainEndometrialSignature(
+    result_median <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         aggregation_method = "median",
         outer_folds = NULL,
         seed = 123
-    )
+    ))
 
     # Both should produce valid signatures (may be empty for very small datasets)
     expect_true(is.character(result_mean$signature$panel))
@@ -396,39 +406,42 @@ test_that("training handles edge cases", {
 
     # Test with very small top_k
     expect_no_error({
+        # Suppress warnings about no consensus genes (expected for small sample sizes)
         set.seed(123)
-        result <- esr_trainEndometrialSignature(
+        result <- suppressWarnings(esr_trainEndometrialSignature(
             X = gse201926_trainmini$counts,
             pheno = gse201926_trainmini$pheno,
             top_k = 10,
             outer_folds = NULL,
             seed = 123
-        )
+        ))
     })
 
     # Test with larger top_k
     expect_no_error({
+        # Suppress warnings about no consensus genes (expected for small sample sizes)
         set.seed(123)
-        result <- esr_trainEndometrialSignature(
+        result <- suppressWarnings(esr_trainEndometrialSignature(
             X = gse201926_trainmini$counts,
             pheno = gse201926_trainmini$pheno,
             top_k = 100,
             outer_folds = NULL,
             seed = 123
-        )
+        ))
     })
 
     # Test with custom min_folds
     expect_no_error({
+        # Suppress warnings about no consensus genes (expected for small sample sizes)
         set.seed(123)
-        result <- esr_trainEndometrialSignature(
+        result <- suppressWarnings(esr_trainEndometrialSignature(
             X = gse201926_trainmini$counts,
             pheno = gse201926_trainmini$pheno,
             top_k = 50,
             min_folds = 3, # Require all folds
             outer_folds = NULL,
             seed = 123
-        )
+        ))
     })
 })
 
@@ -441,14 +454,15 @@ test_that("training returns all required components", {
     library(rsample)
     data(gse201926_trainmini)
 
+    # Suppress warnings about no consensus genes (expected for small sample sizes)
     set.seed(123)
-    result <- esr_trainEndometrialSignature(
+    result <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         outer_folds = NULL,
         seed = 123
-    )
+    ))
 
     # Verify all required components are present
     expect_true("signature" %in% names(result))
@@ -489,26 +503,27 @@ test_that("calibration improves Brier Score", {
     data(gse201926_trainmini)
 
     # Train without calibration
+    # Suppress warnings about no consensus genes (expected for small sample sizes)
     set.seed(123)
-    result_no_cal <- esr_trainEndometrialSignature(
+    result_no_cal <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         outer_folds = NULL,
         calibration_method = "none",
         seed = 123
-    )
+    ))
 
     # Train with Platt calibration
     set.seed(123)
-    result_platt <- esr_trainEndometrialSignature(
+    result_platt <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         outer_folds = NULL,
         calibration_method = "platt",
         seed = 123
-    )
+    ))
 
     # Verify calibration metrics exist
     expect_true("brier_score" %in% names(result_platt$metrics))
@@ -535,15 +550,16 @@ test_that("calibration metrics are valid", {
     library(rsample)
     data(gse201926_trainmini)
 
+    # Suppress warnings about no consensus genes (expected for small sample sizes)
     set.seed(123)
-    result <- esr_trainEndometrialSignature(
+    result <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         outer_folds = NULL,
         calibration_method = "platt",
         seed = 123
-    )
+    ))
 
     # Verify Brier Score is in [0, 1] or NA
     if (!is.na(result$metrics$brier_score)) {
@@ -568,8 +584,9 @@ test_that("stability frequencies are valid", {
 
     # For small n (n=12), stability selection is disabled by default
     # Test with explicit TRUE and fewer resamples
+    # Suppress warnings about no consensus genes (expected for small sample sizes)
     set.seed(123)
-    result <- esr_trainEndometrialSignature(
+    result <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
@@ -577,7 +594,7 @@ test_that("stability frequencies are valid", {
         stability_selection = TRUE,
         stability_resamples = 20, # Fewer resamples for test speed
         seed = 123
-    )
+    ))
 
     # Verify stability components exist
     expect_true("stability" %in% names(result))
@@ -600,15 +617,16 @@ test_that("calibration works with isotonic regression", {
     library(rsample)
     data(gse201926_trainmini)
 
+    # Suppress warnings about no consensus genes and CV fold errors (expected for small sample sizes)
     set.seed(123)
-    result <- esr_trainEndometrialSignature(
+    result <- suppressWarnings(esr_trainEndometrialSignature(
         X = gse201926_trainmini$counts,
         pheno = gse201926_trainmini$pheno,
         top_k = 50,
         outer_folds = NULL,
         calibration_method = "isotonic",
         seed = 123
-    )
+    ))
 
     # Verify isotonic calibration was applied
     expect_true("calibration" %in% names(result))
