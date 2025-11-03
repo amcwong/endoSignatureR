@@ -51,10 +51,11 @@ data(gse201926_trainmini)
 mat_t <- esr_transform_log1p_cpm(gse201926_trainmini$counts)
 set.seed(123)
 splits <- vfold_cv(gse201926_trainmini$pheno, v = 3)
-selected <- esr_selectDEInFold(splits$splits[[1]], 
-                               mat_t,
-                               gse201926_trainmini$pheno,
-                               n = 50)
+selected <- esr_selectDEInFold(splits$splits[[1]],
+  mat_t,
+  gse201926_trainmini$pheno,
+  n = 50
+)
 length(selected)
 }
 }

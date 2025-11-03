@@ -53,9 +53,11 @@ library(rsample)
 data(gse201926_trainmini)
 set.seed(123)
 splits <- vfold_cv(gse201926_trainmini$pheno, v = 3)
-result <- esr_transformInFold(splits$splits[[1]], 
-                              gse201926_trainmini$counts,
-                              gse201926_trainmini$pheno)
+result <- esr_transformInFold(
+  splits$splits[[1]],
+  gse201926_trainmini$counts,
+  gse201926_trainmini$pheno
+)
 dim(result$mat_t_train)
 dim(result$mat_t_test)
 }

@@ -2,20 +2,125 @@
 % Please edit documentation in R/train.R
 \name{esr_trainEndometrialSignature}
 \alias{esr_trainEndometrialSignature}
-\title{Train Endometrial Signature (Placeholder)}
+\title{Train Endometrial Signature with Nested Cross-Validation}
 \usage{
-esr_trainEndometrialSignature(X, pheno, ...)
+esr_trainEndometrialSignature(
+  X,
+  pheno,
+  transform = "log1p-cpm",
+  cpm_min = 1,
+  cpm_min_samples = 4,
+  top_k = 300,
+  outer = c("kfold", "lpo"),
+  outer_folds = NULL,
+  inner_folds = 5,
+  inner_repeats = 10,
+  lambda_rule = c("1se", "min"),
+  min_folds = 2,
+  aggregation_method = c("mean", "median"),
+  seed = 123,
+  ...
+)
 }
 \arguments{
-\item{X}{Matrix/data.frame of counts (genes x samples).}
+\item{X}{Matrix/data.frame of raw counts (genes x samples). Must have column names (sample IDs).}
 
-\item{pheno}{Data.frame with labels.}
+\item{pheno}{Data.frame with sample metadata; must include \code{sample_id} and \code{group} columns.}
 
-\item{...}{Additional arguments (ignored in placeholder).}
+\item{transform}{Character scalar; transformation method. Defaults to "log1p-cpm".}
+
+\item{cpm_min}{Numeric; minimum CPM threshold for gene filtering. Defaults to 1.}
+
+\item{cpm_min_samples}{Integer; minimum number of samples that must meet CPM threshold. Defaults to 4.}
+
+\item{top_k}{Integer; number of top genes to select via DE analysis. Defaults to 300.}
+
+\item{outer}{Character scalar; outer CV type. "kfold" for K-fold CV or "lpo" for Leave-Pair-Out. Defaults to "kfold".}
+
+\item{outer_folds}{Integer; number of outer CV folds (if outer = "kfold"). If NULL, uses folds_demo structure. Defaults to NULL.}
+
+\item{inner_folds}{Integer; number of inner CV folds for λ tuning. Defaults to 5.}
+
+\item{inner_repeats}{Integer; number of inner CV repeats. Defaults to 10.}
+
+\item{lambda_rule}{Character scalar; λ selection rule. "1se" (1 standard error rule, sparser) or "min" (minimum CV error). Defaults to "1se".}
+
+\item{min_folds}{Integer; minimum number of outer folds that must select a gene for consensus. Defaults to 2.}
+
+\item{aggregation_method}{Character scalar; method for aggregating coefficients. "mean" or "median". Defaults to "mean".}
+
+\item{seed}{Integer; random seed for reproducibility. Defaults to 123.}
+
+\item{...}{Additional arguments (currently unused; future: alpha for elastic net).}
 }
 \value{
-A list containing a placeholder signature and metrics.
+A list with elements:
+\describe{
+\item{signature}{List containing:
+\describe{
+\item{panel}{Character vector of consensus gene IDs with non-zero aggregated coefficients}
+\item{coefficients}{Named numeric vector of aggregated coefficients for panel genes}
+\item{intercept}{Numeric scalar; aggregated logistic regression intercept}
+\item{selection_frequency}{Named integer vector; number of folds that selected each gene}
+\item{fold_coefficients}{List of per-fold coefficients (one element per outer fold)}
+\item{recipe}{List of preprocessing parameters (aggregated across folds)}
+}
+}
+\item{metrics}{List containing:
+\describe{
+\item{auc}{Numeric scalar; AUC from outer CV predictions (aggregated)}
+\item{accuracy}{Numeric scalar; classification accuracy from outer CV (threshold 0.5)}
+\item{predictions}{Data.frame with columns: sample_id, fold, prob, label, pred}
+}
+}
+\item{splits}{List containing outer/inner splits used (or reference to folds_demo)}
+\item{seeds}{List of seeds used for reproducibility}
+\item{cv_results}{List of inner CV results (λ tuning per outer fold)}
+\item{aggregation}{List containing aggregation metadata (method, min_folds, consensus_genes)}
+}
 }
 \description{
-Trains a PS vs PIS signature using a defined pipeline.
+Trains a PS vs PIS signature using nested cross-validation with glmnet (LASSO/Elastic Net).
+Uses in-fold preprocessing and coefficient aggregation (Option 2) for stability with small n.
+}
+\details{
+This function implements nested cross-validation with:
+\itemize{
+\item \strong{Outer CV}: Model evaluation on held-out test sets
+\item \strong{Inner CV}: Hyperparameter tuning (λ selection) within each outer fold
+\item \strong{In-fold preprocessing}: Transforms/filters and gene selection within folds only (anti-leakage)
+\item \strong{Coefficient aggregation}: Option 2 - aggregates coefficients across outer folds for stability
+}
+
+For small n (n=12) and weak signals, coefficient aggregation (Option 2) provides:
+\itemize{
+\item Lower variance by averaging out fold-specific noise
+\item Higher stability by requiring consensus across folds
+\item Better generalization compared to single-fold signatures
+}
+}
+\examples{
+\dontrun{
+library(rsample)
+data(gse201926_trainmini)
+data(folds_demo)
+
+# Train signature with default parameters
+result <- esr_trainEndometrialSignature(
+  X = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno,
+  top_k = 100,
+  outer_folds = NULL, # Use folds_demo
+  seed = 123
+)
+
+# Extract signature
+signature <- result$signature
+length(signature$panel)
+head(signature$coefficients)
+
+# Check performance
+result$metrics$auc
+result$metrics$accuracy
+}
 }
