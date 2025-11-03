@@ -18,6 +18,9 @@ esr_trainEndometrialSignature(
   lambda_rule = c("1se", "min"),
   min_folds = 2,
   aggregation_method = c("mean", "median"),
+  calibration_method = c("platt", "isotonic", "none"),
+  stability_selection = NULL,
+  stability_resamples = 100,
   seed = 123,
   ...
 )
@@ -49,6 +52,12 @@ esr_trainEndometrialSignature(
 
 \item{aggregation_method}{Character scalar; method for aggregating coefficients. "mean" or "median". Defaults to "mean".}
 
+\item{calibration_method}{Character scalar; probability calibration method. "platt" (Platt scaling, default), "isotonic" (isotonic regression), or "none" (no calibration). Defaults to "platt".}
+
+\item{stability_selection}{Logical; whether to perform bootstrap resampling for stability selection. Defaults to TRUE (with fewer resamples for small n to manage computational cost).}
+
+\item{stability_resamples}{Integer; number of bootstrap resamples for stability selection. Defaults to 100 (automatically reduced to 30 for n<20, 50 for n<50 to manage computational cost).}
+
 \item{seed}{Integer; random seed for reproducibility. Defaults to 123.}
 
 \item{...}{Additional arguments (currently unused; future: alpha for elastic net).}
@@ -70,7 +79,23 @@ A list with elements:
 \describe{
 \item{auc}{Numeric scalar; AUC from outer CV predictions (aggregated)}
 \item{accuracy}{Numeric scalar; classification accuracy from outer CV (threshold 0.5)}
-\item{predictions}{Data.frame with columns: sample_id, fold, prob, label, pred}
+\item{brier_score}{Numeric scalar; Brier score for probability calibration (lower is better)}
+\item{ece}{Numeric scalar; Expected Calibration Error (lower is better)}
+\item{predictions}{Data.frame with columns: sample_id, fold, prob, label, pred, prob_calibrated}
+}
+}
+\item{calibration}{List containing:
+\describe{
+\item{method}{Character scalar; calibration method used ("platt", "isotonic", or "none")}
+\item{parameters}{List of calibration parameters per fold}
+\item{metrics}{List with brier_score and ece}
+}
+}
+\item{stability}{List containing:
+\describe{
+\item{selection_frequency}{Named integer vector; selection frequency across outer folds (already in signature)}
+\item{bootstrap_frequency}{Named numeric vector; bootstrap resampling frequencies (if computed)}
+\item{stable_genes}{Character vector; genes above stability threshold}
 }
 }
 \item{splits}{List containing outer/inner splits used (or reference to folds_demo)}
