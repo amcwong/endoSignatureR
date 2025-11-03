@@ -624,11 +624,131 @@ result_combined$calibration$method
 length(result_combined$stability$stable_genes)
 ```
 
+## Phase 2.4: Performance and Comparison Visualizations
+
+Phase 2.4 adds visualization functions to help users understand and evaluate signature performance. The package provides ROC curves, Precision-Recall curves, calibration curves, and comparison plots.
+
+### Performance Visualization Functions
+
+Three functions visualize signature performance:
+
+- **`plotEndometrialROC()`**: Receiver Operating Characteristic (ROC) curve showing TPR vs FPR
+- **`plotEndometrialPR()`**: Precision-Recall (PR) curve showing precision vs recall (useful for imbalanced datasets)
+- **`plotEndometrialCalibration()`**: Calibration curve showing how well predicted probabilities match observed frequencies
+
+### ROC Curves
+
+ROC curves visualize the trade-off between true positive rate (TPR) and false positive rate (FPR) across different probability thresholds. AUC (Area Under Curve) represents classification performance (AUC = 1.0 = perfect, AUC = 0.5 = random).
+
+```{r phase2.4-roc, eval = TRUE}
+# Use training result from Phase 2.3
+result <- result_combined
+
+# Plot ROC curve with raw probabilities
+p_roc_raw <- plotEndometrialROC(result$metrics$predictions, use_calibrated = FALSE)
+print(p_roc_raw)
+
+# Plot ROC curve with calibrated probabilities
+p_roc_cal <- plotEndometrialROC(result$metrics$predictions, use_calibrated = TRUE)
+print(p_roc_cal)
+```
+
+ROC curves show how well the signature discriminates between PS and PIS samples. Higher AUC indicates better discrimination. Calibrated probabilities may have different AUC than raw probabilities, depending on calibration quality.
+
+### Precision-Recall Curves
+
+PR curves are especially useful for imbalanced datasets. They show precision vs recall at different probability thresholds. PR-AUC represents average precision across all recall values. The baseline (random classifier) equals the prevalence of the positive class.
+
+```{r phase2.4-pr, eval = TRUE}
+# Plot PR curve with raw probabilities
+p_pr_raw <- plotEndometrialPR(result$metrics$predictions, use_calibrated = FALSE)
+print(p_pr_raw)
+
+# Plot PR curve with calibrated probabilities
+p_pr_cal <- plotEndometrialPR(result$metrics$predictions, use_calibrated = TRUE)
+print(p_pr_cal)
+```
+
+PR curves focus on precision (how many of predicted positives are actually positive) and recall (how many actual positives are captured). Higher PR-AUC indicates better performance, especially when the positive class is rare.
+
+### Calibration Curves
+
+Calibration curves assess probability calibration quality. A well-calibrated model has predicted probabilities that match observed frequencies (points close to the diagonal y = x). Brier Score and ECE measure calibration quality (lower is better).
+
+```{r phase2.4-calibration, eval = TRUE}
+# Plot calibration curve with raw probabilities
+p_cal_raw <- plotEndometrialCalibration(result$metrics$predictions, use_calibrated = FALSE)
+print(p_cal_raw)
+
+# Plot calibration curve with calibrated probabilities
+p_cal_cal <- plotEndometrialCalibration(result$metrics$predictions, use_calibrated = TRUE)
+print(p_cal_cal)
+```
+
+Calibration curves show whether probabilities can be interpreted as actual risk estimates. If points are above the diagonal, the model overestimates probabilities; if below, it underestimates. Well-calibrated probabilities are essential for clinical decision-making.
+
+### Comparison Visualization
+
+The `plotEndometrialComparison()` function creates side-by-side comparison plots to compare pre-trained vs new signature performance. It generates ROC, PR, and calibration curves, plus a metrics comparison table.
+
+```{r phase2.4-comparison, eval = TRUE}
+# Generate comparison plots (new signature only for now)
+comparison_plots <- plotEndometrialComparison(
+  pretrained_result = NULL,  # Will compare with pre-trained in Phase 3
+  new_result = result,
+  metrics_to_plot = c("roc", "pr", "calibration"),
+  show_metrics_table = TRUE
+)
+
+# Display ROC comparison
+print(comparison_plots$roc)
+
+# Display PR comparison
+print(comparison_plots$pr)
+
+# Display calibration comparison
+print(comparison_plots$calibration)
+
+# Display metrics table
+comparison_plots$metrics_table
+```
+
+Comparison plots help researchers benchmark their new signatures against the pre-trained signature (when available in Phase 3). The metrics table compares AUC, accuracy, Brier Score, and ECE between signatures.
+
+### Interpreting Performance Plots
+
+**ROC Curves**:
+
+- **AUC > 0.9**: Excellent discrimination
+- **AUC 0.7-0.9**: Good discrimination
+- **AUC 0.5-0.7**: Poor discrimination
+- **AUC = 0.5**: Random (no discrimination)
+
+**PR Curves**:
+
+- **PR-AUC > baseline**: Better than random
+- **PR-AUC close to baseline**: Poor performance on imbalanced data
+- Higher PR-AUC indicates better precision-recall trade-off
+
+**Calibration Curves**:
+
+- **Points on diagonal**: Perfect calibration
+- **Points above diagonal**: Model overestimates probabilities
+- **Points below diagonal**: Model underestimates probabilities
+- **Lower Brier Score/ECE**: Better calibration
+
+### Performance Visualization Best Practices
+
+1. **Always plot both raw and calibrated probabilities** to assess calibration impact
+2. **Use ROC for balanced datasets** and **PR for imbalanced datasets**
+3. **Check calibration curves** to ensure probabilities can be interpreted as risk estimates
+4. **Compare signatures** using comparison plots when available
+5. **Interpret metrics in context**: AUC, accuracy, Brier Score, and ECE together provide comprehensive performance assessment
+
 ## Next Steps
 
-Phase 2.3 adds calibration and stability selection. Future phases will add:
+Phase 2.4 adds performance and comparison visualizations. Future phases will add:
 
-- **Phase 2.4**: Performance and comparison visualizations
 - **Phase 2.5**: Signature exports and model cards
 
 ## Summary

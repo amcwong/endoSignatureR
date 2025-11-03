@@ -54,9 +54,9 @@ esr_trainEndometrialSignature(
 
 \item{calibration_method}{Character scalar; probability calibration method. "platt" (Platt scaling, default), "isotonic" (isotonic regression), or "none" (no calibration). Defaults to "platt".}
 
-\item{stability_selection}{Logical; whether to perform bootstrap resampling for stability selection. Defaults to TRUE (with fewer resamples for small n to manage computational cost).}
+\item{stability_selection}{Logical; whether to perform bootstrap resampling for stability selection. Defaults to FALSE for small n (<20), TRUE for larger datasets.}
 
-\item{stability_resamples}{Integer; number of bootstrap resamples for stability selection. Defaults to 100 (automatically reduced to 30 for n<20, 50 for n<50 to manage computational cost).}
+\item{stability_resamples}{Integer; number of bootstrap resamples for stability selection. Defaults to 100 (or fewer for small n).}
 
 \item{seed}{Integer; random seed for reproducibility. Defaults to 123.}
 
