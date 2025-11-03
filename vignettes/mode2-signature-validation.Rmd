@@ -745,15 +745,176 @@ Comparison plots help researchers benchmark their new signatures against the pre
 4. **Compare signatures** using comparison plots when available
 5. **Interpret metrics in context**: AUC, accuracy, Brier Score, and ECE together provide comprehensive performance assessment
 
+## Phase 2.5: Exports and Model Card
+
+Phase 2.5 adds export functionality to enable reproducible signature sharing and model transparency. The package provides three export formats: CSV (signature panel and coefficients), JSON (preprocessing recipe and training parameters), and Markdown (model card with provenance and performance).
+
+### Export Functions
+
+The `esr_exportSignature()` function exports trained signatures as reproducible artifacts:
+
+- **endometrial_signature.csv**: Gene panel with coefficients, selection frequencies, and optional bootstrap frequencies
+- **endometrial_recipe.json**: Preprocessing recipe, training parameters, signature metadata, and reproducibility information
+- **endometrial_model_card.md**: Model documentation with provenance, performance metrics, limitations, and intended use
+
+### Exporting Signatures
+
+```{r phase2.5-export, eval = TRUE}
+# Use training result from Phase 2.3
+# Export to temp directory
+export_dir <- tempfile()
+dir.create(export_dir)
+
+# Export all formats (CSV, JSON, Markdown)
+paths <- esr_exportSignature(
+  signature = result_train$signature,
+  result = result_train,
+  dir = export_dir,
+  formats = c("csv", "json", "md")
+)
+
+# Display exported file paths
+paths
+```
+
+### Examining Exported Files
+
+```{r phase2.5-examine-csv, eval = TRUE}
+# Read CSV export
+signature_csv <- readr::read_csv(
+  file.path(export_dir, "endometrial_signature.csv"),
+  show_col_types = FALSE
+)
+
+# Display first few rows
+head(signature_csv, n = 10)
+```
+
+The CSV file contains:
+
+- `gene_id`: Gene identifier
+- `coefficient`: Aggregated coefficient value
+- `selection_frequency`: Number of outer folds that selected this gene
+- `bootstrap_frequency`: Bootstrap resampling frequency (if stability selection was performed)
+
+```{r phase2.5-examine-json, eval = TRUE}
+# Read JSON export
+recipe_json <- jsonlite::fromJSON(
+  file.path(export_dir, "endometrial_recipe.json")
+)
+
+# Display structure
+str(recipe_json, max.level = 2)
+```
+
+The JSON file contains:
+
+- `preprocessing`: Transformation method, CPM thresholds, top-K selection
+- `training`: CV settings, lambda rule, aggregation method, calibration method
+- `signature`: Number of genes, intercept, gene namespace
+- `reproducibility`: Seed, package version, R version
+
+```{r phase2.5-examine-model-card, eval = TRUE}
+# Read model card
+model_card <- readLines(file.path(export_dir, "endometrial_model_card.md"))
+
+# Display first 30 lines
+head(model_card, n = 30)
+```
+
+The model card includes:
+
+- **Model Details**: Name, version, date, package and R versions
+- **Model Purpose**: Description of signature classification task
+- **Training Data**: Sample size, gene count, class balance
+- **Model Architecture**: Algorithm, preprocessing, CV structure, aggregation method
+- **Performance Metrics**: AUC, accuracy, Brier Score, ECE, signature size
+- **Calibration**: Calibration method and parameters
+- **Stability Selection**: Bootstrap resamples, threshold, stable genes (if computed)
+- **Limitations**: Tissue specificity, small n uncertainty, binary only, batch effects
+- **Intended Use**: Use case, target audience, not intended for
+- **Training Parameters**: Complete training configuration
+- **Reproducibility**: Seeds, CV folds, package versions
+- **References**: Citations for methods
+
+### Export Options
+
+```{r phase2.5-export-options, eval = TRUE}
+# Export only CSV
+esr_exportSignature(
+  signature = result_train$signature,
+  result = result_train,
+  dir = tempfile(),
+  formats = "csv"
+)
+
+# Export only JSON
+esr_exportSignature(
+  signature = result_train$signature,
+  result = result_train,
+  dir = tempfile(),
+  formats = "json"
+)
+
+# Export without intercept in CSV
+esr_exportSignature(
+  signature = result_train$signature,
+  result = result_train,
+  dir = tempfile(),
+  formats = "csv",
+  include_intercept = FALSE
+)
+```
+
+### Model Card Interpretation
+
+**Purpose**: The model card documents signature provenance, performance, and limitations to enable informed use.
+
+**Key Sections**:
+
+1. **Performance Metrics**: Assess signature quality (AUC, accuracy, calibration)
+2. **Limitations**: Understand tissue specificity, small n uncertainty, and constraints
+3. **Intended Use**: Determine appropriate use cases and target audience
+4. **Training Parameters**: Reproduce training configuration
+5. **Reproducibility**: Track seeds, folds, and package versions for reproducibility
+
+**Best Practices**:
+
+1. **Always include model card** when sharing signatures to ensure transparency
+2. **Review limitations** before applying signature to new datasets
+3. **Check intended use** to ensure signature matches use case
+4. **Verify reproducibility** using seeds and package versions
+5. **Document changes** if signature is modified or retrained
+
+### Using Exported Artifacts
+
+Exported artifacts enable:
+
+1. **Reproducibility**: Reconstruct signature and preprocessing recipe from exported files
+2. **Sharing**: Share signatures with collaborators without requiring full training results
+3. **Version Control**: Track signature versions via exported files in Git or artifact repositories
+4. **Portability**: Apply signatures to new data using exported coefficients and recipe
+5. **Validation**: Independent validation using exported artifacts
+
+### Export Best Practices
+
+1. **Always export with full result** (include `result` parameter) to ensure complete metadata
+2. **Include all formats** (CSV, JSON, Markdown) for maximum portability
+3. **Store exports with version information** (e.g., timestamps, Git tags)
+4. **Document export context** (e.g., training dataset, date, purpose)
+5. **Verify exported files** can be read back correctly before sharing
+
 ## Next Steps
 
-Phase 2.4 adds performance and comparison visualizations. Future phases will add:
+Phase 2.5 completes Phase 2 (Mode 2 Pipeline). Future phases will add:
 
-- **Phase 2.5**: Signature exports and model cards
+- **Phase 3**: Pre-trained signature loading and scoring (Mode 1)
+- **Phase 4**: Plots and reporting enhancements
+- **Phase 5**: Shiny app integration
 
 ## Summary
 
-Mode 2 (Signature Validation) provides a comprehensive pipeline for training and validating gene signatures. Phases 2.1-2.3 establish:
+Mode 2 (Signature Validation) provides a comprehensive pipeline for training and validating gene signatures. Phases 2.1-2.5 establish:
 
 1. **Data Preparation**: `gse201926_trainmini` provides balanced training data for fast nested CV
 2. **CV Splits**: Stratified splits with fixed seeds for reproducibility (`folds_demo`)
@@ -763,6 +924,10 @@ Mode 2 (Signature Validation) provides a comprehensive pipeline for training and
 6. **Probability Calibration**: Platt/Isotonic scaling for reliable predictions
 7. **Stability Selection**: Bootstrap resampling for robust feature selection
 8. **Performance Metrics**: AUC, accuracy, Brier Score, ECE, and predictions from outer CV
-9. **Determinism**: Fixed seeds ensure reproducible results
+9. **Performance Visualization**: ROC, PR, and calibration curves for performance assessment
+10. **Comparison Visualization**: Side-by-side comparison of pre-trained vs new signatures (when available)
+11. **Signature Export**: CSV, JSON, and Markdown exports for reproducible sharing
+12. **Model Cards**: Transparent documentation of signature provenance, performance, and limitations
+13. **Determinism**: Fixed seeds ensure reproducible results
 
-Phases 2.1-2.3 establish core training, calibration, and stability functionality that enables future phases to add visualization and export features while maintaining best practices for small-sample ML.
+Phases 2.1-2.5 establish core training, calibration, stability, visualization, and export functionality that maintains best practices for small-sample ML while enabling reproducible signature sharing and model transparency.
