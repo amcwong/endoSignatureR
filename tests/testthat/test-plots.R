@@ -568,3 +568,212 @@ test_that("performance plots handle edge cases gracefully", {
     expect_s3_class(p_cal, "ggplot")
   })
 })
+
+# Phase 3.4: Signature Visualization Tests
+
+test_that("plotEndometrialCoefLollipop works with signature list", {
+  # Create mock signature
+  signature <- list(
+    panel = c("gene1", "gene2", "gene3"),
+    coefficients = c(gene1 = 0.5, gene2 = -0.3, gene3 = 0.8)
+  )
+
+  # Test basic plot
+  expect_no_error({
+    p <- plotEndometrialCoefLollipop(signature)
+    expect_s3_class(p, "ggplot")
+  })
+
+  # Test with top_n
+  expect_no_error({
+    p <- plotEndometrialCoefLollipop(signature, top_n = 2)
+    expect_s3_class(p, "ggplot")
+  })
+
+  # Test with ordering
+  expect_no_error({
+    p1 <- plotEndometrialCoefLollipop(signature, order_by = "magnitude")
+    p2 <- plotEndometrialCoefLollipop(signature, order_by = "value")
+    p3 <- plotEndometrialCoefLollipop(signature, order_by = "gene")
+    expect_s3_class(p1, "ggplot")
+    expect_s3_class(p2, "ggplot")
+    expect_s3_class(p3, "ggplot")
+  })
+
+  # Test with color_by
+  expect_no_error({
+    p1 <- plotEndometrialCoefLollipop(signature, color_by = "sign")
+    p2 <- plotEndometrialCoefLollipop(signature, color_by = "none")
+    expect_s3_class(p1, "ggplot")
+    expect_s3_class(p2, "ggplot")
+  })
+})
+
+test_that("plotEndometrialCoefLollipop works with signature data.frame", {
+  # Create mock signature data.frame
+  signature_df <- data.frame(
+    gene_id = c("gene1", "gene2", "gene3"),
+    coefficient = c(0.5, -0.3, 0.8),
+    stringsAsFactors = FALSE
+  )
+
+  # Test basic plot
+  expect_no_error({
+    p <- plotEndometrialCoefLollipop(signature_df)
+    expect_s3_class(p, "ggplot")
+  })
+})
+
+test_that("plotEndometrialCoefLollipop handles errors correctly", {
+  # Test invalid signature
+  expect_error(plotEndometrialCoefLollipop(NULL), "must be a list")
+  expect_error(plotEndometrialCoefLollipop(list()), "must contain 'panel'")
+
+  # Test invalid top_n
+  signature <- list(
+    panel = c("gene1", "gene2"),
+    coefficients = c(gene1 = 0.5, gene2 = -0.3)
+  )
+  expect_error(plotEndometrialCoefLollipop(signature, top_n = -1), "must be a positive integer")
+  expect_error(plotEndometrialCoefLollipop(signature, top_n = "invalid"), "must be a positive integer")
+})
+
+test_that("plotEndometrialCoefLollipop works with pre-trained signature", {
+  # Skip if signature not available
+  skip_if_not_installed("endoSignatureR")
+  
+  # Try to load pre-trained signature
+  signature <- tryCatch({
+    esr_loadPretrainedSignature()
+  }, error = function(e) {
+    skip("Pre-trained signature not available")
+  })
+
+  # Test basic plot
+  expect_no_error({
+    p <- plotEndometrialCoefLollipop(signature, top_n = 10)
+    expect_s3_class(p, "ggplot")
+  })
+
+  # Test with annotations if available
+  if (exists("gse201926_annot_min", where = asNamespace("endoSignatureR"), inherits = FALSE)) {
+    annot <- get("gse201926_annot_min", envir = asNamespace("endoSignatureR"))
+    expect_no_error({
+      p <- plotEndometrialCoefLollipop(signature, annot = annot, top_n = 10)
+      expect_s3_class(p, "ggplot")
+    })
+  }
+})
+
+test_that("plotEndometrialStabilityBars works with signature list", {
+  # Create mock signature with stability info
+  signature <- list(
+    panel = c("gene1", "gene2", "gene3"),
+    stability = list(
+      bootstrap_frequency = c(gene1 = 0.9, gene2 = 0.7, gene3 = 0.8)
+    )
+  )
+
+  # Test basic plot
+  expect_no_error({
+    p <- plotEndometrialStabilityBars(signature)
+    expect_s3_class(p, "ggplot")
+  })
+
+  # Test with top_n
+  expect_no_error({
+    p <- plotEndometrialStabilityBars(signature, top_n = 2)
+    expect_s3_class(p, "ggplot")
+  })
+
+  # Test with threshold
+  expect_no_error({
+    p <- plotEndometrialStabilityBars(signature, threshold = 0.75)
+    expect_s3_class(p, "ggplot")
+  })
+
+  # Test with selection frequency
+  signature2 <- list(
+    panel = c("gene1", "gene2", "gene3"),
+    selection_frequency = c(gene1 = 3L, gene2 = 2L, gene3 = 1L)
+  )
+  expect_no_error({
+    p <- plotEndometrialStabilityBars(signature2, frequency_type = "selection")
+    expect_s3_class(p, "ggplot")
+  })
+})
+
+test_that("plotEndometrialStabilityBars handles errors correctly", {
+  # Test invalid signature
+  expect_error(plotEndometrialStabilityBars(NULL), "must be a list")
+  expect_error(plotEndometrialStabilityBars(list()), "must contain 'panel'")
+
+  # Test missing stability
+  signature <- list(panel = c("gene1", "gene2"))
+  expect_error(plotEndometrialStabilityBars(signature), "must contain stability information")
+
+  # Test invalid threshold
+  signature <- list(
+    panel = c("gene1", "gene2"),
+    stability = list(bootstrap_frequency = c(gene1 = 0.9, gene2 = 0.7))
+  )
+  expect_error(plotEndometrialStabilityBars(signature, threshold = -1), "must be a numeric value between 0 and 1")
+  expect_error(plotEndometrialStabilityBars(signature, threshold = 2), "must be a numeric value between 0 and 1")
+
+  # Test invalid top_n
+  expect_error(plotEndometrialStabilityBars(signature, top_n = -1), "must be a positive integer")
+})
+
+test_that("plotEndometrialStabilityBars handles missing frequencies gracefully", {
+  # Test with bootstrap frequency requested but not available
+  signature <- list(
+    panel = c("gene1", "gene2"),
+    selection_frequency = c(gene1 = 3L, gene2 = 2L)
+  )
+  expect_error(plotEndometrialStabilityBars(signature, frequency_type = "bootstrap"), "bootstrap_frequency not available")
+
+  # Test with selection frequency requested but not available
+  signature2 <- list(
+    panel = c("gene1", "gene2"),
+    stability = list(bootstrap_frequency = c(gene1 = 0.9, gene2 = 0.7))
+  )
+  expect_error(plotEndometrialStabilityBars(signature2, frequency_type = "selection"), "selection_frequency not available")
+})
+
+test_that("plotEndometrialStabilityBars works with pre-trained signature", {
+  # Skip if signature not available
+  skip_if_not_installed("endoSignatureR")
+  
+  # Try to load pre-trained signature
+  signature <- tryCatch({
+    esr_loadPretrainedSignature()
+  }, error = function(e) {
+    skip("Pre-trained signature not available")
+  })
+
+  # Skip if stability info not available
+  if (is.null(signature$stability) && is.null(signature$selection_frequency)) {
+    skip("Stability information not available in pre-trained signature")
+  }
+
+  # Test basic plot
+  expect_no_error({
+    if (!is.null(signature$stability)) {
+      p <- plotEndometrialStabilityBars(signature, frequency_type = "bootstrap", top_n = 10)
+    } else {
+      p <- plotEndometrialStabilityBars(signature, frequency_type = "selection", top_n = 10)
+    }
+    expect_s3_class(p, "ggplot")
+  })
+
+  # Test with threshold if frequencies are high enough
+  if (!is.null(signature$stability)) {
+    freq <- signature$stability$bootstrap_frequency
+    if (!is.null(freq) && max(freq, na.rm = TRUE) > 0.5) {
+      expect_no_error({
+        p <- plotEndometrialStabilityBars(signature, frequency_type = "bootstrap", threshold = 0.5, top_n = 10)
+        expect_s3_class(p, "ggplot")
+      })
+    }
+  }
+})

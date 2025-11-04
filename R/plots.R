@@ -1640,4 +1640,541 @@ plotEndometrialComparison <- function(pretrained_result = NULL, new_result,
     }
 }
 
+#' Plot Endometrial Signature Coefficients
+#'
+#' Creates a lollipop or bar plot showing LASSO coefficients for each gene in the pre-trained signature.
+#' Coefficients represent the log-odds contribution of each gene to PS vs PIS classification.
+#'
+#' @param signature A list from `esr_loadPretrainedSignature()` or `esr_trainEndometrialSignature()` containing:
+#'   \describe{
+#'     \item{panel}{Character vector of gene IDs with non-zero coefficients}
+#'     \item{coefficients}{Named numeric vector of coefficients for panel genes}
+#'   }
+#'   Alternatively, a data.frame with columns `gene_id` and `coefficient`.
+#' @param annot Optional data.frame with gene annotations containing `gene_id` (or `GeneID`) and `Symbol` (or `symbol`) columns.
+#' @param top_n Integer; number of top genes to show (by absolute coefficient). If NULL, shows all genes. Defaults to NULL.
+#' @param order_by Character scalar; ordering method: "magnitude" (default, by absolute coefficient), "value" (by coefficient value), or "gene" (alphabetically by gene ID).
+#' @param show_labels Logical; whether to show gene labels on y-axis. Defaults to TRUE.
+#' @param color_by Character scalar; coloring method: "sign" (color by coefficient sign, red for positive, blue for negative) or "none" (single color). Defaults to "sign".
+#'
+#' @return A ggplot object showing coefficient lollipop/bar plot.
+#'
+#' @details
+#' This function visualizes LASSO coefficients from a pre-trained or trained signature. Positive coefficients
+#' favor PIS prediction when gene expression is higher; negative coefficients favor PS prediction.
+#' Larger absolute coefficients indicate stronger predictors.
+#'
+#' The plot can be ordered by coefficient magnitude (default), value, or gene name. Top genes can be
+#' filtered using `top_n`. Gene symbols can be added via the `annot` parameter.
+#'
+#' @examples
+#' \dontrun{
+#' # Load pre-trained signature
+#' signature <- esr_loadPretrainedSignature()
+#'
+#' # Create coefficient lollipop plot
+#' p_coef <- plotEndometrialCoefLollipop(
+#'   signature = signature,
+#'   top_n = 20,
+#'   order_by = "magnitude"
+#' )
+#' print(p_coef)
+#'
+#' # With gene annotations
+#' data(gse201926_annot_min)
+#' p_coef_annot <- plotEndometrialCoefLollipop(
+#'   signature = signature,
+#'   annot = gse201926_annot_min,
+#'   top_n = 20
+#' )
+#' print(p_coef_annot)
+#' }
+#'
+#' @export
+plotEndometrialCoefLollipop <- function(signature, annot = NULL, top_n = NULL,
+                                       order_by = c("magnitude", "value", "gene"),
+                                       show_labels = TRUE, color_by = c("sign", "none")) {
+    if (!requireNamespace("ggplot2", quietly = TRUE)) {
+        stop("ggplot2 package is required for plotting")
+    }
+
+    order_by <- match.arg(order_by)
+    color_by <- match.arg(color_by)
+
+    # Validate signature input
+    if (is.data.frame(signature)) {
+        # Handle data.frame input (from Mode 2 exports)
+        if (!"gene_id" %in% names(signature) || !"coefficient" %in% names(signature)) {
+            stop("signature data.frame must contain 'gene_id' and 'coefficient' columns")
+        }
+        coef_df <- data.frame(
+            gene_id = signature$gene_id,
+            coefficient = signature$coefficient,
+            stringsAsFactors = FALSE
+        )
+    } else if (is.list(signature)) {
+        # Handle list input (from esr_loadPretrainedSignature() or esr_trainEndometrialSignature())
+        if (!"panel" %in% names(signature) || !"coefficients" %in% names(signature)) {
+            stop("signature list must contain 'panel' and 'coefficients' elements")
+        }
+        panel <- signature$panel
+        coefficients <- signature$coefficients
+
+        # Ensure coefficients are named and match panel
+        if (is.null(names(coefficients))) {
+            if (length(coefficients) != length(panel)) {
+                stop("coefficients length must match panel length")
+            }
+            names(coefficients) <- panel
+        }
+
+        # Match panel to coefficients
+        coef_vec <- coefficients[panel]
+        if (any(is.na(coef_vec))) {
+            warning("Some panel genes not found in coefficients; removing NAs")
+            coef_vec <- coef_vec[!is.na(coef_vec)]
+            panel <- names(coef_vec)
+        }
+
+        coef_df <- data.frame(
+            gene_id = panel,
+            coefficient = as.numeric(coef_vec),
+            stringsAsFactors = FALSE
+        )
+    } else {
+        stop("signature must be a list (from esr_loadPretrainedSignature()) or data.frame with 'gene_id' and 'coefficient' columns")
+    }
+
+    # Add absolute coefficient for ordering
+    coef_df$abs_coefficient <- abs(coef_df$coefficient)
+    coef_df$sign <- ifelse(coef_df$coefficient >= 0, "Positive", "Negative")
+
+    # Add gene annotations if provided
+    if (!is.null(annot)) {
+        if (!is.data.frame(annot)) {
+            stop("annot must be a data.frame")
+        }
+
+        # Try to match gene_id column
+        gene_id_col <- NULL
+        if ("gene_id" %in% names(annot)) {
+            gene_id_col <- "gene_id"
+        } else if ("GeneID" %in% names(annot)) {
+            gene_id_col <- "GeneID"
+        } else {
+            warning("annot does not contain 'gene_id' or 'GeneID' column; skipping annotations")
+            annot <- NULL
+        }
+
+        if (!is.null(annot) && !is.null(gene_id_col)) {
+            # Try to match symbol column
+            symbol_col <- NULL
+            if ("Symbol" %in% names(annot)) {
+                symbol_col <- "Symbol"
+            } else if ("symbol" %in% names(annot)) {
+                symbol_col <- "symbol"
+            }
+
+            # Merge annotations
+            annot_subset <- annot[, c(gene_id_col, symbol_col), drop = FALSE]
+            names(annot_subset)[1] <- "gene_id"
+            if (!is.null(symbol_col)) {
+                names(annot_subset)[2] <- "symbol"
+            } else {
+                annot_subset$symbol <- annot_subset$gene_id
+            }
+
+            # Merge with coefficient data
+            coef_df <- merge(coef_df, annot_subset, by = "gene_id", all.x = TRUE)
+            # Use symbol if available, otherwise gene_id
+            coef_df$label <- ifelse(!is.na(coef_df$symbol), coef_df$symbol, coef_df$gene_id)
+        } else {
+            coef_df$label <- coef_df$gene_id
+        }
+    } else {
+        coef_df$label <- coef_df$gene_id
+    }
+
+    # Order genes
+    if (order_by == "magnitude") {
+        coef_df <- coef_df[order(-coef_df$abs_coefficient, coef_df$gene_id), ]
+    } else if (order_by == "value") {
+        coef_df <- coef_df[order(-coef_df$coefficient, coef_df$gene_id), ]
+    } else if (order_by == "gene") {
+        coef_df <- coef_df[order(coef_df$label), ]
+    }
+
+    # Apply top_n filter if specified
+    if (!is.null(top_n)) {
+        if (!is.numeric(top_n) || top_n <= 0 || length(top_n) != 1) {
+            stop("top_n must be a positive integer")
+        }
+        top_n <- as.integer(top_n)
+        n_available <- nrow(coef_df)
+        n_select <- min(top_n, n_available)
+        coef_df <- coef_df[1:n_select, ]
+    }
+
+    # Count genes
+    n_genes <- nrow(coef_df)
+    n_positive <- sum(coef_df$sign == "Positive")
+    n_negative <- sum(coef_df$sign == "Negative")
+
+    # Create factor for gene labels (preserve order)
+    coef_df$label_f <- factor(coef_df$label, levels = rev(coef_df$label))
+
+    # Set up color palette
+    if (color_by == "sign") {
+        colors_map <- c(
+            "Positive" = "#d62728", # red (color-blind friendly)
+            "Negative" = "#2ca02c" # green (color-blind friendly)
+        )
+    } else {
+        colors_map <- c(
+            "Positive" = "#1f77b4", # blue
+            "Negative" = "#1f77b4" # blue
+        )
+    }
+
+    # Create lollipop plot
+    p <- ggplot2::ggplot(coef_df, ggplot2::aes(x = .data$coefficient, y = .data$label_f)) +
+        # Horizontal line from 0 to coefficient
+        ggplot2::geom_segment(
+            ggplot2::aes(x = 0, xend = .data$coefficient, y = .data$label_f, yend = .data$label_f),
+            color = if (color_by == "sign") {
+                ifelse(coef_df$coefficient >= 0, colors_map["Positive"], colors_map["Negative"])
+            } else {
+                colors_map["Positive"]
+            },
+            linewidth = 0.8
+        ) +
+        # Point at coefficient value
+        ggplot2::geom_point(
+            ggplot2::aes(color = .data$sign),
+            size = 3,
+            alpha = 0.8
+        ) +
+        # Vertical reference line at x = 0
+        ggplot2::geom_vline(xintercept = 0, linetype = "dashed", color = "gray40", linewidth = 0.5) +
+        # Color scale
+        ggplot2::scale_color_manual(
+            name = "Coefficient",
+            values = colors_map,
+            labels = c(paste0("Negative (n=", n_negative, ")"), paste0("Positive (n=", n_positive, ")"))
+        ) +
+        # Labels
+        ggplot2::labs(
+            x = "LASSO Coefficient",
+            y = if (show_labels) "Gene" else "",
+            title = paste0("Signature Coefficients (n = ", n_genes, " genes)")
+        ) +
+        ggplot2::theme_bw() +
+        ggplot2::theme(
+            plot.title = ggplot2::element_text(hjust = 0.5),
+            legend.position = "right",
+            axis.text.y = if (show_labels) ggplot2::element_text(size = 8) else ggplot2::element_blank()
+        ) +
+        # Add count annotation
+        ggplot2::annotate(
+            "text",
+            x = Inf, y = Inf,
+            label = paste0("n = ", n_genes, " genes"),
+            hjust = 1.1, vjust = 1.5,
+            size = 3.5,
+            color = "gray40"
+        )
+
+    return(p)
+}
+
+#' Plot Endometrial Stability Selection Frequencies
+#'
+#' Creates a bar plot showing selection frequencies for each gene from stability selection.
+#' Higher frequencies indicate more stable gene selection across bootstrap resampling or cross-validation.
+#'
+#' @param signature A list from `esr_loadPretrainedSignature()` or `esr_trainEndometrialSignature()` containing:
+#'   \describe{
+#'     \item{panel}{Character vector of gene IDs}
+#'     \item{stability}{List with `bootstrap_frequency` (named numeric vector) or `selection_frequency` (named integer vector)}
+#'   }
+#'   Alternatively, `stability` can be a named numeric vector directly.
+#' @param annot Optional data.frame with gene annotations containing `gene_id` (or `GeneID`) and `Symbol` (or `symbol`) columns.
+#' @param frequency_type Character scalar; which frequency to plot: "bootstrap" (default, from stability selection), "selection" (from outer CV), or "both" (if both available). Defaults to "bootstrap".
+#' @param top_n Integer; number of top genes to show (by frequency). If NULL, shows all genes. Defaults to NULL.
+#' @param threshold Numeric; minimum frequency threshold (0-1). Only genes with frequency >= threshold are shown. If NULL, no threshold filtering. Defaults to NULL.
+#' @param show_labels Logical; whether to show gene labels on y-axis. Defaults to TRUE.
+#' @param color_palette Optional color palette function or vector. Defaults to color-blind friendly gradient.
+#'
+#' @return A ggplot object showing stability selection frequency bar plot.
+#'
+#' @details
+#' This function visualizes stability selection frequencies from bootstrap resampling or cross-validation.
+#' Higher frequencies (closer to 1.0) indicate genes that are consistently selected across resampling
+#' iterations, providing more robust feature selection.
+#'
+#' The plot can filter genes by frequency threshold and show top genes by frequency. Gene symbols can
+#' be added via the `annot` parameter.
+#'
+#' @examples
+#' \dontrun{
+#' # Load pre-trained signature
+#' signature <- esr_loadPretrainedSignature()
+#'
+#' # Create stability bars plot (if stability info available)
+#' if (!is.null(signature$stability)) {
+#'   p_stab <- plotEndometrialStabilityBars(
+#'     signature = signature,
+#'     frequency_type = "bootstrap",
+#'     top_n = 20,
+#'     threshold = 0.6
+#'   )
+#'   print(p_stab)
+#' }
+#' }
+#'
+#' @export
+plotEndometrialStabilityBars <- function(signature, annot = NULL,
+                                        frequency_type = c("bootstrap", "selection", "both"),
+                                        top_n = NULL, threshold = NULL,
+                                        show_labels = TRUE, color_palette = NULL) {
+    if (!requireNamespace("ggplot2", quietly = TRUE)) {
+        stop("ggplot2 package is required for plotting")
+    }
+
+    frequency_type <- match.arg(frequency_type)
+
+    # Validate signature input
+    if (is.list(signature)) {
+        if (!"panel" %in% names(signature)) {
+            stop("signature list must contain 'panel' element")
+        }
+        panel <- signature$panel
+
+        # Extract stability information
+        stability <- signature$stability
+        selection_frequency <- signature$selection_frequency
+
+        # Handle stability structure
+        if (is.null(stability) && is.null(selection_frequency)) {
+            stop("signature must contain stability information (stability$bootstrap_frequency or selection_frequency)")
+        }
+
+        # Extract frequencies based on type
+        bootstrap_freq <- NULL
+        select_freq <- NULL
+
+        if (!is.null(stability)) {
+            if (is.list(stability) && "bootstrap_frequency" %in% names(stability)) {
+                bootstrap_freq <- stability$bootstrap_frequency
+            } else if (is.numeric(stability) && !is.null(names(stability))) {
+                # Direct named vector
+                bootstrap_freq <- stability
+            }
+        }
+
+        if (!is.null(selection_frequency)) {
+            if (is.numeric(selection_frequency) && !is.null(names(selection_frequency))) {
+                select_freq <- selection_frequency
+            }
+        }
+
+        # Normalize selection frequency to 0-1 if it's integer
+        if (!is.null(select_freq)) {
+            if (is.integer(select_freq) || all(select_freq == as.integer(select_freq))) {
+                # Likely represents count out of total folds; normalize to 0-1
+                max_freq <- max(select_freq, na.rm = TRUE)
+                if (max_freq > 1) {
+                    select_freq <- select_freq / max_freq
+                }
+            }
+        }
+
+        # Create frequency data.frame
+        freq_df <- data.frame(
+            gene_id = panel,
+            stringsAsFactors = FALSE
+        )
+
+        # Add frequencies
+        if (!is.null(bootstrap_freq)) {
+            freq_df$bootstrap_frequency <- bootstrap_freq[panel]
+        }
+        if (!is.null(select_freq)) {
+            freq_df$selection_frequency <- select_freq[panel]
+        }
+
+        # Select frequency column based on frequency_type
+        if (frequency_type == "bootstrap") {
+            if (is.null(freq_df$bootstrap_frequency)) {
+                stop("bootstrap_frequency not available in signature; use frequency_type = 'selection'")
+            }
+            freq_df$frequency <- freq_df$bootstrap_frequency
+            freq_label <- "Bootstrap Frequency"
+        } else if (frequency_type == "selection") {
+            if (is.null(freq_df$selection_frequency)) {
+                stop("selection_frequency not available in signature; use frequency_type = 'bootstrap'")
+            }
+            freq_df$frequency <- freq_df$selection_frequency
+            freq_label <- "Selection Frequency"
+        } else if (frequency_type == "both") {
+            if (is.null(freq_df$bootstrap_frequency) || is.null(freq_df$selection_frequency)) {
+                warning("Both frequencies not available; plotting available frequency")
+                if (!is.null(freq_df$bootstrap_frequency)) {
+                    freq_df$frequency <- freq_df$bootstrap_frequency
+                    freq_label <- "Bootstrap Frequency"
+                } else {
+                    freq_df$frequency <- freq_df$selection_frequency
+                    freq_label <- "Selection Frequency"
+                }
+            } else {
+                # For "both", we'll create a grouped bar plot
+                # For simplicity, show bootstrap on primary axis
+                freq_df$frequency <- freq_df$bootstrap_frequency
+                freq_label <- "Bootstrap Frequency"
+            }
+        }
+    } else {
+        stop("signature must be a list from esr_loadPretrainedSignature() or esr_trainEndometrialSignature()")
+    }
+
+    # Remove NA frequencies
+    freq_df <- freq_df[!is.na(freq_df$frequency), ]
+
+    if (nrow(freq_df) == 0) {
+        stop("No valid frequencies found in signature")
+    }
+
+    # Apply threshold filter if specified
+    if (!is.null(threshold)) {
+        if (!is.numeric(threshold) || threshold < 0 || threshold > 1) {
+            stop("threshold must be a numeric value between 0 and 1")
+        }
+        freq_df <- freq_df[freq_df$frequency >= threshold, ]
+        if (nrow(freq_df) == 0) {
+            stop(paste0("No genes with frequency >= ", threshold))
+        }
+    }
+
+    # Add gene annotations if provided
+    if (!is.null(annot)) {
+        if (!is.data.frame(annot)) {
+            stop("annot must be a data.frame")
+        }
+
+        # Try to match gene_id column
+        gene_id_col <- NULL
+        if ("gene_id" %in% names(annot)) {
+            gene_id_col <- "gene_id"
+        } else if ("GeneID" %in% names(annot)) {
+            gene_id_col <- "GeneID"
+        } else {
+            warning("annot does not contain 'gene_id' or 'GeneID' column; skipping annotations")
+            annot <- NULL
+        }
+
+        if (!is.null(annot) && !is.null(gene_id_col)) {
+            # Try to match symbol column
+            symbol_col <- NULL
+            if ("Symbol" %in% names(annot)) {
+                symbol_col <- "Symbol"
+            } else if ("symbol" %in% names(annot)) {
+                symbol_col <- "symbol"
+            }
+
+            # Merge annotations
+            annot_subset <- annot[, c(gene_id_col, symbol_col), drop = FALSE]
+            names(annot_subset)[1] <- "gene_id"
+            if (!is.null(symbol_col)) {
+                names(annot_subset)[2] <- "symbol"
+            } else {
+                annot_subset$symbol <- annot_subset$gene_id
+            }
+
+            # Merge with frequency data
+            freq_df <- merge(freq_df, annot_subset, by = "gene_id", all.x = TRUE)
+            # Use symbol if available, otherwise gene_id
+            freq_df$label <- ifelse(!is.na(freq_df$symbol), freq_df$symbol, freq_df$gene_id)
+        } else {
+            freq_df$label <- freq_df$gene_id
+        }
+    } else {
+        freq_df$label <- freq_df$gene_id
+    }
+
+    # Order by frequency (descending)
+    freq_df <- freq_df[order(-freq_df$frequency, freq_df$gene_id), ]
+
+    # Apply top_n filter if specified
+    if (!is.null(top_n)) {
+        if (!is.numeric(top_n) || top_n <= 0 || length(top_n) != 1) {
+            stop("top_n must be a positive integer")
+        }
+        top_n <- as.integer(top_n)
+        n_available <- nrow(freq_df)
+        n_select <- min(top_n, n_available)
+        freq_df <- freq_df[1:n_select, ]
+    }
+
+    # Count genes
+    n_genes <- nrow(freq_df)
+    mean_freq <- round(mean(freq_df$frequency, na.rm = TRUE), 3)
+    max_freq <- round(max(freq_df$frequency, na.rm = TRUE), 3)
+    min_freq <- round(min(freq_df$frequency, na.rm = TRUE), 3)
+
+    # Create factor for gene labels (preserve order)
+    freq_df$label_f <- factor(freq_df$label, levels = rev(freq_df$label))
+
+    # Set up color palette
+    if (is.null(color_palette)) {
+        # Default color-blind friendly gradient (blue to red)
+        color_fill <- "#2ca02c" # green
+    } else if (is.character(color_palette) && length(color_palette) == 1) {
+        color_fill <- color_palette
+    } else {
+        color_fill <- "#2ca02c"
+    }
+
+    # Create bar plot
+    p <- ggplot2::ggplot(freq_df, ggplot2::aes(x = .data$frequency, y = .data$label_f)) +
+        ggplot2::geom_col(fill = color_fill, alpha = 0.7, color = "black", linewidth = 0.3) +
+        # Labels
+        ggplot2::labs(
+            x = paste0(freq_label, " (0-1)"),
+            y = if (show_labels) "Gene" else "",
+            title = paste0("Stability Selection Frequencies (n = ", n_genes, " genes)")
+        ) +
+        ggplot2::scale_x_continuous(limits = c(0, 1), breaks = scales::pretty_breaks(n = 6)) +
+        ggplot2::theme_bw() +
+        ggplot2::theme(
+            plot.title = ggplot2::element_text(hjust = 0.5),
+            legend.position = "none",
+            axis.text.y = if (show_labels) ggplot2::element_text(size = 8) else ggplot2::element_blank()
+        ) +
+        # Add count annotation
+        ggplot2::annotate(
+            "text",
+            x = Inf, y = Inf,
+            label = paste0("n = ", n_genes, " genes\nMean = ", mean_freq),
+            hjust = 1.1, vjust = 1.5,
+            size = 3.5,
+            color = "gray40"
+        )
+
+    # Add threshold line and annotation if specified
+    if (!is.null(threshold)) {
+        p <- p +
+            ggplot2::geom_vline(xintercept = threshold, linetype = "dashed", color = "red", linewidth = 0.8) +
+            ggplot2::annotate(
+                "text",
+                x = threshold, y = -Inf,
+                label = paste0("Threshold = ", threshold),
+                hjust = 0.5, vjust = -0.5,
+                size = 3,
+                color = "red"
+            )
+    }
+
+    return(p)
+}
+
 # [END]
