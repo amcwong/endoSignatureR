@@ -74,7 +74,7 @@ browseVignettes("endoSignatureR")
 3.  `esr_classifyEndometrial(X_new, signature = NULL, threshold = 0.5, confidence = TRUE)`: apply pre-trained signature to new samples; predictions + confidence.
 4.  `esr_trainEndometrialSignature(...)`: train a new signature using in-fold transforms, DE screening, nested CV, LASSO, calibration, and optional stability selection.
 5.  `esr_compareSignatures(pretrained_result, new_result)`: compare pre-trained vs new signature performance.
-6.  Export/report helpers: `esr_exportSignature(...)`, `esr_reportEndometrial(...)`.
+6.  Export helpers: `esr_exportSignature(...)`.
 
 Plotting helpers (examples):
 
@@ -113,6 +113,38 @@ Generative AI tools (e.g., OpenAI ChatGPT) were used for branstorming, code comp
 - GEO Series GSE201926. Available from: <https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE201926>.
 
 - Silva, A. (2019–2025). TestingPackage: R Package Illustrating Components of an R package for BCB410H. GitHub. <https://github.com/anjalisilva/TestingPackage>.
+
+### Additional Packages Used
+
+The following packages are used in the package but citations are listed here for reference (to be formatted manually):
+
+- **readr** (Wickham et al., 2024): For reading TSV/CSV files
+- **scales** (Wickham & Seidel, 2024): For plot scaling and formatting
+- **limma** (Ritchie et al., 2015): For differential expression analysis
+- **circlize** (Gu et al., 2014): For circular visualization
+- **rsample** (Kuhn & Silge, 2024): For cross-validation splits
+- **jsonlite** (Ooms, 2014): For JSON export/import
+- **knitr** (Xie, 2024): For vignette generation
+- **rmarkdown** (Allaire et al., 2024): For R Markdown processing
+- **testthat** (Wickham, 2024): For unit testing
+
+## Statistical Assumptions
+
+The signature creation process in `EndoSignatureR` relies on several statistical assumptions:
+
+1. **Data type**: Bulk RNA-seq gene counts from endometrial tissue (not single-cell, not microarray, not other tissues). The pre-trained signature is specific to endometrial tissue and is not portable across tissues or divergent processing pipelines.
+
+2. **Design**: Binary labels (PS vs PIS) with independent biological replicates. The package supports only binary classification; multiclass or continuous outcomes are out of scope for v1.
+
+3. **Modeling**: Linear log-odds relationship (logistic regression) with L1 penalty (LASSO) that selects a sparse set of genes. The L1 penalty drives most coefficients to zero, yielding an interpretable gene signature.
+
+4. **Resampling**: Nested cross-validation is used as a proxy for generalization in small-n datasets. Leave-pair-out (LPO) cross-validation is used when n is tiny and class-balanced to maximize training data while maintaining valid test sets.
+
+5. **Feature selection**: DE screening improves stability in p≫n scenarios (where the number of features greatly exceeds the number of samples). Top-K gene selection based on differential expression statistics helps focus the model on biologically relevant features.
+
+6. **Anti-leakage**: All preprocessing operations (transformation, filtering, gene selection) occur inside cross-validation folds to avoid data leakage. Preprocessing parameters are computed from training data only, then applied to test data.
+
+These assumptions are important for proper interpretation of signature results and should be considered when applying the package to new datasets.
 
 ## Acknowledgements
 
