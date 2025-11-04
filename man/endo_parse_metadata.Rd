@@ -23,8 +23,10 @@ sample IDs and group labels (PS vs PIS).
 }
 \examples{
 # Handle gzipped or plain file
-pheno_file_gz <- system.file("extdata", 
-    "gse201926_series_matrix.txt.gz", package = "endoSignatureR")
+pheno_file_gz <- system.file("extdata",
+    "gse201926_series_matrix.txt.gz",
+    package = "endoSignatureR"
+)
 if (nzchar(pheno_file_gz) && file.exists(pheno_file_gz)) {
     pheno <- endo_parse_metadata(pheno_file_gz)
     head(pheno)

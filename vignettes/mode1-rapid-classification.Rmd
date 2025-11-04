@@ -510,7 +510,6 @@ Together, these plots help you understand:
 - **Mode 2**: Train and validate a new signature on your own labeled data using `esr_trainEndometrialSignature()`
 - **Mode 3**: Explore and visualize your data before or after classification using plotting functions
 - **Compare signatures**: Compare predictions from different signatures using `esr_compareSignatures()`
-- **Generate reports**: Create comprehensive reports using `esr_reportEndometrial()`
 
 For more information, see:
 
