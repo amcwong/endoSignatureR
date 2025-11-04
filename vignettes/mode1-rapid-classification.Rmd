@@ -353,6 +353,135 @@ write.csv(predictions, file = "endometrial_predictions.csv", row.names = FALSE)
 save(predictions, signature, file = "classification_results.RData")
 ```
 
+## Signature Visualization
+
+After loading the pre-trained signature, you can visualize its structure to understand which genes drive PS vs PIS classification. The package provides two visualization functions:
+
+### Coefficient Lollipop Plot
+
+The coefficient lollipop plot shows LASSO coefficients for each gene in the signature. Positive coefficients favor PIS prediction when gene expression is higher; negative coefficients favor PS prediction. Larger absolute coefficients indicate stronger predictors.
+
+```{r coefficient-plot}
+# Load pre-trained signature
+signature <- esr_loadPretrainedSignature()
+
+# Create coefficient lollipop plot (top 20 genes by magnitude)
+p_coef <- plotEndometrialCoefLollipop(
+  signature = signature,
+  top_n = 20,
+  order_by = "magnitude"
+)
+print(p_coef)
+```
+
+You can customize the plot with different options:
+
+```{r coefficient-plot-options}
+# Plot with gene annotations (if available)
+data(gse201926_annot_min, package = "endoSignatureR")
+p_coef_annot <- plotEndometrialCoefLollipop(
+  signature = signature,
+  annot = gse201926_annot_min,
+  top_n = 20,
+  order_by = "magnitude"
+)
+print(p_coef_annot)
+
+# Order by coefficient value (positive first)
+p_coef_value <- plotEndometrialCoefLollipop(
+  signature = signature,
+  top_n = 20,
+  order_by = "value"
+)
+print(p_coef_value)
+```
+
+**Interpreting the coefficient plot**:
+
+- **Positive coefficients (red)**: Genes that increase PIS probability when expressed higher
+- **Negative coefficients (green)**: Genes that increase PS probability when expressed higher
+- **Magnitude**: Larger absolute coefficients indicate stronger predictors
+- **Sparsity**: LASSO typically selects 10-50 genes (many coefficients = 0, not shown)
+
+### Stability Bars Plot
+
+The stability bars plot shows selection frequencies for each gene from stability selection. Higher frequencies (closer to 1.0) indicate genes that are consistently selected across bootstrap resampling iterations, providing more robust feature selection.
+
+```{r stability-plot}
+# Create stability bars plot (if stability info available)
+if (!is.null(signature$stability)) {
+  # Plot without threshold first (show all genes)
+  if (!is.null(signature$stability$bootstrap_frequency)) {
+    p_stab <- plotEndometrialStabilityBars(
+      signature = signature,
+      frequency_type = "bootstrap",
+      top_n = 20
+      # No threshold - show all genes
+    )
+    print(p_stab)
+  } else if (!is.null(signature$selection_frequency)) {
+    # Use selection frequency if bootstrap not available
+    p_stab <- plotEndometrialStabilityBars(
+      signature = signature,
+      frequency_type = "selection",
+      top_n = 20
+    )
+    print(p_stab)
+  } else {
+    message("Stability frequencies not available in pre-trained signature")
+  }
+} else {
+  message("Stability information not available in pre-trained signature")
+}
+```
+
+You can customize the stability plot:
+
+```{r stability-plot-options, eval=FALSE}
+# Plot with annotations (optional - requires annotation data)
+if (!is.null(signature$stability)) {
+  # Check if annotation data is available
+  if (exists("gse201926_annot_min")) {
+    data(gse201926_annot_min, package = "endoSignatureR")
+    if (!is.null(signature$stability$bootstrap_frequency)) {
+      p_stab_annot <- plotEndometrialStabilityBars(
+        signature = signature,
+        annot = gse201926_annot_min,
+        frequency_type = "bootstrap",
+        top_n = 20
+        # Can optionally add threshold if frequencies are high enough
+        # threshold = 0.6  # Only use if genes meet this threshold
+      )
+      print(p_stab_annot)
+    } else if (!is.null(signature$selection_frequency)) {
+      p_stab_annot <- plotEndometrialStabilityBars(
+        signature = signature,
+        annot = gse201926_annot_min,
+        frequency_type = "selection",
+        top_n = 20
+      )
+      print(p_stab_annot)
+    }
+  }
+}
+```
+
+**Interpreting the stability plot**:
+
+- **High frequencies (0.8-1.0)**: Genes that are consistently selected across resampling (very reliable)
+- **Medium frequencies (0.6-0.8)**: Genes that are frequently selected (reliable)
+- **Low frequencies (< 0.6)**: Genes that are less consistently selected (may be less reliable)
+- **Threshold**: Typically 0.6-0.9 for "stable" gene selection
+
+### Signature Interpretation
+
+Together, these plots help you understand:
+
+1. **Which genes drive classification**: Top genes by coefficient magnitude
+2. **Direction of effect**: Positive vs negative coefficients
+3. **Selection stability**: How consistently genes are selected across resampling
+4. **Biological insight**: Relate coefficients to known endometrial biology or pathways
+
 ## Next Steps
 
 - **Mode 2**: Train and validate a new signature on your own labeled data using `esr_trainEndometrialSignature()`
