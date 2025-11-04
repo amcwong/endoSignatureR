@@ -648,6 +648,268 @@ export_stability_csv <- function(stability, dir = "export") {
   return(csv_path)
 }
 
+# Internal helper for exporting predictions to CSV
+export_predictions_csv <- function(predictions, dir = "export",
+                                   filename = "endometrial_predictions.csv") {
+  # Validate inputs
+  if (is.null(predictions)) {
+    stop("predictions must be provided")
+  }
+
+  # Handle list result (if alerts included)
+  if (is.list(predictions) && "predictions" %in% names(predictions)) {
+    predictions_df <- predictions$predictions
+  } else if (is.data.frame(predictions)) {
+    predictions_df <- predictions
+  } else {
+    stop("predictions must be a data.frame or list with predictions element")
+  }
+
+  # Validate required columns
+  required_cols <- c("sample", "score", "probability", "prediction")
+  missing_cols <- setdiff(required_cols, names(predictions_df))
+  if (length(missing_cols) > 0) {
+    stop(paste0("predictions must contain columns: ", paste(missing_cols, collapse = ", ")))
+  }
+
+  # Create directory if doesn't exist
+  if (!dir.exists(dir)) {
+    dir.create(dir, recursive = TRUE)
+  }
+
+  # Prepare data for export
+  # Select columns in order: sample, score, probability, prediction, confidence_lower, confidence_upper
+  export_cols <- c("sample", "score", "probability", "prediction")
+  if ("confidence_lower" %in% names(predictions_df)) {
+    export_cols <- c(export_cols, "confidence_lower")
+  }
+  if ("confidence_upper" %in% names(predictions_df)) {
+    export_cols <- c(export_cols, "confidence_upper")
+  }
+
+  # Extract columns
+  export_df <- predictions_df[, export_cols, drop = FALSE]
+
+  # Format predictions as character (PS/PIS)
+  export_df$prediction <- as.character(export_df$prediction)
+
+  # Round numeric columns to appropriate precision
+  export_df$score <- round(export_df$score, 6)
+  export_df$probability <- round(export_df$probability, 6)
+  if ("confidence_lower" %in% names(export_df)) {
+    export_df$confidence_lower <- round(export_df$confidence_lower, 6)
+  }
+  if ("confidence_upper" %in% names(export_df)) {
+    export_df$confidence_upper <- round(export_df$confidence_upper, 6)
+  }
+
+  # Write CSV
+  csv_path <- file.path(dir, filename)
+  readr::write_csv(export_df, csv_path)
+
+  return(csv_path)
+}
+
+#' Export Predictions to CSV
+#'
+#' Exports predictions from `esr_classifyEndometrial()` to CSV format.
+#'
+#' @param predictions A data.frame from `esr_classifyEndometrial()` or a list with `predictions` element.
+#' @param dir Character; output directory. Defaults to "export".
+#' @param formats Character vector; which formats to export (currently only "csv").
+#'   Defaults to "csv".
+#' @param filename Character; output filename. Defaults to "endometrial_predictions.csv".
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return Invisibly, a character vector of paths to exported files.
+#'
+#' @details
+#' This function exports predictions to CSV format with columns:
+#' - sample: Sample IDs
+#' - score: Raw signature scores
+#' - probability: Calibrated or sigmoid-transformed probabilities
+#' - prediction: Binary predictions (PS/PIS)
+#' - confidence_lower: Lower confidence bound (if available)
+#' - confidence_upper: Upper confidence bound (if available)
+#'
+#' @examples
+#' \dontrun{
+#' # Load signature and classify samples
+#' signature <- esr_loadPretrainedSignature()
+#' data(gse201926_sample)
+#' predictions <- esr_classifyEndometrial(
+#'   X_new = gse201926_sample$counts,
+#'   signature = signature
+#' )
+#'
+#' # Export predictions
+#' export_path <- esr_exportPredictions(
+#'   predictions = predictions,
+#'   dir = tempdir()
+#' )
+#'
+#' # Read exported file
+#' read.csv(export_path)
+#' }
+#'
+#' @export
+esr_exportPredictions <- function(predictions, dir = "export",
+                                  formats = "csv", filename = NULL, ...) {
+  # Validate inputs
+  if (is.null(predictions)) {
+    stop("predictions must be provided")
+  }
+
+  # Normalize formats
+  if ("all" %in% formats) {
+    formats <- "csv"
+  }
+  valid_formats <- c("csv")
+  invalid_formats <- setdiff(formats, valid_formats)
+  if (length(invalid_formats) > 0) {
+    stop(
+      "Invalid formats: ", paste(invalid_formats, collapse = ", "),
+      ". Valid formats: ", paste(valid_formats, collapse = ", ")
+    )
+  }
+
+  # Create directory if doesn't exist
+  if (!dir.exists(dir)) {
+    dir.create(dir, recursive = TRUE)
+  }
+
+  # Default filename
+  if (is.null(filename)) {
+    filename <- "endometrial_predictions.csv"
+  }
+
+  # Export paths
+  paths <- character(0)
+
+  # Export CSV
+  if ("csv" %in% formats) {
+    csv_path <- export_predictions_csv(
+      predictions = predictions,
+      dir = dir,
+      filename = filename
+    )
+    paths <- c(paths, csv_path)
+  }
+
+  return(invisible(paths))
+}
+
+
+# Internal helper for exporting predictions to CSV
+export_predictions_csv <- function(predictions, dir = "export",
+                                   filename = "endometrial_predictions.csv") {
+  # Validate inputs
+  if (is.null(predictions)) {
+    stop("predictions must be provided")
+  }
+
+  # Handle list result (if alerts included)
+  if (is.list(predictions) && "predictions" %in% names(predictions)) {
+    predictions_df <- predictions$predictions
+  } else if (is.data.frame(predictions)) {
+    predictions_df <- predictions
+  } else {
+    stop("predictions must be a data.frame or list with predictions element")
+  }
+
+  # Validate required columns
+  required_cols <- c("sample", "score", "probability", "prediction")
+  missing_cols <- setdiff(required_cols, names(predictions_df))
+  if (length(missing_cols) > 0) {
+    stop(paste0("predictions must contain columns: ", paste(missing_cols, collapse = ", ")))
+  }
+
+  # Create directory if doesn't exist
+  if (!dir.exists(dir)) {
+    dir.create(dir, recursive = TRUE)
+  }
+
+  # Prepare data for export
+  # Select columns in order: sample, score, probability, prediction, confidence_lower, confidence_upper
+  export_cols <- c("sample", "score", "probability", "prediction")
+  if ("confidence_lower" %in% names(predictions_df)) {
+    export_cols <- c(export_cols, "confidence_lower")
+  }
+  if ("confidence_upper" %in% names(predictions_df)) {
+    export_cols <- c(export_cols, "confidence_upper")
+  }
+
+  # Extract columns
+  export_df <- predictions_df[, export_cols, drop = FALSE]
+
+  # Format predictions as character (PS/PIS)
+  export_df$prediction <- as.character(export_df$prediction)
+
+  # Round numeric columns to appropriate precision
+  export_df$score <- round(export_df$score, 6)
+  export_df$probability <- round(export_df$probability, 6)
+  if ("confidence_lower" %in% names(export_df)) {
+    export_df$confidence_lower <- round(export_df$confidence_lower, 6)
+  }
+  if ("confidence_upper" %in% names(export_df)) {
+    export_df$confidence_upper <- round(export_df$confidence_upper, 6)
+  }
+
+  # Write CSV
+  csv_path <- file.path(dir, filename)
+  readr::write_csv(export_df, csv_path)
+
+  return(csv_path)
+}
+
+# Public export function for predictions
+esr_exportPredictions <- function(predictions, dir = "export",
+                                  formats = "csv", filename = NULL, ...) {
+  # Validate inputs
+  if (is.null(predictions)) {
+    stop("predictions must be provided")
+  }
+
+  # Normalize formats
+  if ("all" %in% formats) {
+    formats <- "csv"
+  }
+  valid_formats <- c("csv")
+  invalid_formats <- setdiff(formats, valid_formats)
+  if (length(invalid_formats) > 0) {
+    stop(
+      "Invalid formats: ", paste(invalid_formats, collapse = ", "),
+      ". Valid formats: ", paste(valid_formats, collapse = ", ")
+    )
+  }
+
+  # Create directory if doesn't exist
+  if (!dir.exists(dir)) {
+    dir.create(dir, recursive = TRUE)
+  }
+
+  # Default filename
+  if (is.null(filename)) {
+    filename <- "endometrial_predictions.csv"
+  }
+
+  # Export paths
+  paths <- character(0)
+
+  # Export CSV
+  if ("csv" %in% formats) {
+    csv_path <- export_predictions_csv(
+      predictions = predictions,
+      dir = dir,
+      filename = filename
+    )
+    paths <- c(paths, csv_path)
+  }
+
+  return(invisible(paths))
+}
+
+
 # Helper function for NULL coalescing
 `%||%` <- function(x, y) {
   if (is.null(x)) y else x
