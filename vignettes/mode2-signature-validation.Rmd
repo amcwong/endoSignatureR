@@ -760,15 +760,15 @@ The `esr_exportSignature()` function exports trained signatures as reproducible 
 ### Exporting Signatures
 
 ```{r phase2.5-export, eval = TRUE}
-# Use training result from Phase 2.3
+# Use training result from Phase 2.3 (result_combined contains calibration and stability)
 # Export to temp directory
 export_dir <- tempfile()
 dir.create(export_dir)
 
 # Export all formats (CSV, JSON, Markdown)
 paths <- esr_exportSignature(
-  signature = result_train$signature,
-  result = result_train,
+  signature = result_combined$signature,
+  result = result_combined,
   dir = export_dir,
   formats = c("csv", "json", "md")
 )
@@ -842,24 +842,24 @@ The model card includes:
 ```{r phase2.5-export-options, eval = TRUE}
 # Export only CSV
 esr_exportSignature(
-  signature = result_train$signature,
-  result = result_train,
+  signature = result_combined$signature,
+  result = result_combined,
   dir = tempfile(),
   formats = "csv"
 )
 
 # Export only JSON
 esr_exportSignature(
-  signature = result_train$signature,
-  result = result_train,
+  signature = result_combined$signature,
+  result = result_combined,
   dir = tempfile(),
   formats = "json"
 )
 
 # Export without intercept in CSV
 esr_exportSignature(
-  signature = result_train$signature,
-  result = result_train,
+  signature = result_combined$signature,
+  result = result_combined,
   dir = tempfile(),
   formats = "csv",
   include_intercept = FALSE

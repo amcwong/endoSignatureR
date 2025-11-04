@@ -91,8 +91,10 @@ esr_exportSignature <- function(signature, result = NULL, dir = "export",
   valid_formats <- c("csv", "json", "md")
   invalid_formats <- setdiff(formats, valid_formats)
   if (length(invalid_formats) > 0) {
-    stop("Invalid formats: ", paste(invalid_formats, collapse = ", "),
-         ". Valid formats: ", paste(valid_formats, collapse = ", "))
+    stop(
+      "Invalid formats: ", paste(invalid_formats, collapse = ", "),
+      ". Valid formats: ", paste(valid_formats, collapse = ", ")
+    )
   }
 
   # Create directory if doesn't exist
@@ -108,7 +110,6 @@ esr_exportSignature <- function(signature, result = NULL, dir = "export",
     splits <- result$splits
     seeds <- result$seeds
     aggregation <- result$aggregation
-    cv_results <- result$cv_results
   } else {
     metrics <- NULL
     calibration <- NULL
@@ -116,7 +117,6 @@ esr_exportSignature <- function(signature, result = NULL, dir = "export",
     splits <- NULL
     seeds <- NULL
     aggregation <- NULL
-    cv_results <- NULL
   }
 
   # Export paths
@@ -189,7 +189,8 @@ export_signature_csv <- function(signature, stability = NULL, dir = "export",
   # Match coefficients and frequencies to panel
   # Convert to numeric to remove names
   coef_vec <- as.numeric(coefficients[match(panel, names(coefficients))])
-  freq_vec <- as.numeric(selection_frequency[match(panel, names(selection_frequency))])
+  # Convert selection_frequency to integer (it represents counts)
+  freq_vec <- as.integer(selection_frequency[match(panel, names(selection_frequency))])
 
   # Extract bootstrap frequencies if available
   bootstrap_freq_vec <- NULL
@@ -260,8 +261,8 @@ export_signature_csv <- function(signature, stability = NULL, dir = "export",
 #' @return Path to exported JSON file.
 #' @keywords internal
 export_signature_json <- function(signature, metrics = NULL, calibration = NULL,
-                                   stability = NULL, splits = NULL, seeds = NULL,
-                                   aggregation = NULL, dir = "export") {
+                                  stability = NULL, splits = NULL, seeds = NULL,
+                                  aggregation = NULL, dir = "export") {
   # Extract preprocessing parameters
   recipe <- signature$recipe
   preprocessing <- list()
@@ -401,7 +402,8 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
   )
 
   # Model Purpose
-  lines <- c(lines,
+  lines <- c(
+    lines,
     "## Model Purpose",
     "This signature classifies endometrial bulk RNA-seq samples as Proliferative Secretory (PS) or Proliferative Inflammatory Secretory (PIS) using LASSO logistic regression with nested cross-validation.",
     ""
@@ -424,7 +426,8 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
     class_balance <- "Unknown"
   }
 
-  lines <- c(lines,
+  lines <- c(
+    lines,
     "## Training Data",
     paste0("- **Samples**: ", n_samples),
     paste0("- **Genes**: ", length(signature$panel), " (signature panel)"),
@@ -445,7 +448,8 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
   aggregation_method <- if (!is.null(aggregation) && "method" %in% names(aggregation)) aggregation$method else "mean"
   min_folds <- if (!is.null(aggregation) && "min_folds" %in% names(aggregation)) aggregation$min_folds else 2
 
-  lines <- c(lines,
+  lines <- c(
+    lines,
     "## Model Architecture",
     paste0("- **Algorithm**: LASSO logistic regression (glmnet)"),
     paste0("- **Preprocessing**: ", transform_method, " transformation, CPM filtering (min=", cpm_min, ", min_samples=", cpm_min_samples, "), DE-based top-K selection (K=", top_k, ")"),
@@ -463,7 +467,8 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
     brier_score <- metrics$brier_score %||% NA_real_
     ece <- metrics$ece %||% NA_real_
 
-    lines <- c(lines,
+    lines <- c(
+      lines,
       "## Performance Metrics",
       paste0("- **AUC-ROC**: ", if (is.na(auc)) "N/A" else round(auc, 3)),
       paste0("- **Accuracy**: ", if (is.na(accuracy)) "N/A" else round(accuracy, 3)),
@@ -473,7 +478,8 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
       ""
     )
   } else {
-    lines <- c(lines,
+    lines <- c(
+      lines,
       "## Performance Metrics",
       paste0("- **Signature Size**: ", length(signature$panel), " genes"),
       "- Performance metrics not available (signature-only export)",
@@ -484,14 +490,16 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
   # Calibration
   if (!is.null(calibration) && "method" %in% names(calibration)) {
     cal_method <- calibration$method
-    lines <- c(lines,
+    lines <- c(
+      lines,
       "## Calibration",
       paste0("- **Method**: ", cal_method, if (cal_method == "platt") " scaling" else if (cal_method == "isotonic") " regression" else ""),
       "- **Calibrated Probabilities**: Included in predictions",
       ""
     )
   } else {
-    lines <- c(lines,
+    lines <- c(
+      lines,
       "## Calibration",
       "- **Method**: Not available",
       ""
@@ -504,7 +512,8 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
     threshold <- recipe$stability_threshold %||% 0.7
     n_stable <- if (!is.null(stability$stable_genes)) length(stability$stable_genes) else 0
 
-    lines <- c(lines,
+    lines <- c(
+      lines,
       "## Stability Selection",
       paste0("- **Bootstrap Resamples**: ", n_resamples),
       paste0("- **Stability Threshold**: ", threshold),
@@ -512,7 +521,8 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
       ""
     )
   } else {
-    lines <- c(lines,
+    lines <- c(
+      lines,
       "## Stability Selection",
       "- **Status**: Not performed",
       ""
@@ -520,7 +530,8 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
   }
 
   # Limitations
-  lines <- c(lines,
+  lines <- c(
+    lines,
     "## Limitations",
     "- **Tissue Specificity**: Trained on endometrial tissue only; not portable across tissues",
     "- **Small n Uncertainty**: Limited sample size introduces uncertainty; avoid clinical claims",
@@ -530,7 +541,8 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
   )
 
   # Intended Use
-  lines <- c(lines,
+  lines <- c(
+    lines,
     "## Intended Use",
     "- **Use Case**: Classification of endometrial bulk RNA-seq samples into PS vs PIS states",
     "- **Target Audience**: Endometrial researchers, pathologists, clinicians",
@@ -567,7 +579,8 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
   outer_seed <- if (!is.null(seeds) && "outer" %in% names(seeds)) seeds$outer else NULL
   inner_seed <- if (!is.null(seeds) && "inner" %in% names(seeds)) seeds$inner else NULL
 
-  lines <- c(lines,
+  lines <- c(
+    lines,
     "## Reproducibility",
     paste0("- **Seeds**: ", if (!is.null(outer_seed) && !is.null(inner_seed)) {
       paste0("Outer CV seed=", outer_seed, ", Inner CV seed=", inner_seed)
@@ -580,7 +593,8 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
   )
 
   # References
-  lines <- c(lines,
+  lines <- c(
+    lines,
     "## References",
     "- LASSO: Tibshirani (1996), \"Regression shrinkage and selection via the lasso\"",
     "- Nested CV: Varma & Simon (2006), \"Bias in error estimation when using cross-validation for model selection\"",
@@ -594,11 +608,49 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
   return(md_path)
 }
 
+#' Export Stability Frequencies to CSV
+#'
+#' Exports bootstrap stability frequencies to CSV format.
+#'
+#' @param stability Stability object containing bootstrap_frequency.
+#' @param dir Output directory.
+#' @return Path to exported CSV file.
+#' @keywords internal
+export_stability_csv <- function(stability, dir = "export") {
+  # Validate inputs
+  if (is.null(stability)) {
+    stop("stability must be provided")
+  }
+  if (!is.list(stability)) {
+    stop("stability must be a list")
+  }
+  if (!("bootstrap_frequency" %in% names(stability))) {
+    stop("stability must include 'bootstrap_frequency' element")
+  }
+
+  # Extract bootstrap frequencies
+  bootstrap_freq <- stability$bootstrap_frequency
+
+  # Create data frame
+  stability_df <- data.frame(
+    gene_id = names(bootstrap_freq),
+    bootstrap_frequency = as.numeric(bootstrap_freq),
+    stringsAsFactors = FALSE
+  )
+
+  # Sort by frequency (descending)
+  stability_df <- stability_df[order(stability_df$bootstrap_frequency, decreasing = TRUE), ]
+
+  # Write CSV
+  csv_path <- file.path(dir, "endometrial_stability.csv")
+  readr::write_csv(stability_df, csv_path)
+
+  return(csv_path)
+}
+
 # Helper function for NULL coalescing
 `%||%` <- function(x, y) {
   if (is.null(x)) y else x
 }
 
 # [END]
-
-

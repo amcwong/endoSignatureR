@@ -1,0 +1,30 @@
+{
+  "preprocessing": {
+    "transform": "log1p-cpm",
+    "cpm_min": 1,
+    "cpm_min_samples": 4,
+    "top_k": 300
+  },
+  "training": {
+    "outer": "lpo",
+    "outer_folds": 3,
+    "inner_folds": 5,
+    "inner_repeats": 10,
+    "lambda_rule": "1se",
+    "min_folds": 2,
+    "aggregation_method": "mean",
+    "calibration_method": "platt",
+    "stability_selection": true,
+    "stability_resamples": 100
+  },
+  "signature": {
+    "n_genes": 3,
+    "intercept": 2.2202,
+    "gene_namespace": "ensembl_gene_id"
+  },
+  "reproducibility": {
+    "seed": 12345,
+    "package_version": "endoSignatureR_0.0.0.9000",
+    "r_version": "R version 4.5.1 (2025-06-13)"
+  }
+}
