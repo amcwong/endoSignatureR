@@ -88,45 +88,51 @@ An overview of the package is illustrated below.
 
 ## Contributions
 
-The author of the package is Andrew WOng. The author designed and implemented the endometrial-specific workflows and functions listed above, integrating established methods (DE screening, LASSO via glmnet, nested cross-validation) into a cohesive package for PS vs PIS classification and validation.
+The author of the package is Andrew Wong. The author designed and implemented the endometrial-specific workflows and functions listed above, integrating established methods (DE screening, LASSO via glmnet, nested cross-validation) into a cohesive package for PS vs PIS classification and validation.
 
-Generative AI tools (e.g., OpenAI ChatGPT) were used for branstorming, code completions, debugging, and drafting where noted; all outputs were reviewed and validated by the author.
+Generative AI tools (e.g., GitHub Copilot, ChatGPT) were used for brainstorming, code completions, debugging, and drafting where noted; all outputs were reviewed and validated by the author. Notably, GitHub Copilot was used extensively throughout creating the test suite and ChatGPT was used for commenting and proofreading.
 
 ## References
 
-- R Core Team (2025). _R: A Language and Environment for Statistical Computing_. R Foundation for Statistical Computing, Vienna, Austria. <https://www.R-project.org/>.
+- Allaire, J. J., Xie, Y., Dervieux, C., McPherson, J., Luraschi, J., Ushey, K., Atkins, A., Wickham, H., Cheng, J., Chang, W., & Iannone, R. (2024). rmarkdown: Dynamic documents for R. R package. <https://CRAN.R-project.org/package=rmarkdown>.
 
-- Wickham, H. (2016). _ggplot2: Elegant Graphics for Data Analysis_. Springer-Verlag, New York.
+- Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression Omnibus: NCBI gene expression and hybridization array data repository. Nucleic Acids Research, 30(1), 207–210. <https://doi.org/10.1093/nar/30.1.207>.
 
-- Wickham, H., Hester, J., & Chang, W. (2024). _devtools: Tools to Make Developing R Packages Easier_. R package. <https://CRAN.R-project.org/package=devtools>.
+- Friedman, J., Hastie, T., & Tibshirani, R. (2010). Regularization paths for generalized linear models via coordinate descent. Journal of Statistical Software, 33(1), 1–22. doi:10.18637/jss.v033.i01 <https://doi.org/10.18637/jss.v033.i01>.
 
-- Love, M. I., Huber, W., & Anders, S. (2014). Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. _Genome Biology_, 15(12), 550. doi:10.1186/s13059-014-0550-8.
+- GitHub & OpenAI. (2025). GitHub Copilot: AI-powered code completion assistant. GitHub, Inc., San Francisco, USA. <https://github.com/features/copilot>.
 
-- Friedman, J., Hastie, T., & Tibshirani, R. (2010). Regularization Paths for Generalized Linear Models via Coordinate Descent. _Journal of Statistical Software_, 33(1), 1–22. (glmnet).
+- Gu, Z., Eils, R., & Schlesner, M. (2016). Complex heatmaps reveal patterns and correlations in multidimensional genomic data. Bioinformatics. doi:10.1093/bioinformatics/btw313
 
-- Robin, X., et al. (2011). pROC: an open-source package for R and S+ to analyze and compare ROC curves. _BMC Bioinformatics_, 12, 77. doi:10.1186/1471-2105-12-77.
+- Gu, Z., Gu, T., Eils, R., Schlesner, M., & Brors, B. (2014). circlize implements and enhances circular visualization in R. Bioinformatics, 30(19), 2811–2812.
 
-- Gu, Z., Eils, R., & Schlesner, M. (2016). Complex heatmaps reveal patterns and correlations in multidimensional genomic data. _Bioinformatics_, 32(18), 2847–2849. (ComplexHeatmap).
+- Frick, H., Chow, F., Kuhn, M., Mahoney, M., Silge, J., & Wickham, H. (2025). rsample: General resampling infrastructure. R package. <https://CRAN.R-project.org/package=rsample>.
 
-- Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression Omnibus: NCBI gene expression and hybridization array data repository. _Nucleic Acids Research_, 30(1), 207–210. doi:10.1093/nar/30.1.207.
+- Love, M. I., Huber, W., & Anders, S. (2014). Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. Genome Biology, 15(12), 550. <https://doi.org/10.1186/s13059-014-0550-8>.
 
-- GEO Series GSE201926. Available from: <https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE201926>.
+- Ooms, J. (2014). The jsonlite package: A practical and consistent mapping between JSON data and R objects. arXiv:1403.2805 [stat.CO]. <https://arxiv.org/abs/1403.2805>.
+
+- OpenAI. (2025). ChatGPT (GPT-5) [Large language model]. OpenAI, San Francisco, USA. <https://chat.openai.com/>.
+
+- R Core Team (2025). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. <https://www.R-project.org/>.
+
+- Ritchie, M. E., Phipson, B., Wu, D., Hu, Y., Law, C. W., Shi, W., & Smyth, G. K. (2015). limma powers differential expression analyses for RNA-sequencing and microarray studies. Nucleic Acids Research, 43(7), e47.
+
+- Robin, X., et al. (2011). pROC: an open-source package for R and S+ to analyze and compare ROC curves. BMC Bioinformatics, 12, 77. <https://doi.org/10.1186/1471-2105-12-77>.
 
 - Silva, A. (2019–2025). TestingPackage: R Package Illustrating Components of an R package for BCB410H. GitHub. <https://github.com/anjalisilva/TestingPackage>.
 
-### Additional Packages Used
+- Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York.
 
-The following packages are used in the package but citations are listed here for reference (to be formatted manually):
+- Wickham, H. (2011). testthat: Get started with testing. The R Journal, 3, 5-10. <https://CRAN.R-project.org/package=testthat>.
 
-- **readr** (Wickham et al., 2024): For reading TSV/CSV files
-- **scales** (Wickham & Seidel, 2024): For plot scaling and formatting
-- **limma** (Ritchie et al., 2015): For differential expression analysis
-- **circlize** (Gu et al., 2014): For circular visualization
-- **rsample** (Kuhn & Silge, 2024): For cross-validation splits
-- **jsonlite** (Ooms, 2014): For JSON export/import
-- **knitr** (Xie, 2024): For vignette generation
-- **rmarkdown** (Allaire et al., 2024): For R Markdown processing
-- **testthat** (Wickham, 2024): For unit testing
+- Wickham, H., Pedersen, T., & Seidel, D. (2025). scales: Scale functions for visualization. R package. <https://CRAN.R-project.org/package=scales>.
+
+- Wickham, H., Hester, J., & Chang, W. (2024). devtools: Tools to Make Developing R Packages Easier. R package. <https://CRAN.R-project.org/package=devtools>.
+
+- Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular text data. R package. <https://CRAN.R-project.org/package=readr>.
+
+- Xie, Y. (2025). knitr: A general-purpose package for dynamic report generation in R. R package. <https://CRAN.R-project.org/package=knitr>.
 
 ## Statistical Assumptions
 
@@ -209,6 +215,3 @@ loaded via a namespace (and not attached):
  [97] SparseArray_1.8.1 farver_2.1.2 memoise_2.0.1  
 [100] htmltools_0.5.8.1 lifecycle_1.0.4 httr_1.4.7  
 [103] openssl_2.3.3 bit64_4.6.0-1
-
-
-
