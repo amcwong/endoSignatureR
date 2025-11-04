@@ -1,0 +1,197 @@
+---
+title: "Mode 1: Rapid Classification Using Pre-trained Signature"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{mode1-rapid-classification}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(endoSignatureR)
+```
+
+# Mode 1: Rapid Classification
+
+Mode 1 (Rapid Classification) enables users to quickly classify unlabeled endometrial samples using the pre-trained PS vs PIS signature. This workflow is ideal for researchers who want immediate predictions without training a new signature.
+
+## Overview
+
+The pre-trained signature was trained on the full GSE201926 endometrial lesion RNA-seq dataset using the Phase 2 pipeline (`esr_trainEndometrialSignature()`). The signature artifacts are stored in `inst/extdata/pretrained-signature/` and can be loaded using `esr_loadPretrainedSignature()`.
+
+### Pre-trained Signature Artifacts
+
+The package ships with pre-trained signature artifacts stored in `inst/extdata/pretrained-signature/`:
+
+- **`endometrial_signature.csv`**: Gene panel with coefficients, selection frequencies, and optional bootstrap frequencies
+- **`endometrial_recipe.json`**: Preprocessing recipe, training parameters, signature metadata, and reproducibility information
+- **`endometrial_model_card.md`**: Model documentation with provenance, performance metrics, limitations, and intended use
+- **`endometrial_stability.csv`** (optional): Bootstrap stability frequencies for signature genes
+
+### Artifact Provenance
+
+The pre-trained signature was trained on the full GSE201926 endometrial lesion RNA-seq dataset using the Phase 2 pipeline. Training parameters:
+
+- **Dataset**: Full GSE201926 (all 12 samples, all genes after filtering)
+- **Transform**: log1p-CPM transformation
+- **CV Structure**: Leave-Pair-Out (LPO) for small n (n=12) with balanced classes
+- **Lambda Selection**: 1se rule (1 standard error rule for sparsity)
+- **Aggregation**: Mean aggregation across outer folds
+- **Calibration**: Platt scaling for probability calibration
+- **Stability Selection**: Bootstrap resampling (500 resamples)
+
+For full documentation, see `inst/extdata/pretrained-signature/endometrial_model_card.md` or the package introduction vignette.
+
+## Loading Pre-trained Signature
+
+The pre-trained signature can be loaded using `esr_loadPretrainedSignature()`. This function reads artifacts from `inst/extdata/pretrained-signature/` and returns a signature object ready for classification.
+
+```{r load-pretrained, eval = TRUE}
+# Load pretrained signature
+signature <- esr_loadPretrainedSignature()
+
+# Inspect signature structure
+str(signature, max.level = 2)
+
+# View signature panel
+cat("Signature panel size:", length(signature$panel), "genes\n")
+head(signature$panel, n = 10)
+
+# View coefficients
+head(signature$coefficients, n = 10)
+
+# View intercept
+cat("Intercept:", signature$intercept, "\n")
+
+# View recipe (preprocessing parameters)
+if (!is.null(signature$recipe)) {
+  cat("Preprocessing recipe:\n")
+  print(signature$recipe)
+}
+```
+
+## Applying Signature to New Samples
+
+Once the signature is loaded, it can be applied to new endometrial samples using `esr_classifyEndometrial()`. This function:
+
+- Validates data structure and performs domain/tissue checks (ID mapping, missing genes)
+- Applies preprocessing recipe (transform, filter) to match training pipeline
+- Computes signature scores using linear combination
+- Applies calibration if available
+- Applies threshold to get binary predictions (PS vs PIS)
+- Returns predictions with confidence intervals
+
+```{r classify-samples, eval = TRUE}
+# Load sample data (treat as unlabeled new data)
+data(gse201926_sample)
+X_new <- gse201926_sample$counts
+
+# Classify samples
+predictions <- esr_classifyEndometrial(
+  X_new = X_new,
+  signature = signature,
+  threshold = 0.5,
+  confidence = TRUE
+)
+
+# View predictions
+head(predictions)
+
+# Summary statistics
+cat("\nPrediction summary:\n")
+print(table(predictions$prediction))
+```
+
+## Confidence Scores
+
+The classification function returns confidence intervals for each prediction:
+
+```{r confidence-scores, eval = TRUE}
+# View confidence intervals if available
+if ("confidence_lower" %in% names(predictions)) {
+  cat("Confidence intervals:\n")
+  summary(predictions$confidence_lower)
+  summary(predictions$confidence_upper)
+}
+
+# Plot scores vs predictions
+plot(predictions$score, as.numeric(predictions$prediction),
+     xlab = "Signature Score", ylab = "Prediction (PS=1, PIS=2)",
+     main = "Signature Scores vs Predictions")
+```
+
+## Threshold Selection
+
+The default threshold is 0.5, but custom thresholds can be specified:
+
+```{r threshold-selection, eval = TRUE}
+# Default threshold (0.5)
+predictions_default <- esr_classifyEndometrial(
+  X_new = X_new,
+  signature = signature,
+  threshold = 0.5,
+  confidence = FALSE
+)
+
+# Custom threshold (0.6)
+predictions_custom <- esr_classifyEndometrial(
+  X_new = X_new,
+  signature = signature,
+  threshold = 0.6,
+  confidence = FALSE
+)
+
+# Compare predictions
+cat("Predictions at threshold 0.5:\n")
+print(table(predictions_default$prediction))
+
+cat("\nPredictions at threshold 0.6:\n")
+print(table(predictions_custom$prediction))
+```
+
+## Handling Warnings
+
+The classification function may issue warnings for:
+
+- **Low mapping rate**: If < 80% of signature genes are found in new data (suggests ID namespace mismatch)
+- **Missing genes**: Signature genes not found in new data (set to 0 with warning)
+
+These warnings help identify potential data compatibility issues. The function will still return predictions, but they may be less reliable if many genes are missing.
+
+```{r handling-warnings, eval = TRUE}
+# Example: Warnings are displayed automatically during classification
+# If you see warnings about low mapping rate or missing genes, check:
+# 1. Gene ID namespace (Ensembl, Entrez, Symbol) matches between signature and data
+# 2. Data preprocessing is compatible with signature training pipeline
+# 3. Tissue type matches (endometrial tissue only)
+```
+
+## Best Practices
+
+1. **Verify data compatibility**: Ensure gene IDs match between signature and new data
+2. **Check tissue type**: Pre-trained signature is trained on endometrial tissue only
+3. **Review warnings**: Pay attention to mapping rate and missing gene warnings
+4. **Interpret confidence intervals**: Lower confidence indicates more uncertainty
+5. **Consider threshold adjustment**: Custom thresholds may be needed for specific use cases
+
+## Limitations
+
+- **Tissue specificity**: Trained on endometrial tissue only; not portable across tissues
+- **Small n uncertainty**: Limited sample size (n=12) introduces uncertainty; avoid clinical claims
+- **Binary only**: Supports only PS vs PIS classification; multiclass/continuous outcomes out of scope
+- **Batch effects**: Users should account for batch effects if present
+
+## Next Steps
+
+- **Mode 2**: Train and validate a new signature on your own labeled data
+- **Mode 3**: Explore and visualize your data before or after classification
+- **Export results**: Save predictions for further analysis or reporting
+
+For more information, see the package introduction vignette: `vignette("endoSignatureR-intro", package = "endoSignatureR")`
+
