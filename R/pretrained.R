@@ -165,18 +165,29 @@ esr_loadPretrainedSignature <- function() {
 #' @param X_new A matrix/data.frame of gene expression (genes x samples) for new samples.
 #'   Must have rownames (gene IDs) and colnames (sample IDs).
 #' @param signature Optional signature list; if NULL, loads the shipped pre-trained signature.
-#' @param threshold Decision threshold for positive class. Defaults to 0.5. Can be numeric (0-1) or "youden" (requires calibration).
+#' @param threshold Decision threshold for positive class. Defaults to 0.5. Can be numeric (0-1) or "youden" (requires labeled validation data via y_new).
 #' @param confidence Logical; whether to compute confidence outputs. Defaults to TRUE.
+#' @param y_new Optional vector of validation labels (PS/PIS or 0/1). Required if threshold = "youden".
 #'
-#' @return A data.frame with per-sample predictions containing:
+#' @return If alerts are generated, returns a list with:
 #' \describe{
-#'   \item{sample}{Character; sample IDs (colnames of X_new)}
-#'   \item{score}{Numeric; raw signature score (linear combination)}
-#'   \item{probability}{Numeric; calibrated probability (if calibration available) or sigmoid-transformed score}
-#'   \item{prediction}{Factor; binary predictions (PS or PIS) based on threshold}
-#'   \item{confidence_lower}{Numeric; lower confidence bound (if confidence = TRUE)}
-#'   \item{confidence_upper}{Numeric; upper confidence bound (if confidence = TRUE)}
+#'   \item{predictions}{Data.frame with per-sample predictions containing:}
+#'   \itemize{
+#'     \item{sample}{Character; sample IDs (colnames of X_new)}
+#'     \item{score}{Numeric; raw signature score (linear combination)}
+#'     \item{probability}{Numeric; calibrated probability (if calibration available) or sigmoid-transformed score}
+#'     \item{prediction}{Factor; binary predictions (PS or PIS) based on threshold}
+#'     \item{confidence_lower}{Numeric; lower confidence bound (if confidence = TRUE)}
+#'     \item{confidence_upper}{Numeric; upper confidence bound (if confidence = TRUE)}
+#'   }
+#'   \item{alerts}{Data.frame with validation alerts containing:}
+#'   \itemize{
+#'     \item{type}{Character; alert type (warning, info, error)}
+#'     \item{message}{Character; alert message}
+#'     \item{severity}{Character; severity level (low, medium, high)}
+#'   }
 #' }
+#' If no alerts are generated, returns the predictions data.frame directly (for backward compatibility).
 #'
 #' @details
 #' This function applies a pre-trained signature to new endometrial samples:
@@ -213,8 +224,126 @@ esr_loadPretrainedSignature <- function() {
 #' head(predictions)
 #' table(predictions$prediction)
 #'
+# Internal helper for Youden threshold selection
+.select_threshold_youden <- function(probabilities, labels) {
+  # Validate inputs
+  if (!is.numeric(probabilities)) {
+    stop("probabilities must be numeric")
+  }
+
+  if (length(probabilities) == 0) {
+    stop("probabilities must not be empty")
+  }
+
+  if (length(probabilities) != length(labels)) {
+    stop("probabilities and labels must have same length")
+  }
+
+  # Check probability range
+  if (any(probabilities < 0 | probabilities > 1, na.rm = TRUE)) {
+    warning("Probabilities outside [0, 1] range detected; clamping to [0, 1]")
+    probabilities <- pmax(0, pmin(1, probabilities))
+  }
+
+  # Convert labels to binary (0 = PS, 1 = PIS)
+  if (is.factor(labels)) {
+    labels <- as.character(labels)
+  }
+
+  # Handle PS/PIS labels
+  labels_binary <- ifelse(labels == "PS" | labels == "0" | labels == 0, 0, 1)
+
+  # Check for edge cases
+  if (length(unique(probabilities)) == 1) {
+    # All probabilities are the same
+    warning("All probabilities are the same; using default threshold 0.5")
+    return(0.5)
+  }
+
+  if (length(unique(labels_binary)) < 2) {
+    # Only one class present
+    warning("Only one class present in labels; using default threshold 0.5")
+    return(0.5)
+  }
+
+  # Use pROC if available, otherwise manual computation
+  if (requireNamespace("pROC", quietly = TRUE)) {
+    # Compute ROC curve using pROC
+    roc_obj <- pROC::roc(
+      response = labels_binary, predictor = probabilities,
+      quiet = TRUE, direction = "<"
+    )
+
+    # Get optimal threshold using Youden's J
+    coords <- pROC::coords(roc_obj,
+      x = "best", best.method = "youden",
+      transpose = FALSE
+    )
+
+    if (is.null(coords) || nrow(coords) == 0 || is.na(coords$threshold[1])) {
+      warning("Could not compute Youden threshold; using default 0.5")
+      return(0.5)
+    }
+
+    optimal_threshold <- as.numeric(coords$threshold[1])
+
+    # Ensure threshold is in valid range
+    if (is.na(optimal_threshold) || optimal_threshold < 0 || optimal_threshold > 1) {
+      warning("Invalid Youden threshold computed; using default 0.5")
+      return(0.5)
+    }
+
+    return(optimal_threshold)
+  } else {
+    # Manual computation of Youden threshold
+    # Sort probabilities in descending order
+    ord <- order(probabilities, decreasing = TRUE)
+    probs_sorted <- probabilities[ord]
+    labels_sorted <- labels_binary[ord]
+
+    # Count positives and negatives
+    n_pos <- sum(labels_sorted == 1)
+    n_neg <- sum(labels_sorted == 0)
+
+    if (n_pos == 0 || n_neg == 0) {
+      warning("No positive or negative samples; using default threshold 0.5")
+      return(0.5)
+    }
+
+    # Compute TPR and FPR at each unique threshold
+    unique_thresholds <- sort(unique(probs_sorted), decreasing = TRUE)
+    best_j <- -Inf
+    best_threshold <- 0.5
+
+    for (thresh in unique_thresholds) {
+      preds <- ifelse(probs_sorted >= thresh, 1, 0)
+      tp <- sum(preds == 1 & labels_sorted == 1)
+      fp <- sum(preds == 1 & labels_sorted == 0)
+
+      tpr <- tp / n_pos
+      fpr <- fp / n_neg
+
+      # Youden's J = TPR - FPR = sensitivity + specificity - 1
+      j <- tpr - fpr
+
+      if (j > best_j) {
+        best_j <- j
+        best_threshold <- thresh
+      }
+    }
+
+    # If perfect separation, use threshold closest to 0.5
+    if (best_j >= 1.0) {
+      # Perfect separation - find threshold closest to 0.5
+      best_threshold <- unique_thresholds[which.min(abs(unique_thresholds - 0.5))]
+    }
+
+    return(best_threshold)
+  }
+}
+
 #' @export
-esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, confidence = TRUE) {
+esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, confidence = TRUE, y_new = NULL) {
   # Load signature if not provided
   if (is.null(signature)) {
     signature <- esr_loadPretrainedSignature()
@@ -250,6 +379,14 @@ esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, co
     stop("X_new must have rownames (gene IDs)")
   }
 
+  # Initialize alerts data.frame for validation alerts
+  alerts <- data.frame(
+    type = character(),
+    message = character(),
+    severity = character(),
+    stringsAsFactors = FALSE
+  )
+
   # Check for colnames (sample IDs)
   sample_ids <- if (is.null(colnames(X_new))) {
     paste0("sample_", seq_len(ncol(X_new)))
@@ -279,27 +416,47 @@ esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, co
   matched_genes <- intersect(signature_panel, X_genes)
   mapping_rate <- length(matched_genes) / length(signature_panel)
 
-  # Warn if low mapping rate
+
+  # Warn if low mapping rate and add alert
   if (mapping_rate < 0.8) {
-    warning(
+    warning_msg <- paste0(
       "Low gene ID mapping rate: ", round(mapping_rate * 100, 1), "% (",
       length(matched_genes), "/", length(signature_panel),
       ") signature genes found in new data. ",
       "This may indicate a gene ID namespace mismatch. ",
       "Predictions may be unreliable."
     )
+    warning(warning_msg)
+    alerts <- rbind(alerts, data.frame(
+      type = "warning",
+      message = warning_msg,
+      severity = "high",
+      stringsAsFactors = FALSE
+    ))
   }
 
-  # Check for missing genes
+
+
+  # Check for missing genes and add alert
   missing_genes <- setdiff(signature_panel, X_genes)
+  missing_pct <- length(missing_genes) / length(signature_panel)
   if (length(missing_genes) > 0) {
-    warning(
+    warning_msg <- paste0(
       "Missing signature genes in new data: ", length(missing_genes),
-      " genes will be set to 0. Missing: ",
+      " genes (", round(missing_pct * 100, 1), "%) will be set to 0. Missing: ",
       paste(head(missing_genes, 10), collapse = ", "),
       if (length(missing_genes) > 10) " ..." else ""
     )
+    warning(warning_msg)
+    severity <- if (missing_pct > 0.2) "high" else if (missing_pct > 0.1) "medium" else "low"
+    alerts <- rbind(alerts, data.frame(
+      type = "warning",
+      message = warning_msg,
+      severity = severity,
+      stringsAsFactors = FALSE
+    ))
   }
+
 
   # Apply preprocessing recipe (transform and filter)
   # Use same preprocessing as training pipeline
@@ -353,7 +510,8 @@ esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, co
 
   # Apply calibration if available
   calibration <- signature$recipe$training$calibration_method %||% NULL
-  calibration_params <- NULL
+  # calibration_params would be used when calibration is fully implemented
+  # calibration_params <- NULL
   probabilities <- scores
 
   # Convert scores to probabilities using sigmoid (for logistic regression)
@@ -367,12 +525,22 @@ esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, co
     # For now, use uncalibrated probabilities
   }
 
+
   # Apply threshold
   if (is.character(threshold) && threshold == "youden") {
     # Youden threshold requires labeled validation data
-    # For now, fall back to 0.5 with warning
-    warning("Youden threshold requires labeled validation data. Using default threshold 0.5.")
-    threshold <- 0.5
+    if (is.null(y_new)) {
+      warning("Youden threshold requires labeled validation data (y_new). Using default threshold 0.5.")
+      threshold <- 0.5
+    } else {
+      # Compute Youden threshold using validation labels
+      # Note: probabilities are computed after calibration, so use them for threshold selection
+      youden_threshold <- .select_threshold_youden(probabilities = probabilities, labels = y_new)
+      threshold <- youden_threshold
+      if (threshold != 0.5) {
+        message(paste("Optimal Youden threshold:", round(threshold, 3)))
+      }
+    }
   }
 
   if (!is.numeric(threshold) || threshold < 0 || threshold > 1) {
@@ -382,6 +550,38 @@ esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, co
   # Get binary predictions based on threshold
   predictions <- ifelse(probabilities >= threshold, "PIS", "PS")
   predictions <- factor(predictions, levels = c("PS", "PIS"))
+
+  # Check for class imbalance if labels provided
+  if (!is.null(y_new)) {
+    if (is.factor(y_new)) {
+      y_new_char <- as.character(y_new)
+    } else {
+      y_new_char <- as.character(y_new)
+    }
+    n_ps <- sum(y_new_char == "PS" | y_new_char == "0" | y_new_char == 0)
+    n_pis <- sum(y_new_char == "PIS" | y_new_char == "1" | y_new_char == 1)
+    total <- n_ps + n_pis
+
+    if (total > 0) {
+      ps_pct <- n_ps / total
+      pis_pct <- n_pis / total
+      imbalance_ratio <- max(ps_pct, pis_pct) / min(ps_pct, pis_pct)
+
+      if (imbalance_ratio > 2.0) {
+        warning_msg <- paste0(
+          "Class imbalance detected in validation data: ",
+          n_ps, " PS (", round(ps_pct * 100, 1), "%), ",
+          n_pis, " PIS (", round(pis_pct * 100, 1), "%)"
+        )
+        alerts <- rbind(alerts, data.frame(
+          type = "info",
+          message = warning_msg,
+          severity = "low",
+          stringsAsFactors = FALSE
+        ))
+      }
+    }
+  }
 
   # Compute confidence intervals if requested
   confidence_lower <- NULL
@@ -415,7 +615,13 @@ esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, co
     result$confidence_upper <- confidence_upper
   }
 
-  return(result)
+  # Return predictions and alerts
+  # If alerts exist, return as list; otherwise return data.frame for backward compatibility
+  if (nrow(alerts) > 0) {
+    return(list(predictions = result, alerts = alerts))
+  } else {
+    return(result)
+  }
 }
 
 # [END]
