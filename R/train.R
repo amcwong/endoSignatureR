@@ -11,9 +11,9 @@
 #' @param top_k Integer; number of top genes to select via DE analysis. Defaults to 300.
 #' @param outer Character scalar; outer CV type. "kfold" for K-fold CV or "lpo" for Leave-Pair-Out. Defaults to "kfold".
 #' @param outer_folds Integer; number of outer CV folds (if outer = "kfold"). If NULL, uses folds_demo structure. Defaults to NULL.
-#' @param inner_folds Integer; number of inner CV folds for λ tuning. Defaults to 5.
+#' @param inner_folds Integer; number of inner CV folds for lambda tuning. Defaults to 5.
 #' @param inner_repeats Integer; number of inner CV repeats. Defaults to 10.
-#' @param lambda_rule Character scalar; λ selection rule. "1se" (1 standard error rule, sparser) or "min" (minimum CV error). Defaults to "1se".
+#' @param lambda_rule Character scalar; lambda selection rule. "1se" (1 standard error rule, sparser) or "min" (minimum CV error). Defaults to "1se".
 #' @param min_folds Integer; minimum number of outer folds that must select a gene for consensus. Defaults to 2.
 #' @param aggregation_method Character scalar; method for aggregating coefficients. "mean" or "median". Defaults to "mean".
 #' @param calibration_method Character scalar; probability calibration method. "platt" (Platt scaling, default), "isotonic" (isotonic regression), or "none" (no calibration). Defaults to "platt".
@@ -59,14 +59,14 @@
 #'   }
 #'   \item{splits}{List containing outer/inner splits used (or reference to folds_demo)}
 #'   \item{seeds}{List of seeds used for reproducibility}
-#'   \item{cv_results}{List of inner CV results (λ tuning per outer fold)}
+#'   \item{cv_results}{List of inner CV results (lambda tuning per outer fold)}
 #'   \item{aggregation}{List containing aggregation metadata (method, min_folds, consensus_genes)}
 #' }
 #'
 #' @details
 #' This function implements nested cross-validation with:
 #' - **Outer CV**: Model evaluation on held-out test sets
-#' - **Inner CV**: Hyperparameter tuning (λ selection) within each outer fold
+#' - **Inner CV**: Hyperparameter tuning (lambda selection) within each outer fold
 #' - **In-fold preprocessing**: Transforms/filters and gene selection within folds only (anti-leakage)
 #' - **Coefficient aggregation**: Option 2 - aggregates coefficients across outer folds for stability
 #'
@@ -99,6 +99,8 @@
 #' result$metrics$auc
 #' result$metrics$accuracy
 #' }
+#' @importFrom stats coef predict glm binomial median approx var isoreg
+#' @importFrom utils data head
 #' @export
 esr_trainEndometrialSignature <- function(X, pheno,
                                           transform = "log1p-cpm",
@@ -202,10 +204,10 @@ esr_trainEndometrialSignature <- function(X, pheno,
   folds_data <- NULL
   if (is.null(outer_folds)) {
     # Try to use folds_demo if available
-    tryCatch(
+      tryCatch(
       {
         # Try to load folds_demo using data()
-        data(folds_demo, package = "endoSignatureR", envir = environment())
+        utils::data("folds_demo", package = "endoSignatureR", envir = environment())
         if (exists("folds_demo", envir = environment())) {
           folds_data <- get("folds_demo", envir = environment())
         }
@@ -312,7 +314,7 @@ esr_trainEndometrialSignature <- function(X, pheno,
         train_labels <- as.integer(train_pheno$group == groups[2]) # PIS = 1, PS = 0
         test_labels <- as.integer(test_pheno$group == groups[2])
 
-        # Inner CV for λ tuning
+        # Inner CV for lambda tuning
         set.seed(seeds$inner + fold_idx)
 
         # Create inner splits on outer training data
@@ -329,7 +331,7 @@ esr_trainEndometrialSignature <- function(X, pheno,
           inner_splits <- NULL
         }
 
-        # Use cv.glmnet for λ tuning (handles inner CV internally)
+        # Use cv.glmnet for lambda tuning (handles inner CV internally)
         n_train_samples <- nrow(mat_t_train_selected)
 
         if (!is.null(inner_splits)) {
@@ -380,7 +382,7 @@ esr_trainEndometrialSignature <- function(X, pheno,
           }
         }
 
-        # Select λ based on rule
+        # Select lambda based on rule
         if (lambda_rule == "1se") {
           lambda_selected <- cv_fit$lambda.1se
         } else {
@@ -398,7 +400,7 @@ esr_trainEndometrialSignature <- function(X, pheno,
           nzero = cv_fit$nzero
         )
 
-        # Train final model on full outer training data with selected λ
+        # Train final model on full outer training data with selected lambda
         if (n_train_samples < 20) {
           final_fit <- suppressWarnings(glmnet::glmnet(
             x = mat_t_train_selected,
@@ -664,7 +666,7 @@ esr_trainEndometrialSignature <- function(X, pheno,
         }
       }
 
-      # Filter to consensus genes (selected in ≥min_folds folds)
+      # Filter to consensus genes (selected in >= min_folds folds)
       consensus_genes <- names(selection_freq)[selection_freq >= min_folds]
     } else {
       selection_freq <- integer(0)
@@ -716,7 +718,7 @@ esr_trainEndometrialSignature <- function(X, pheno,
           if (length(consensus_genes) == 0) {
             selection_freq_subset <- integer(0)
           }
-          warning("No consensus genes found (selected in ≥", min_folds, " folds). Using genes from fold ", best_fold, " (", length(consensus_genes), " genes).")
+          warning("No consensus genes found (selected in >= ", min_folds, " folds). Using genes from fold ", best_fold, " (", length(consensus_genes), " genes).")
         } else {
           consensus_genes <- character(0)
           aggregated_coef <- numeric(0)
@@ -802,7 +804,7 @@ esr_trainEndometrialSignature <- function(X, pheno,
             boot_mat_t_selected <- boot_mat_t[, boot_selected, drop = FALSE]
 
             if (ncol(boot_mat_t_selected) > 0 && nrow(boot_mat_t_selected) > 0) {
-              # Use cv.glmnet for λ selection
+              # Use cv.glmnet for lambda selection
               n_boot_samples <- nrow(boot_mat_t_selected)
 
               if (n_boot_samples < 20) {
@@ -827,7 +829,7 @@ esr_trainEndometrialSignature <- function(X, pheno,
                 )
               }
 
-              # Select λ based on rule
+              # Select lambda based on rule
               if (lambda_rule == "1se") {
                 boot_lambda <- boot_cv_fit$lambda.1se
               } else {
@@ -976,6 +978,7 @@ esr_trainEndometrialSignature <- function(X, pheno,
 #' dim(result$mat_t_train)
 #' dim(result$mat_t_test)
 #' }
+#' @importFrom utils head
 #' @export
 esr_transformInFold <- function(split, counts, pheno,
                                 transform = "log1p-cpm",
@@ -1120,6 +1123,7 @@ esr_transformInFold <- function(split, counts, pheno,
 #' - Selecting genes based on training-only statistics
 #' - Never using test/validation data for gene selection
 #'
+#' @importFrom utils head
 #' @examples
 #' \dontrun{
 #' library(rsample)
@@ -1225,6 +1229,7 @@ esr_selectDEInFold <- function(split, mat_t, pheno,
 #' @param prob_raw Numeric vector; raw probabilities from model.
 #' @param labels Integer vector; binary labels (0/1).
 #' @return List with calibrated probabilities and parameters (A, B).
+#' @importFrom stats glm binomial
 #' @keywords internal
 calibrate_platt <- function(prob_raw, labels) {
   # Avoid edge cases
@@ -1270,6 +1275,7 @@ calibrate_platt <- function(prob_raw, labels) {
 #' @param prob_raw Numeric vector; raw probabilities from model.
 #' @param labels Integer vector; binary labels (0/1).
 #' @return List with calibrated probabilities and isotonic fit.
+#' @importFrom stats isoreg
 #' @keywords internal
 calibrate_isotonic <- function(prob_raw, labels) {
   # Edge case: need at least 2 samples

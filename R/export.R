@@ -456,7 +456,7 @@ export_model_card <- function(signature, metrics = NULL, calibration = NULL,
     paste0("- **CV Structure**: Nested CV (outer: ", n_outer_folds, "-fold, inner: ", inner_folds, "-fold with ", inner_repeats, " repeats)"),
     paste0("- **Lambda Selection**: ", lambda_rule, " rule (", if (lambda_rule == "1se") "1 standard error rule for sparsity" else "minimum CV error", ")"),
     paste0("- **Coefficient Aggregation**: ", aggregation_method, " aggregation across outer folds (Option 2)"),
-    paste0("- **Consensus Genes**: Genes selected in ≥", min_folds, " outer folds"),
+    paste0("- **Consensus Genes**: Genes selected in >=", min_folds, " outer folds"),
     ""
   )
 

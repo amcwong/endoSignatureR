@@ -33,6 +33,7 @@
 #'   pheno = gse201926_sample$pheno
 #' )
 #' head(qc_metrics)
+#' @importFrom utils head
 #' @export
 esr_computeQCMetrics <- function(counts, mat_t = NULL, pheno = NULL, group_col = "group") {
     # Convert counts to matrix if needed
@@ -196,6 +197,7 @@ esr_computeQCMetrics <- function(counts, mat_t = NULL, pheno = NULL, group_col =
 #' bundle$counts_t
 #' bundle$de_table
 #' bundle$selected_genes
+#' @importFrom utils head
 #' @export
 esr_createAnalysisBundle <- function(counts_t, de_table = NULL, selected_genes = NULL,
                                      qc_metrics = NULL, pheno = NULL, annot = NULL,

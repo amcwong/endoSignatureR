@@ -8,6 +8,7 @@
 #'
 #' @return A ggplot object showing PC1 vs PC2 colored by group.
 #'
+#' @importFrom utils head
 #' @examples
 #' data(gse201926_sample)
 #' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
@@ -50,7 +51,7 @@ plotEndometrialPCA <- function(mat_t, pheno = NULL, group_col = "group") {
     n_groups <- length(unique(pca_df$group))
 
     # Create plot with better point distinction
-    p <- ggplot2::ggplot(pca_df, ggplot2::aes(x = PC1, y = PC2, color = group, shape = group)) +
+    p <- ggplot2::ggplot(pca_df, ggplot2::aes(x = .data$PC1, y = .data$PC2, color = .data$group, shape = .data$group)) +
         ggplot2::geom_point(size = 4, alpha = 0.8, stroke = 1.2) +
         ggplot2::scale_shape_manual(values = c("PIS" = 16, "PS" = 17, "1" = 16)) + # Different shapes for groups
         ggplot2::labs(
@@ -131,7 +132,7 @@ plotEndometrialLibsize <- function(counts, pheno = NULL, group_col = "group") {
     # Create plot
     if (length(unique(lib_df$group)) > 1) {
         # Boxplot if grouping available
-        p <- ggplot2::ggplot(lib_df, ggplot2::aes(x = group, y = library_size, fill = group)) +
+        p <- ggplot2::ggplot(lib_df, ggplot2::aes(x = .data$group, y = .data$library_size, fill = .data$group)) +
             ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
             ggplot2::geom_jitter(width = 0.2, height = 0, size = 2, alpha = 0.6, color = "black") +
             ggplot2::labs(
@@ -156,7 +157,7 @@ plotEndometrialLibsize <- function(counts, pheno = NULL, group_col = "group") {
             )
     } else {
         # Histogram if no grouping
-        p <- ggplot2::ggplot(lib_df, ggplot2::aes(x = library_size)) +
+        p <- ggplot2::ggplot(lib_df, ggplot2::aes(x = .data$library_size)) +
             ggplot2::geom_histogram(bins = 30, fill = "steelblue", alpha = 0.7, color = "black") +
             ggplot2::labs(
                 x = "Library Size (total counts)",
@@ -247,7 +248,7 @@ plotEndometrialZeros <- function(counts, by = c("gene", "sample")) {
     perfect_coverage <- sum(pct_zeros == 0)
 
     # Create plot with clearer percentage display
-    p <- ggplot2::ggplot(zero_df, ggplot2::aes(x = pct_zeros)) +
+    p <- ggplot2::ggplot(zero_df, ggplot2::aes(x = .data$pct_zeros)) +
         ggplot2::geom_histogram(bins = 30, fill = "steelblue", alpha = 0.7, color = "black") +
         ggplot2::scale_x_continuous(
             labels = function(x) paste0(x, "%"),
@@ -358,7 +359,7 @@ plotEndometrialMA <- function(de_table, fdr_threshold = 0.05,
     )
 
     # Create plot
-    p <- ggplot2::ggplot(de_table, ggplot2::aes(x = AveExpr, y = log2FC, color = significant)) +
+    p <- ggplot2::ggplot(de_table, ggplot2::aes(x = .data$AveExpr, y = .data$log2FC, color = .data$significant)) +
         ggplot2::geom_point(alpha = 0.6, size = 1.5) +
         ggplot2::geom_hline(yintercept = log2fc_threshold, linetype = "dashed", color = "gray40", linewidth = 0.5) +
         ggplot2::geom_hline(yintercept = -log2fc_threshold, linetype = "dashed", color = "gray40", linewidth = 0.5) +
@@ -398,7 +399,7 @@ plotEndometrialMA <- function(de_table, fdr_threshold = 0.05,
         if (nrow(de_table_highlight) > 0) {
             p <- p + ggplot2::geom_point(
                 data = de_table_highlight,
-                ggplot2::aes(x = AveExpr, y = log2FC),
+                ggplot2::aes(x = .data$AveExpr, y = .data$log2FC),
                 color = "black",
                 shape = 21,
                 fill = "yellow",
@@ -492,7 +493,7 @@ plotEndometrialVolcano <- function(de_table, fdr_threshold = 0.05,
     )
 
     # Create plot
-    p <- ggplot2::ggplot(de_table, ggplot2::aes(x = log2FC_plot, y = neg_log10_pval, color = significant)) +
+    p <- ggplot2::ggplot(de_table, ggplot2::aes(x = .data$log2FC_plot, y = .data$neg_log10_pval, color = .data$significant)) +
         ggplot2::geom_point(alpha = 0.6, size = 1.5) +
         ggplot2::geom_vline(xintercept = log2fc_threshold, linetype = "dashed", color = "gray40", linewidth = 0.5) +
         ggplot2::geom_vline(xintercept = -log2fc_threshold, linetype = "dashed", color = "gray40", linewidth = 0.5) +
@@ -551,7 +552,7 @@ plotEndometrialVolcano <- function(de_table, fdr_threshold = 0.05,
         if (nrow(de_table_highlight) > 0) {
             p <- p + ggplot2::geom_point(
                 data = de_table_highlight,
-                ggplot2::aes(x = log2FC_plot, y = neg_log10_pval),
+                ggplot2::aes(x = .data$log2FC_plot, y = .data$neg_log10_pval),
                 color = "black",
                 shape = 21,
                 fill = "yellow",
@@ -597,7 +598,7 @@ plotEndometrialVolcano <- function(de_table, fdr_threshold = 0.05,
 #' de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
 #' top_de <- esr_selectTopGenes(de_table = de_table, n = 10, by = "de")
 #' head(top_de)
-#'
+#' @importFrom stats var
 #' @export
 esr_selectTopGenes <- function(mat_t = NULL, de_table = NULL, n = 50,
                                by = c("variance", "de", "custom"), sort_col = NULL) {
@@ -744,7 +745,7 @@ esr_selectTopGenes <- function(mat_t = NULL, de_table = NULL, n = 50,
 #'     show_row_names = TRUE, scale = "row"
 #' )
 #' ComplexHeatmap::draw(p)
-#'
+#' @importFrom utils head
 #' @export
 plotEndometrialHeatmap <- function(mat_t, genes = NULL, pheno = NULL,
                                    group_col = "group", annot_cols = NULL,
@@ -1026,7 +1027,7 @@ plotEndometrialROC <- function(predictions, use_calibrated = FALSE, show_auc = T
     }
 
     # Create plot
-    p <- ggplot2::ggplot(roc_df, ggplot2::aes(x = FPR, y = TPR)) +
+    p <- ggplot2::ggplot(roc_df, ggplot2::aes(x = .data$FPR, y = .data$TPR)) +
         ggplot2::geom_line(color = color_line, linewidth = 1.2, ...) +
         ggplot2::geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray40", linewidth = 0.8) +
         ggplot2::labs(
@@ -1213,7 +1214,7 @@ plotEndometrialPR <- function(predictions, use_calibrated = FALSE, show_auc = TR
     }
 
     # Create plot
-    p <- ggplot2::ggplot(pr_df, ggplot2::aes(x = Recall, y = Precision)) +
+    p <- ggplot2::ggplot(pr_df, ggplot2::aes(x = .data$Recall, y = .data$Precision)) +
         ggplot2::geom_line(color = color_line, linewidth = 1.2, ...) +
         ggplot2::geom_hline(
             yintercept = prevalence, linetype = "dashed", color = "gray40", linewidth = 0.8
@@ -1382,7 +1383,7 @@ plotEndometrialCalibration <- function(predictions, use_calibrated = FALSE, n_bi
     }
 
     # Create plot
-    p <- ggplot2::ggplot(bin_stats, ggplot2::aes(x = mean_pred, y = mean_obs)) +
+    p <- ggplot2::ggplot(bin_stats, ggplot2::aes(x = .data$mean_pred, y = .data$mean_obs)) +
         ggplot2::geom_point(size = 3, color = color_point, ...) +
         ggplot2::geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray40", linewidth = 0.8) +
         ggplot2::labs(
@@ -1544,7 +1545,7 @@ plotEndometrialComparison <- function(pretrained_result = NULL, new_result,
             # Overlay both curves (simplified - could use patchwork for better layout)
             p_roc_new <- p_roc_new + ggplot2::geom_line(
                 data = p_roc_pretrained$data,
-                ggplot2::aes(x = FPR, y = TPR),
+                ggplot2::aes(x = .data$FPR, y = .data$TPR),
                 color = color_pretrained, linewidth = 1.2, ...
             )
         }
@@ -1565,7 +1566,7 @@ plotEndometrialComparison <- function(pretrained_result = NULL, new_result,
             # Overlay both curves
             p_pr_new <- p_pr_new + ggplot2::geom_line(
                 data = p_pr_pretrained$data,
-                ggplot2::aes(x = Recall, y = Precision),
+                ggplot2::aes(x = .data$Recall, y = .data$Precision),
                 color = color_pretrained, linewidth = 1.2, ...
             )
         }
@@ -1588,7 +1589,7 @@ plotEndometrialComparison <- function(pretrained_result = NULL, new_result,
             # Overlay both curves
             p_cal_new <- p_cal_new + ggplot2::geom_point(
                 data = p_cal_pretrained$data,
-                ggplot2::aes(x = mean_pred, y = mean_obs),
+                ggplot2::aes(x = .data$mean_pred, y = .data$mean_obs),
                 color = color_pretrained, size = 3, shape = 17, ...
             )
         }
