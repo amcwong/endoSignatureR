@@ -28,9 +28,9 @@ library(endoSignatureR)
 For detailed workflow demonstrations, see the dedicated vignettes:
 
 - `browseVignettes("endoSignatureR")` - List all available vignettes
-- Mode 3: `vignette("mode3-visualization-analysis", package = "endoSignatureR")`
+- Mode 1: `vignette("mode1-rapid-classification", package = "endoSignatureR")`
 - Mode 2: `vignette("mode2-signature-validation", package = "endoSignatureR")`
-- Mode 1: `vignette("mode1-rapid-classification", package = "endoSignatureR")` (coming in Phase 3.2)
+- Mode 3: `vignette("mode3-visualization-analysis", package = "endoSignatureR")`
 
 ## Pre-trained Signature Artifacts
 
@@ -57,12 +57,105 @@ The pre-trained signature artifacts are reproducible and documented in the model
 
 ### Loading Pre-trained Signature
 
-The pre-trained signature can be loaded using `esr_loadPretrainedSignature()` (to be implemented in Phase 3.2). This function will read artifacts from `inst/extdata/pretrained-signature/` and return a signature object ready for classification.
+The pre-trained signature can be loaded using `esr_loadPretrainedSignature()`. This function reads artifacts from `inst/extdata/pretrained-signature/` and returns a signature object ready for classification.
 
-```{r load-pretrained-placeholder, eval=FALSE}
-# Placeholder for Phase 3.2 implementation
-# signature <- esr_loadPretrainedSignature()
-# signature$panel  # Gene panel
-# signature$coefficients  # Coefficients
-# signature$intercept  # Intercept
+```{r load-pretrained}
+# Load pretrained signature
+signature <- esr_loadPretrainedSignature()
+
+# Inspect signature structure
+str(signature, max.level = 2)
+
+# View signature panel
+head(signature$panel)
+
+# View coefficients
+head(signature$coefficients)
+
+# View intercept
+signature$intercept
+
+# View recipe (preprocessing parameters)
+signature$recipe$preprocessing
 ```
+
+### Applying Signature to New Samples
+
+Once the signature is loaded, it can be applied to new endometrial samples using `esr_classifyEndometrial()`. This function:
+
+- Validates data structure and performs domain/tissue checks (ID mapping, missing genes)
+- Applies preprocessing recipe (transform, filter) to match training pipeline
+- Computes signature scores using linear combination
+- Applies calibration if available
+- Applies threshold to get binary predictions (PS vs PIS)
+- Returns predictions with confidence intervals
+
+```{r classify-samples}
+# Load sample data (treat as unlabeled)
+data(gse201926_sample)
+X_new <- gse201926_sample$counts
+
+# Classify samples
+predictions <- esr_classifyEndometrial(
+  X_new = X_new,
+  signature = signature,
+  threshold = 0.5,
+  confidence = TRUE
+)
+
+# View predictions
+head(predictions)
+
+# Summary statistics
+table(predictions$prediction)
+```
+
+### Confidence Scores
+
+The classification function returns confidence intervals for each prediction:
+
+```{r confidence-scores}
+# View confidence intervals
+if ("confidence_lower" %in% names(predictions)) {
+  summary(predictions$confidence_lower)
+  summary(predictions$confidence_upper)
+}
+
+# Plot scores vs predictions
+plot(predictions$score, as.numeric(predictions$prediction),
+     xlab = "Signature Score", ylab = "Prediction (PS=1, PIS=2)")
+```
+
+### Threshold Selection
+
+The default threshold is 0.5, but custom thresholds can be specified:
+
+```{r threshold-selection}
+# Default threshold (0.5)
+predictions_default <- esr_classifyEndometrial(
+  X_new = X_new,
+  signature = signature,
+  threshold = 0.5,
+  confidence = FALSE
+)
+
+# Custom threshold (0.6)
+predictions_custom <- esr_classifyEndometrial(
+  X_new = X_new,
+  signature = signature,
+  threshold = 0.6,
+  confidence = FALSE
+)
+
+# Compare predictions
+table(predictions_default$prediction, predictions_custom$prediction)
+```
+
+### Handling Warnings
+
+The classification function may issue warnings for:
+
+- **Low mapping rate**: If < 80% of signature genes are found in new data (suggests ID namespace mismatch)
+- **Missing genes**: Signature genes not found in new data (set to 0 with warning)
+
+These warnings help identify potential data compatibility issues. The function will still return predictions, but they may be less reliable if many genes are missing.

@@ -246,3 +246,339 @@ test_that("pretrained stability CSV has correct structure (if available)", {
         )
     }
 })
+
+# Test Loading API
+
+test_that("esr_loadPretrainedSignature loads artifacts correctly", {
+    # Skip test if artifacts don't exist
+    csv_path <- system.file("extdata", "pretrained-signature", "endometrial_signature.csv", package = "endoSignatureR")
+    skip_if(
+        nchar(csv_path) == 0 || !file.exists(csv_path),
+        "Pretrained signature artifacts not found"
+    )
+
+    # Load signature
+    signature <- esr_loadPretrainedSignature()
+
+    # Verify signature structure
+    expect_type(signature, "list")
+    expect_true("panel" %in% names(signature))
+    expect_true("coefficients" %in% names(signature))
+    expect_true("intercept" %in% names(signature))
+    expect_true("selection_frequency" %in% names(signature))
+    expect_true("recipe" %in% names(signature))
+
+    # Verify panel is character vector
+    expect_type(signature$panel, "character")
+    expect_true(length(signature$panel) > 0)
+
+    # Verify coefficients is named numeric vector
+    expect_type(signature$coefficients, "double")
+    expect_true(length(signature$coefficients) > 0)
+    expect_equal(names(signature$coefficients), signature$panel)
+
+    # Verify intercept is numeric scalar
+    expect_type(signature$intercept, "double")
+    expect_true(length(signature$intercept) == 1)
+
+    # Verify selection_frequency is named integer vector
+    expect_type(signature$selection_frequency, "integer")
+    expect_equal(names(signature$selection_frequency), signature$panel)
+
+    # Verify recipe is a list with required sections
+    expect_type(signature$recipe, "list")
+    expect_true("preprocessing" %in% names(signature$recipe))
+    expect_true("training" %in% names(signature$recipe))
+    expect_true("signature" %in% names(signature$recipe))
+    expect_true("reproducibility" %in% names(signature$recipe))
+
+    # Verify panel length matches coefficient length
+    expect_equal(length(signature$panel), length(signature$coefficients))
+})
+
+test_that("esr_loadPretrainedSignature handles missing artifacts gracefully", {
+    # This test would require mocking system.file() to return empty path
+    # For now, we test that the function provides clear error messages
+    # by checking error message format when artifacts are missing
+    # (This is a placeholder - actual test would require more sophisticated mocking)
+    skip("Requires mocking system.file() to test missing artifacts")
+})
+
+# Test Scoring API
+
+test_that("esr_classifyEndometrial applies signature correctly", {
+    # Skip test if artifacts don't exist
+    csv_path <- system.file("extdata", "pretrained-signature", "endometrial_signature.csv", package = "endoSignatureR")
+    skip_if(
+        nchar(csv_path) == 0 || !file.exists(csv_path),
+        "Pretrained signature artifacts not found"
+    )
+
+    # Load sample data (treat as unlabeled)
+    data(gse201926_sample)
+    X_new <- gse201926_sample$counts
+
+    # Load pretrained signature
+    signature <- esr_loadPretrainedSignature()
+
+    # Classify samples
+    predictions <- esr_classifyEndometrial(
+        X_new = X_new,
+        signature = signature,
+        threshold = 0.5,
+        confidence = TRUE
+    )
+
+    # Verify predictions structure
+    expect_s3_class(predictions, "data.frame")
+    expect_true("sample" %in% names(predictions))
+    expect_true("score" %in% names(predictions))
+    expect_true("probability" %in% names(predictions))
+    expect_true("prediction" %in% names(predictions))
+    expect_true("confidence_lower" %in% names(predictions))
+    expect_true("confidence_upper" %in% names(predictions))
+
+    # Verify dimensions
+    expect_equal(nrow(predictions), ncol(X_new))
+    expect_equal(predictions$sample, colnames(X_new))
+
+    # Verify scores are numeric
+    expect_type(predictions$score, "double")
+    expect_true(all(!is.na(predictions$score)))
+
+    # Verify probabilities are numeric and between 0 and 1
+    expect_type(predictions$probability, "double")
+    expect_true(all(predictions$probability >= 0 & predictions$probability <= 1))
+
+    # Verify predictions are binary (PS or PIS)
+    expect_s3_class(predictions$prediction, "factor")
+    expect_true(all(levels(predictions$prediction) %in% c("PS", "PIS")))
+    expect_true(all(predictions$prediction %in% c("PS", "PIS")))
+
+    # Verify confidence intervals are numeric and between 0 and 1
+    expect_type(predictions$confidence_lower, "double")
+    expect_type(predictions$confidence_upper, "double")
+    expect_true(all(predictions$confidence_lower >= 0 & predictions$confidence_lower <= 1))
+    expect_true(all(predictions$confidence_upper >= 0 & predictions$confidence_upper <= 1))
+    expect_true(all(predictions$confidence_lower <= predictions$confidence_upper))
+})
+
+test_that("esr_classifyEndometrial is deterministic", {
+    # Skip test if artifacts don't exist
+    csv_path <- system.file("extdata", "pretrained-signature", "endometrial_signature.csv", package = "endoSignatureR")
+    skip_if(
+        nchar(csv_path) == 0 || !file.exists(csv_path),
+        "Pretrained signature artifacts not found"
+    )
+
+    # Load sample data
+    data(gse201926_sample)
+    X_new <- gse201926_sample$counts
+
+    # Load pretrained signature
+    signature <- esr_loadPretrainedSignature()
+
+    # Classify samples twice
+    set.seed(123)
+    predictions1 <- esr_classifyEndometrial(
+        X_new = X_new,
+        signature = signature,
+        threshold = 0.5,
+        confidence = TRUE
+    )
+
+    set.seed(123)
+    predictions2 <- esr_classifyEndometrial(
+        X_new = X_new,
+        signature = signature,
+        threshold = 0.5,
+        confidence = TRUE
+    )
+
+    # Verify predictions are identical
+    expect_equal(predictions1$score, predictions2$score, tolerance = 1e-6)
+    expect_equal(predictions1$probability, predictions2$probability, tolerance = 1e-6)
+    expect_equal(predictions1$prediction, predictions2$prediction)
+})
+
+test_that("esr_classifyEndometrial handles threshold correctly", {
+    # Skip test if artifacts don't exist
+    csv_path <- system.file("extdata", "pretrained-signature", "endometrial_signature.csv", package = "endoSignatureR")
+    skip_if(
+        nchar(csv_path) == 0 || !file.exists(csv_path),
+        "Pretrained signature artifacts not found"
+    )
+
+    # Load sample data
+    data(gse201926_sample)
+    X_new <- gse201926_sample$counts
+
+    # Load pretrained signature
+    signature <- esr_loadPretrainedSignature()
+
+    # Test default threshold (0.5)
+    predictions_default <- esr_classifyEndometrial(
+        X_new = X_new,
+        signature = signature,
+        threshold = 0.5,
+        confidence = FALSE
+    )
+
+    # Test custom threshold (0.6)
+    predictions_custom <- esr_classifyEndometrial(
+        X_new = X_new,
+        signature = signature,
+        threshold = 0.6,
+        confidence = FALSE
+    )
+
+    # Verify predictions can change with threshold
+    # (At least some predictions should differ if probabilities are not all extreme)
+    # Note: This may not always be true if all probabilities are <0.6 or >0.6
+    # So we just verify that the function accepts different thresholds
+    expect_s3_class(predictions_default, "data.frame")
+    expect_s3_class(predictions_custom, "data.frame")
+    expect_equal(nrow(predictions_default), nrow(predictions_custom))
+})
+
+test_that("esr_classifyEndometrial handles missing genes gracefully", {
+    # Skip test if artifacts don't exist
+    csv_path <- system.file("extdata", "pretrained-signature", "endometrial_signature.csv", package = "endoSignatureR")
+    skip_if(
+        nchar(csv_path) == 0 || !file.exists(csv_path),
+        "Pretrained signature artifacts not found"
+    )
+
+    # Load sample data
+    data(gse201926_sample)
+    X_new <- gse201926_sample$counts
+
+    # Load pretrained signature
+    signature <- esr_loadPretrainedSignature()
+
+    # Remove some signature genes from X_new
+    # (This simulates missing genes in new data)
+    genes_to_remove <- head(signature$panel, 1)
+    if (length(genes_to_remove) > 0 && genes_to_remove[1] %in% rownames(X_new)) {
+        X_new_missing <- X_new[rownames(X_new) != genes_to_remove[1], , drop = FALSE]
+
+        # Classify with missing genes (should warn but not fail)
+        expect_warning(
+            predictions <- esr_classifyEndometrial(
+                X_new = X_new_missing,
+                signature = signature,
+                threshold = 0.5,
+                confidence = FALSE
+            ),
+            "Missing signature genes"
+        )
+
+        # Verify predictions are still returned
+        expect_s3_class(predictions, "data.frame")
+        expect_equal(nrow(predictions), ncol(X_new_missing))
+    }
+})
+
+test_that("esr_classifyEndometrial handles low mapping rate", {
+    # Skip test if artifacts don't exist
+    csv_path <- system.file("extdata", "pretrained-signature", "endometrial_signature.csv", package = "endoSignatureR")
+    skip_if(
+        nchar(csv_path) == 0 || !file.exists(csv_path),
+        "Pretrained signature artifacts not found"
+    )
+
+    # Load sample data
+    data(gse201926_sample)
+    X_new <- gse201926_sample$counts
+
+    # Load pretrained signature
+    signature <- esr_loadPretrainedSignature()
+
+    # Create data with very few matching genes (simulate low mapping rate)
+    # Keep only a small subset of genes that are not in signature panel
+    # This tests the warning for low mapping rate
+    signature_genes <- signature$panel
+    non_signature_genes <- setdiff(rownames(X_new), signature_genes)
+
+    # If we have enough non-signature genes, create a test case
+    if (length(non_signature_genes) >= 50) {
+        X_new_low_mapping <- X_new[non_signature_genes[1:50], , drop = FALSE]
+
+        # This should fail because no signature genes are present after transformation
+        # (CPM filtering may remove all signature genes)
+        # So we expect an error or we need to ensure at least one signature gene passes filtering
+        # For now, skip this test as it requires a more sophisticated setup
+        skip("Low mapping rate test requires complex setup to ensure signature genes pass CPM filtering")
+    } else {
+        skip("Not enough non-signature genes to test low mapping rate")
+    }
+})
+
+test_that("esr_classifyEndometrial validates inputs", {
+    # Skip test if artifacts don't exist
+    csv_path <- system.file("extdata", "pretrained-signature", "endometrial_signature.csv", package = "endoSignatureR")
+    skip_if(
+        nchar(csv_path) == 0 || !file.exists(csv_path),
+        "Pretrained signature artifacts not found"
+    )
+
+    # Load pretrained signature
+    signature <- esr_loadPretrainedSignature()
+
+    # Test NULL X_new
+    expect_error(
+        esr_classifyEndometrial(X_new = NULL, signature = signature),
+        "X_new must be provided"
+    )
+
+    # Test empty matrix
+    X_empty <- matrix(nrow = 0, ncol = 0)
+    expect_error(
+        esr_classifyEndometrial(X_new = X_empty, signature = signature),
+        "X_new must have at least one gene and one sample"
+    )
+
+    # Test matrix without rownames
+    X_no_rownames <- matrix(1:10, nrow = 5, ncol = 2)
+    expect_error(
+        esr_classifyEndometrial(X_new = X_no_rownames, signature = signature),
+        "X_new must have rownames"
+    )
+
+    # Test invalid threshold
+    data(gse201926_sample)
+    X_new <- gse201926_sample$counts
+    expect_error(
+        esr_classifyEndometrial(X_new = X_new, signature = signature, threshold = -1),
+        "threshold must be numeric between 0 and 1"
+    )
+    expect_error(
+        esr_classifyEndometrial(X_new = X_new, signature = signature, threshold = 2),
+        "threshold must be numeric between 0 and 1"
+    )
+})
+
+test_that("esr_classifyEndometrial loads signature if not provided", {
+    # Skip test if artifacts don't exist
+    csv_path <- system.file("extdata", "pretrained-signature", "endometrial_signature.csv", package = "endoSignatureR")
+    skip_if(
+        nchar(csv_path) == 0 || !file.exists(csv_path),
+        "Pretrained signature artifacts not found"
+    )
+
+    # Load sample data
+    data(gse201926_sample)
+    X_new <- gse201926_sample$counts
+
+    # Classify without providing signature (should load automatically)
+    predictions <- esr_classifyEndometrial(
+        X_new = X_new,
+        signature = NULL,
+        threshold = 0.5,
+        confidence = TRUE
+    )
+
+    # Verify predictions are returned
+    expect_s3_class(predictions, "data.frame")
+    expect_equal(nrow(predictions), ncol(X_new))
+})

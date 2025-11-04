@@ -52,6 +52,14 @@ For full documentation, see `inst/extdata/pretrained-signature/endometrial_model
 
 The pre-trained signature can be loaded using `esr_loadPretrainedSignature()`. This function reads artifacts from `inst/extdata/pretrained-signature/` and returns a signature object ready for classification.
 
+The function automatically:
+
+- Loads `endometrial_signature.csv` (gene panel, coefficients, selection frequencies)
+- Loads `endometrial_recipe.json` (preprocessing recipe, training parameters)
+- Optionally loads `endometrial_stability.csv` (bootstrap stability frequencies)
+- Validates artifact structure and content
+- Returns a structured signature object with all components
+
 ```{r load-pretrained, eval = TRUE}
 # Load pretrained signature
 signature <- esr_loadPretrainedSignature()
@@ -63,16 +71,34 @@ str(signature, max.level = 2)
 cat("Signature panel size:", length(signature$panel), "genes\n")
 head(signature$panel, n = 10)
 
-# View coefficients
-head(signature$coefficients, n = 10)
+# View coefficients (first 10 genes with largest absolute coefficients)
+coef_sorted <- sort(abs(signature$coefficients), decreasing = TRUE)
+head(coef_sorted, n = 10)
 
 # View intercept
 cat("Intercept:", signature$intercept, "\n")
 
+# View selection frequencies (how many folds selected each gene)
+if (!is.null(signature$selection_frequency)) {
+  cat("Selection frequencies (first 10):\n")
+  head(signature$selection_frequency, n = 10)
+}
+
 # View recipe (preprocessing parameters)
 if (!is.null(signature$recipe)) {
-  cat("Preprocessing recipe:\n")
-  print(signature$recipe)
+  cat("\nPreprocessing recipe:\n")
+  preproc <- signature$recipe$preprocessing
+  cat("Transform:", if (!is.null(preproc$transform)) preproc$transform else "N/A", "\n")
+  cat("CPM min:", if (!is.null(preproc$cpm_min)) preproc$cpm_min else "N/A", "\n")
+  cat("CPM min samples:", if (!is.null(preproc$cpm_min_samples)) preproc$cpm_min_samples else "N/A", "\n")
+  cat("Top-K:", if (!is.null(preproc$top_k)) preproc$top_k else "N/A", "\n")
+}
+
+# View stability information (if available)
+if (!is.null(signature$stability) && !is.null(signature$stability$bootstrap_frequency)) {
+  cat("\nBootstrap stability frequencies (first 10):\n")
+  boot_freq_sorted <- sort(signature$stability$bootstrap_frequency, decreasing = TRUE)
+  head(boot_freq_sorted, n = 10)
 }
 ```
 
@@ -80,19 +106,22 @@ if (!is.null(signature$recipe)) {
 
 Once the signature is loaded, it can be applied to new endometrial samples using `esr_classifyEndometrial()`. This function:
 
-- Validates data structure and performs domain/tissue checks (ID mapping, missing genes)
-- Applies preprocessing recipe (transform, filter) to match training pipeline
-- Computes signature scores using linear combination
-- Applies calibration if available
-- Applies threshold to get binary predictions (PS vs PIS)
-- Returns predictions with confidence intervals
+- **Validates data structure**: Checks for required format (matrix/data.frame with rownames for gene IDs, colnames for sample IDs)
+- **Performs domain/tissue checks**: Validates gene ID mapping rate and reports missing genes
+- **Applies preprocessing recipe**: Uses the same transform and filtering as training (log1p-CPM, CPM filtering)
+- **Computes signature scores**: Linear combination of coefficients and expression values plus intercept
+- **Converts to probabilities**: Sigmoid transformation of raw scores
+- **Applies threshold**: Default 0.5 or custom threshold for binary classification
+- **Returns predictions**: Data frame with sample IDs, scores, probabilities, predictions, and optional confidence intervals
+
+### Basic Classification
 
 ```{r classify-samples, eval = TRUE}
 # Load sample data (treat as unlabeled new data)
 data(gse201926_sample)
 X_new <- gse201926_sample$counts
 
-# Classify samples
+# Classify samples with default parameters
 predictions <- esr_classifyEndometrial(
   X_new = X_new,
   signature = signature,
@@ -106,29 +135,81 @@ head(predictions)
 # Summary statistics
 cat("\nPrediction summary:\n")
 print(table(predictions$prediction))
+
+# Score distribution
+cat("\nScore summary:\n")
+summary(predictions$score)
+
+# Probability distribution
+cat("\nProbability summary:\n")
+summary(predictions$probability)
+```
+
+### Automatic Signature Loading
+
+If you don't provide a signature object, the function will automatically load it:
+
+```{r auto-load, eval = TRUE}
+# Classify without explicitly loading signature first
+predictions_auto <- esr_classifyEndometrial(
+  X_new = X_new,
+  signature = NULL,  # Will automatically load
+  threshold = 0.5,
+  confidence = TRUE
+)
+
+# Verify predictions are identical
+identical(predictions$sample, predictions_auto$sample)
+identical(predictions$score, predictions_auto$score)
 ```
 
 ## Confidence Scores
 
-The classification function returns confidence intervals for each prediction:
+The classification function returns confidence intervals for each prediction when `confidence = TRUE`. These intervals provide uncertainty estimates based on the distance from the decision threshold.
 
 ```{r confidence-scores, eval = TRUE}
-# View confidence intervals if available
+# View confidence intervals
 if ("confidence_lower" %in% names(predictions)) {
   cat("Confidence intervals:\n")
-  summary(predictions$confidence_lower)
-  summary(predictions$confidence_upper)
+  cat("\nLower bounds:\n")
+  print(summary(predictions$confidence_lower))
+  cat("\nUpper bounds:\n")
+  print(summary(predictions$confidence_upper))
+
+  # Calculate confidence width
+  confidence_width <- predictions$confidence_upper - predictions$confidence_lower
+  cat("\nConfidence interval width:\n")
+  print(summary(confidence_width))
 }
 
-# Plot scores vs predictions
-plot(predictions$score, as.numeric(predictions$prediction),
-     xlab = "Signature Score", ylab = "Prediction (PS=1, PIS=2)",
-     main = "Signature Scores vs Predictions")
+# Visualize predictions with confidence intervals
+if ("confidence_lower" %in% names(predictions)) {
+  # Plot scores vs probabilities with confidence bands
+  plot(predictions$score, predictions$probability,
+       xlab = "Signature Score", ylab = "Probability",
+       main = "Signature Scores vs Probabilities",
+       pch = 19, col = ifelse(predictions$prediction == "PIS", "red", "green"))
+
+  # Add confidence intervals as error bars
+  arrows(predictions$score, predictions$confidence_lower,
+         predictions$score, predictions$confidence_upper,
+         length = 0.05, angle = 90, code = 3, col = "gray50", lwd = 1.5)
+
+  # Add threshold line
+  abline(h = 0.5, lty = 2, col = "blue", lwd = 2)
+  legend("right", legend = c("PS", "PIS", "Threshold"),
+         col = c("green", "red", "blue"), pch = c(19, 19, NA), lty = c(NA, NA, 2))
+}
 ```
 
 ## Threshold Selection
 
-The default threshold is 0.5, but custom thresholds can be specified:
+The default threshold is 0.5, but custom thresholds can be specified. The threshold determines the probability cutoff for binary classification:
+
+- **Probability >= threshold**: Predicted as "PIS"
+- **Probability < threshold**: Predicted as "PS"
+
+Higher thresholds make the classifier more conservative (fewer PIS predictions), while lower thresholds make it more liberal (more PIS predictions).
 
 ```{r threshold-selection, eval = TRUE}
 # Default threshold (0.5)
@@ -139,46 +220,119 @@ predictions_default <- esr_classifyEndometrial(
   confidence = FALSE
 )
 
-# Custom threshold (0.6)
-predictions_custom <- esr_classifyEndometrial(
+# Conservative threshold (0.6) - fewer PIS predictions
+predictions_conservative <- esr_classifyEndometrial(
   X_new = X_new,
   signature = signature,
   threshold = 0.6,
   confidence = FALSE
 )
 
-# Compare predictions
-cat("Predictions at threshold 0.5:\n")
+# Liberal threshold (0.4) - more PIS predictions
+predictions_liberal <- esr_classifyEndometrial(
+  X_new = X_new,
+  signature = signature,
+  threshold = 0.4,
+  confidence = FALSE
+)
+
+# Compare predictions across thresholds
+cat("Predictions at threshold 0.5 (default):\n")
 print(table(predictions_default$prediction))
 
-cat("\nPredictions at threshold 0.6:\n")
-print(table(predictions_custom$prediction))
+cat("\nPredictions at threshold 0.6 (conservative):\n")
+print(table(predictions_conservative$prediction))
+
+cat("\nPredictions at threshold 0.4 (liberal):\n")
+print(table(predictions_liberal$prediction))
+
+# Note: Youden threshold calculation requires labeled validation data
+# For unlabeled classification, you can use the default 0.5 threshold
+# or calculate Youden threshold on labeled validation data (see text below)
+predictions_default_for_youden <- esr_classifyEndometrial(
+  X_new = X_new,
+  signature = signature,
+  threshold = 0.5,  # Default threshold (Youden threshold requires labeled data)
+  confidence = FALSE
+)
 ```
 
-## Handling Warnings
+### Threshold Selection Guidelines
 
-The classification function may issue warnings for:
+- **Default (0.5)**: Balanced classification, suitable for most cases
+- **Higher threshold (0.6-0.7)**: Use when false positives are costly (e.g., conservative screening)
+- **Lower threshold (0.3-0.4)**: Use when you want to capture more potential positives (e.g., initial screening)
+- **Youden threshold**: Optimal threshold based on validation data (requires labeled data; not yet implemented for unlabeled classification)
+
+## Handling Warnings and Validation
+
+The classification function performs comprehensive validation and may issue warnings for:
 
 - **Low mapping rate**: If < 80% of signature genes are found in new data (suggests ID namespace mismatch)
 - **Missing genes**: Signature genes not found in new data (set to 0 with warning)
+- **Data structure issues**: Missing rownames/colnames, non-numeric values, empty matrices
 
 These warnings help identify potential data compatibility issues. The function will still return predictions, but they may be less reliable if many genes are missing.
 
+### Validation Checks
+
+The function automatically validates:
+
+1. **Data structure**: Ensures `X_new` is a matrix/data.frame with rownames (gene IDs) and colnames (sample IDs)
+2. **Gene ID mapping**: Checks how many signature genes are found in new data (warns if < 80%)
+3. **Missing genes**: Reports which signature genes are missing (set to 0 expression)
+4. **Preprocessing compatibility**: Applies the same preprocessing recipe as training
+
 ```{r handling-warnings, eval = TRUE}
 # Example: Warnings are displayed automatically during classification
-# If you see warnings about low mapping rate or missing genes, check:
-# 1. Gene ID namespace (Ensembl, Entrez, Symbol) matches between signature and data
-# 2. Data preprocessing is compatible with signature training pipeline
-# 3. Tissue type matches (endometrial tissue only)
+# The function will warn about:
+# 1. Low gene ID mapping rate (< 80%)
+# 2. Missing signature genes (set to 0)
+# 3. Data structure issues
+
+# To see warnings in action, try with incompatible data:
+# (This example is commented out to avoid errors in vignette)
+# X_incompatible <- matrix(rnorm(1000), nrow = 100, ncol = 10)
+# rownames(X_incompatible) <- paste0("Gene_", 1:100)  # Different gene IDs
+# colnames(X_incompatible) <- paste0("Sample_", 1:10)
+# predictions_warn <- esr_classifyEndometrial(X_incompatible, signature = signature)
+# # This would trigger warnings about low mapping rate and missing genes
+
+# Best practices for avoiding warnings:
+# 1. Ensure gene ID namespace matches (Ensembl, Entrez, Symbol)
+# 2. Use compatible data preprocessing (raw counts recommended)
+# 3. Verify tissue type matches (endometrial tissue only)
+# 4. Check data quality (sufficient sequencing depth, library sizes)
+```
+
+### Deterministic Predictions
+
+The classification function is deterministic: running it multiple times with the same inputs produces identical results:
+
+```{r deterministic, eval = TRUE}
+# Run classification twice
+set.seed(123)
+predictions1 <- esr_classifyEndometrial(X_new, signature = signature, threshold = 0.5)
+
+set.seed(123)
+predictions2 <- esr_classifyEndometrial(X_new, signature = signature, threshold = 0.5)
+
+# Verify identical results
+identical(predictions1$score, predictions2$score)
+identical(predictions1$probability, predictions2$probability)
+identical(predictions1$prediction, predictions2$prediction)
 ```
 
 ## Best Practices
 
-1. **Verify data compatibility**: Ensure gene IDs match between signature and new data
-2. **Check tissue type**: Pre-trained signature is trained on endometrial tissue only
-3. **Review warnings**: Pay attention to mapping rate and missing gene warnings
-4. **Interpret confidence intervals**: Lower confidence indicates more uncertainty
-5. **Consider threshold adjustment**: Custom thresholds may be needed for specific use cases
+1. **Verify data compatibility**: Ensure gene IDs match between signature and new data (check namespace: Ensembl, Entrez, Symbol)
+2. **Check tissue type**: Pre-trained signature is trained on endometrial tissue only; not portable across tissues
+3. **Use raw counts**: Provide raw count data; the function will apply the same preprocessing as training
+4. **Review warnings**: Pay attention to mapping rate and missing gene warnings; predictions may be unreliable if many genes are missing
+5. **Interpret confidence intervals**: Lower confidence indicates more uncertainty; use caution when confidence intervals are wide
+6. **Consider threshold adjustment**: Custom thresholds may be needed for specific use cases (e.g., screening vs. diagnosis)
+7. **Validate with labeled data**: If you have labeled validation data, compare predictions to ground truth to assess performance
+8. **Check data quality**: Ensure sufficient sequencing depth and library sizes for reliable predictions
 
 ## Limitations
 
@@ -187,11 +341,27 @@ These warnings help identify potential data compatibility issues. The function w
 - **Binary only**: Supports only PS vs PIS classification; multiclass/continuous outcomes out of scope
 - **Batch effects**: Users should account for batch effects if present
 
+## Exporting Results
+
+After classification, you may want to save predictions for further analysis or reporting:
+
+```{r export-results, eval = FALSE}
+# Save predictions to CSV
+write.csv(predictions, file = "endometrial_predictions.csv", row.names = FALSE)
+
+# Or save to RData format
+save(predictions, signature, file = "classification_results.RData")
+```
+
 ## Next Steps
 
-- **Mode 2**: Train and validate a new signature on your own labeled data
-- **Mode 3**: Explore and visualize your data before or after classification
-- **Export results**: Save predictions for further analysis or reporting
+- **Mode 2**: Train and validate a new signature on your own labeled data using `esr_trainEndometrialSignature()`
+- **Mode 3**: Explore and visualize your data before or after classification using plotting functions
+- **Compare signatures**: Compare predictions from different signatures using `esr_compareSignatures()`
+- **Generate reports**: Create comprehensive reports using `esr_reportEndometrial()`
 
-For more information, see the package introduction vignette: `vignette("endoSignatureR-intro", package = "endoSignatureR")`
+For more information, see:
 
+- Package introduction: `vignette("endoSignatureR-intro", package = "endoSignatureR")`
+- Mode 2 workflow: `vignette("mode2-signature-validation", package = "endoSignatureR")`
+- Mode 3 visualization: `vignette("mode3-visualization-analysis", package = "endoSignatureR")`

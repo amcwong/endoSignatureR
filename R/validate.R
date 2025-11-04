@@ -251,6 +251,7 @@ esr_transform_log1p_cpm <- function(X, cpm_min = 1, cpm_min_samples = 4) {
 #' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
 #' de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
 #' head(de_table)
+#' @importFrom utils head
 #' @export
 esr_analyzeDifferentialExpression <- function(mat_t, pheno, group_col = "group",
                                               transform = "log1p-cpm",
