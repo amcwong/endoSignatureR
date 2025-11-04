@@ -28,9 +28,9 @@
 #' data(gse201926_sample)
 #' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
 #' qc_metrics <- esr_computeQCMetrics(
-#'   counts = gse201926_sample$counts,
-#'   mat_t = mat_t,
-#'   pheno = gse201926_sample$pheno
+#'     counts = gse201926_sample$counts,
+#'     mat_t = mat_t,
+#'     pheno = gse201926_sample$pheno
 #' )
 #' head(qc_metrics)
 #' @importFrom utils head
@@ -107,8 +107,9 @@ esr_computeQCMetrics <- function(counts, mat_t = NULL, pheno = NULL, group_col =
         # Check if sample_id column exists
         if ("sample_id" %in% names(pheno)) {
             # Merge with pheno to add group
-            qc_metrics <- merge(qc_metrics, pheno[, c("sample_id", group_col)], 
-                                by = "sample_id", all.x = TRUE)
+            qc_metrics <- merge(qc_metrics, pheno[, c("sample_id", group_col)],
+                by = "sample_id", all.x = TRUE
+            )
             # Rename group column for consistency
             if (group_col != "group" && group_col %in% names(qc_metrics)) {
                 qc_metrics$group <- qc_metrics[[group_col]]
@@ -179,18 +180,18 @@ esr_computeQCMetrics <- function(counts, mat_t = NULL, pheno = NULL, group_col =
 #' de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
 #' top_genes <- esr_selectTopGenes(de_table = de_table, n = 10, by = "de")
 #' qc_metrics <- esr_computeQCMetrics(
-#'   counts = gse201926_sample$counts,
-#'   mat_t = mat_t,
-#'   pheno = gse201926_sample$pheno
+#'     counts = gse201926_sample$counts,
+#'     mat_t = mat_t,
+#'     pheno = gse201926_sample$pheno
 #' )
 #'
 #' bundle <- esr_createAnalysisBundle(
-#'   counts_t = mat_t,
-#'   de_table = de_table,
-#'   selected_genes = top_genes,
-#'   qc_metrics = qc_metrics,
-#'   pheno = gse201926_sample$pheno,
-#'   annot = gse201926_sample$annot
+#'     counts_t = mat_t,
+#'     de_table = de_table,
+#'     selected_genes = top_genes,
+#'     qc_metrics = qc_metrics,
+#'     pheno = gse201926_sample$pheno,
+#'     annot = gse201926_sample$annot
 #' )
 #'
 #' # Access bundle components
@@ -246,8 +247,8 @@ esr_createAnalysisBundle <- function(counts_t, de_table = NULL, selected_genes =
             common_samples_qc <- intersect(sample_ids_counts, qc_sample_ids)
             if (length(common_samples_qc) == 0) {
                 warning("No matching sample IDs found between counts_t rownames and qc_metrics$sample_id")
-            } else if (length(common_samples_qc) < length(sample_ids_counts) || 
-                       length(common_samples_qc) < length(qc_sample_ids)) {
+            } else if (length(common_samples_qc) < length(sample_ids_counts) ||
+                length(common_samples_qc) < length(qc_sample_ids)) {
                 warning("Some sample IDs don't match between counts_t and qc_metrics")
             }
         }
@@ -262,8 +263,8 @@ esr_createAnalysisBundle <- function(counts_t, de_table = NULL, selected_genes =
             common_samples_pheno <- intersect(sample_ids_counts, pheno_sample_ids)
             if (length(common_samples_pheno) == 0) {
                 warning("No matching sample IDs found between counts_t rownames and pheno$sample_id")
-            } else if (length(common_samples_pheno) < length(sample_ids_counts) || 
-                       length(common_samples_pheno) < length(pheno_sample_ids)) {
+            } else if (length(common_samples_pheno) < length(sample_ids_counts) ||
+                length(common_samples_pheno) < length(pheno_sample_ids)) {
                 warning("Some sample IDs don't match between counts_t and pheno")
             }
         }
@@ -299,9 +300,11 @@ esr_createAnalysisBundle <- function(counts_t, de_table = NULL, selected_genes =
             warning("No matching gene IDs found between counts_t colnames and selected_genes")
         } else if (length(common_genes_selected) < length(selected_genes)) {
             missing_genes <- setdiff(selected_genes, gene_ids_counts)
-            warning(paste0("Some selected genes not found in counts_t: ", 
-                          paste(head(missing_genes, 5), collapse = ", "),
-                          if (length(missing_genes) > 5) " ..." else ""))
+            warning(paste0(
+                "Some selected genes not found in counts_t: ",
+                paste(head(missing_genes, 5), collapse = ", "),
+                if (length(missing_genes) > 5) " ..." else ""
+            ))
         }
     }
 
@@ -331,4 +334,3 @@ esr_createAnalysisBundle <- function(counts_t, de_table = NULL, selected_genes =
 }
 
 # [END]
-

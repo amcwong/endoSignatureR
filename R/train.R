@@ -204,7 +204,7 @@ esr_trainEndometrialSignature <- function(X, pheno,
   folds_data <- NULL
   if (is.null(outer_folds)) {
     # Try to use folds_demo if available
-      tryCatch(
+    tryCatch(
       {
         # Try to load folds_demo using data()
         utils::data("folds_demo", package = "endoSignatureR", envir = environment())
