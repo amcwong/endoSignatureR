@@ -32,6 +32,146 @@ For detailed workflow demonstrations, see the dedicated vignettes:
 - Mode 2: `vignette("mode2-signature-validation", package = "endoSignatureR")`
 - Mode 3: `vignette("mode3-visualization-analysis", package = "endoSignatureR")`
 
+## Loading Your Own Data
+
+The package provides functions to load your own RNA-seq count data, phenotype/metadata, and gene annotation files. These functions convert raw files into the standardized format expected by all package functions.
+
+### Supported File Formats
+
+The data loading functions support:
+
+- **Counts files**: TSV or CSV files with genes as rows and samples as columns (or transposed)
+- **Phenotype files**: GEO series matrix files (`.txt` or `.txt.gz`) or simple TSV/CSV files
+- **Annotation files**: TSV or CSV files with gene IDs and metadata
+- **Compressed files**: All file types support `.gz` compression automatically
+
+### Data Loading Functions
+
+The package provides three individual loading functions and one high-level convenience function:
+
+- **`esr_loadCountsFromFile()`**: Loads counts from TSV/CSV file
+- **`esr_loadPhenoFromFile()`**: Loads phenotype/metadata from series matrix or TSV/CSV file
+- **`esr_loadAnnotFromFile()`**: Loads gene annotation from TSV/CSV file
+- **`esr_loadFromFiles()`**: High-level function that loads all files and aligns IDs automatically
+
+### Loading Counts Data
+
+Counts files should have genes as rows and samples as columns. The first column should contain gene IDs (default: `"GeneID"`), and subsequent columns are sample counts.
+
+```{r load-counts}
+# Load counts from TSV file (using bundled example data)
+counts_file <- system.file("extdata", "gse201926_raw_counts.tsv.gz", package = "endoSignatureR")
+counts <- esr_loadCountsFromFile(
+  file_path = counts_file,
+  gene_id_col = "GeneID"  # Default; specify if different
+)
+
+# Check structure
+dim(counts)  # genes × samples
+head(rownames(counts))  # Gene IDs
+head(colnames(counts))  # Sample IDs
+```
+
+The function automatically:
+
+- Detects TSV vs CSV format based on file extension
+- Handles compressed files (`.gz`)
+- Converts to numeric matrix format
+- Sets rownames to gene IDs and colnames to sample IDs
+- Validates numeric values and warns about missing values
+
+### Loading Phenotype/Metadata
+
+Phenotype files can be in GEO series matrix format (from GEO downloads) or simple TSV/CSV files with sample metadata.
+
+```{r load-pheno}
+# Load from series matrix file (GEO format)
+pheno_file <- system.file("extdata", "gse201926_series_matrix.txt.gz", package = "endoSignatureR")
+pheno <- esr_loadPhenoFromFile(
+  file_path = pheno_file,
+  format = "series_matrix"  # Auto-detected if "auto"
+)
+
+# Check structure
+head(pheno)
+# Required columns: sample_id, group
+```
+
+For simple TSV/CSV files, the function auto-detects common column names:
+
+- **Sample ID**: `sample_id`, `Sample_ID`, `sample`, `Sample`, `GSM_ID`, etc.
+- **Group**: `group`, `Group`, `label`, `Label`, `class`, `Class`, etc.
+
+### Loading Gene Annotation
+
+Annotation files should contain gene IDs (matching counts rownames) and any additional metadata (gene symbols, descriptions, etc.).
+
+```{r load-annot}
+# Load annotation from TSV file (using bundled example data)
+annot_file <- system.file("extdata", "gse201926_annotation.tsv.gz", package = "endoSignatureR")
+annot <- esr_loadAnnotFromFile(
+  file_path = annot_file,
+  gene_id_col = "GeneID"  # Default; specify if different
+)
+
+# Check structure
+head(annot[, c("GeneID", "Symbol", "Description")])
+```
+
+### High-Level Convenience Function
+
+The `esr_loadFromFiles()` function loads all files and aligns IDs automatically. This is the recommended approach for most use cases.
+
+```{r load-from-files}
+# Load all files (Mode 2: labeled data) - using bundled example data
+counts_file <- system.file("extdata", "gse201926_raw_counts.tsv.gz", package = "endoSignatureR")
+pheno_file <- system.file("extdata", "gse201926_series_matrix.txt.gz", package = "endoSignatureR")
+annot_file <- system.file("extdata", "gse201926_annotation.tsv.gz", package = "endoSignatureR")
+
+user_data <- esr_loadFromFiles(
+  counts_file = counts_file,
+  pheno_file = pheno_file,
+  annot_file = annot_file,
+  pheno_format = "series_matrix",
+  validate = TRUE,  # Run validation checks
+  align_ids = TRUE   # Align sample/gene IDs between files
+)
+
+# Check structure
+str(user_data, max.level = 1)
+# List with: counts, pheno, annot, issues (if validate=TRUE)
+
+# Load unlabeled data (Mode 1)
+user_data_unlabeled <- esr_loadFromFiles(
+  counts_file = counts_file,
+  pheno_file = NULL,  # Not needed for unlabeled data
+  annot_file = NULL,  # Optional
+  validate = FALSE
+)
+```
+
+The function automatically:
+
+- Loads all files using individual loading functions
+- Aligns sample IDs between counts and pheno (reorders columns to match)
+- Aligns gene IDs between counts and annot (reorders rows to match)
+- Optionally validates data structure using `esr_validateEndometrial()`
+- Returns data in format matching `gse201926_sample` structure
+
+### Integration with Three-Mode Workflow
+
+The data loading functions serve as the entry point for all three modes:
+
+- **Mode 1 (Rapid Classification)**: Load unlabeled counts → apply pre-trained signature
+- **Mode 2 (Signature Validation)**: Load labeled data (counts + pheno + annot) → train/validate signature
+- **Mode 3 (Visualization & Analysis)**: Load labeled or unlabeled data → visualize and explore
+
+See the mode-specific vignettes for detailed workflow examples:
+
+- `vignette("mode1-rapid-classification", package = "endoSignatureR")`
+- `vignette("mode2-signature-validation", package = "endoSignatureR")`
+- `vignette("mode3-visualization-analysis", package = "endoSignatureR")`
+
 ## Pre-trained Signature Artifacts
 
 The package ships with a pre-trained PS vs PIS signature trained on the full GSE201926 dataset. The pre-trained signature artifacts are stored in `inst/extdata/pretrained-signature/` and can be accessed via `system.file("extdata", "pretrained-signature", ...)`:

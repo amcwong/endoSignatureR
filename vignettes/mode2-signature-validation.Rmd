@@ -41,6 +41,32 @@ Mode 2 provides a comprehensive pipeline for signature training that enforces an
 
 This vignette demonstrates Phase 2.1 functionality: **Data Preparation, Splits, and Anti-leakage Guards**. Future phases will add training, calibration, and comparison features.
 
+## Data Loading
+
+Mode 2 requires labeled data (counts + phenotype + optional annotation). Load your data files using `esr_loadFromFiles()`:
+
+```{r mode2-data-loading, eval=FALSE}
+# Load labeled data (required for Mode 2)
+user_data <- esr_loadFromFiles(
+  counts_file = "my_counts.tsv",
+  pheno_file = "my_metadata.tsv",  # Required: contains sample_id and group
+  annot_file = "my_annotation.tsv",  # Optional: for gene symbols
+  validate = TRUE,  # Run validation checks
+  align_ids = TRUE   # Align sample/gene IDs between files
+)
+
+# Check structure
+str(user_data, max.level = 1)
+# List with: counts, pheno, annot, issues (if validate=TRUE)
+
+# Check validation issues
+if (nrow(user_data$issues) > 0) {
+  print(user_data$issues)
+}
+```
+
+For detailed information on data loading functions, see the "Loading Your Own Data" section in the package introduction vignette: `vignette("endoSignatureR-intro", package = "endoSignatureR")`.
+
 ## Data Preparation
 
 ### Loading the Training Mini Dataset

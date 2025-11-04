@@ -21,6 +21,29 @@ library(endoSignatureR)
 
 Mode 1 (Rapid Classification) enables users to quickly classify unlabeled endometrial samples using the pre-trained PS vs PIS signature. This workflow is ideal for researchers who want immediate predictions without training a new signature.
 
+## Data Loading
+
+Mode 1 requires unlabeled counts data. Load your counts file using `esr_loadFromFiles()` or `esr_loadCountsFromFile()`:
+
+```{r mode1-data-loading, eval=FALSE}
+# Option 1: High-level convenience function (recommended)
+user_data <- esr_loadFromFiles(
+  counts_file = "my_counts.tsv",
+  pheno_file = NULL,  # Not needed for unlabeled data
+  annot_file = NULL,  # Optional
+  validate = FALSE
+)
+X_new <- user_data$counts
+
+# Option 2: Load counts directly
+X_new <- esr_loadCountsFromFile(
+  file_path = "my_counts.tsv",
+  gene_id_col = "GeneID"  # Default; specify if different
+)
+```
+
+For detailed information on data loading functions, see the "Loading Your Own Data" section in the package introduction vignette: `vignette("endoSignatureR-intro", package = "endoSignatureR")`.
+
 ## Overview
 
 The pre-trained signature was trained on the full GSE201926 endometrial lesion RNA-seq dataset using the Phase 2 pipeline (`esr_trainEndometrialSignature()`). The signature artifacts are stored in `inst/extdata/pretrained-signature/` and can be loaded using `esr_loadPretrainedSignature()`.

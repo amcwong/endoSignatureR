@@ -26,6 +26,31 @@ library(ComplexHeatmap)
 
 This vignette demonstrates the **Mode 3 workflow** (Standalone Visualization & Analysis) using the bundled sample dataset. This workflow enables quality assessment and exploratory analysis before proceeding to signature training or classification tasks.
 
+## Data Loading
+
+Mode 3 can work with labeled or unlabeled data. Load your data files using `esr_loadFromFiles()`:
+
+```{r mode3-data-loading, eval=FALSE}
+# Option 1: Load labeled data (for group-based analysis)
+user_data <- esr_loadFromFiles(
+  counts_file = "my_counts.tsv",
+  pheno_file = "my_metadata.tsv",  # Optional: for group-based analysis
+  annot_file = "my_annotation.tsv",  # Optional: for gene symbols
+  validate = TRUE,  # Run validation checks
+  align_ids = TRUE   # Align sample/gene IDs between files
+)
+
+# Option 2: Load unlabeled data (for general QC)
+user_data_unlabeled <- esr_loadFromFiles(
+  counts_file = "my_counts.tsv",
+  pheno_file = NULL,  # Not needed for unlabeled data
+  annot_file = NULL,  # Optional
+  validate = FALSE
+)
+```
+
+For detailed information on data loading functions, see the "Loading Your Own Data" section in the package introduction vignette: `vignette("endoSignatureR-intro", package = "endoSignatureR")`.
+
 ## Loading Data
 
 The package includes a sample dataset `gse201926_sample` containing 200 genes and 12 samples (6 PS and 6 PIS) for fast examples and testing.
