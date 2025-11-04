@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 
 # EndoSignatureR
 
-Endometrial RNA-seq Signature Discovery, Classification, and Visualization.
+Leakage-Safe Gene Signature Discovery for Small RNA-seq Cohorts
 
 <!-- badges: start -->
 
@@ -53,11 +53,7 @@ devtools::install_github("amcwong/endoSignatureR", build_vignettes = TRUE)
 library("endoSignatureR")
 ```
 
-To run the Shiny app:
-
-```r
-runEndoSignatureR()
-```
+To run the shinyApp: Under construction
 
 ## Overview
 
@@ -106,7 +102,9 @@ The package provides three workflows:
 
 The author of the package is Andrew Wong. The author designed and implemented the endometrial-specific workflows and functions listed above, integrating established methods (DE screening, LASSO via glmnet, nested cross-validation) into a cohesive package for PS vs PIS classification and validation.
 
-Generative AI tools (e.g., GitHub Copilot, ChatGPT) were used for brainstorming, code completions, debugging, and drafting where noted; all outputs were reviewed and validated by the author. Notably, GitHub Copilot was used extensively throughout creating the test suite and ChatGPT was used for commenting and proofreading.
+Contributions from other packages/sources for each function: The core analysis functions (`esr_trainEndometrialSignature`, `esr_validateEndometrial`, `esr_analyzeDifferentialExpression`) build upon `glmnet` (Friedman et al., 2010) for LASSO regularization, `limma` (Ritchie et al., 2015) for differential expression analysis, and `rsample` (Frick et al., 2025) for cross-validation resampling. The plotting functions (`plotEndometrial*`) use `ggplot2` (Wickham, 2016) for base graphics, `ComplexHeatmap` (Gu et al., 2016) for heatmap visualization, and `circlize` (Gu et al., 2014) for circular visualizations. The data loading functions (`endo_load_*`, `esr_load*`) use `readr` (Wickham et al., 2024) for file I/O and `jsonlite` (Ooms, 2014) for JSON parsing. The calibration functions (`calibrate_*`, `compute_*`) implement established methods (Platt scaling, isotonic regression) using base R `stats` functions. The export functions (`esr_export*`, `export_*`) use `jsonlite` for JSON export and base R for CSV export.
+
+Contributions from generative AI tool(s) for each function: GitHub Copilot was used extensively throughout the test suite (`tests/testthat/test-*.R`) for generating test cases, assertions, and test fixtures. It was also used for code completions in R source files, particularly for repetitive patterns in plotting functions and data validation logic. ChatGPT was used for commenting and proofreading documentation (roxygen comments), README sections, and vignettes. It was also used for brainstorming function signatures and workflow design in early development stages. All outputs from AI tools were reviewed, validated, and modified by the author before inclusion. No AI-generated code was used verbatim without review.
 
 ## References
 
