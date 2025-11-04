@@ -52,5 +52,4 @@ head(top_var)
 de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
 top_de <- esr_selectTopGenes(de_table = de_table, n = 10, by = "de")
 head(top_de)
-
 }

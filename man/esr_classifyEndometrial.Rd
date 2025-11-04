@@ -12,17 +12,65 @@ esr_classifyEndometrial(
 )
 }
 \arguments{
-\item{X_new}{A matrix/data.frame of gene expression (genes x samples) for new samples.}
+\item{X_new}{A matrix/data.frame of gene expression (genes x samples) for new samples.
+Must have rownames (gene IDs) and colnames (sample IDs).}
 
-\item{signature}{Optional signature list; if NULL, loads the shipped signature.}
+\item{signature}{Optional signature list; if NULL, loads the shipped pre-trained signature.}
 
-\item{threshold}{Decision threshold for positive class. Defaults to 0.5.}
+\item{threshold}{Decision threshold for positive class. Defaults to 0.5. Can be numeric (0-1) or "youden" (requires calibration).}
 
-\item{confidence}{Logical; whether to compute confidence outputs. Defaults to TRUE (placeholder only).}
+\item{confidence}{Logical; whether to compute confidence outputs. Defaults to TRUE.}
 }
 \value{
-A data.frame with per-sample predictions and scores. Placeholder implementation for Phase 0.
+A data.frame with per-sample predictions containing:
+\describe{
+\item{sample}{Character; sample IDs (colnames of X_new)}
+\item{score}{Numeric; raw signature score (linear combination)}
+\item{probability}{Numeric; calibrated probability (if calibration available) or sigmoid-transformed score}
+\item{prediction}{Factor; binary predictions (PS or PIS) based on threshold}
+\item{confidence_lower}{Numeric; lower confidence bound (if confidence = TRUE)}
+\item{confidence_upper}{Numeric; upper confidence bound (if confidence = TRUE)}
+}
 }
 \description{
-Applies a pre-trained signature to new samples and returns predictions.
+Applies a pre-trained signature to new endometrial samples and returns predictions with confidence scores.
+}
+\details{
+This function applies a pre-trained signature to new endometrial samples:
+\itemize{
+\item Validates data structure and performs domain/tissue checks (ID mapping, missing genes)
+\item Applies preprocessing recipe (transform, filter) to match training pipeline
+\item Computes signature scores using linear combination
+\item Applies calibration if available (Platt scaling or isotonic regression)
+\item Applies threshold to get binary predictions (PS vs PIS)
+\item Computes confidence intervals if requested
+}
+
+Domain checks include:
+\itemize{
+\item Gene ID namespace matching (warns if mapping rate < 80\%)
+\item Missing signature gene handling (sets to 0 with warning)
+\item Class imbalance detection (if pheno provided)
+}
+}
+\examples{
+# Load signature
+signature <- esr_loadPretrainedSignature()
+
+# Load sample data (treat as unlabeled)
+data(gse201926_sample)
+X_new <- gse201926_sample$counts
+
+# Classify samples
+predictions <- esr_classifyEndometrial(
+  X_new = X_new,
+  signature = signature,
+  threshold = 0.5,
+  confidence = TRUE
+)
+
+# View predictions
+head(predictions)
+table(predictions$prediction)
+
 }

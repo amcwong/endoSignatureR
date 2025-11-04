@@ -42,11 +42,11 @@ esr_trainEndometrialSignature(
 
 \item{outer_folds}{Integer; number of outer CV folds (if outer = "kfold"). If NULL, uses folds_demo structure. Defaults to NULL.}
 
-\item{inner_folds}{Integer; number of inner CV folds for λ tuning. Defaults to 5.}
+\item{inner_folds}{Integer; number of inner CV folds for lambda tuning. Defaults to 5.}
 
 \item{inner_repeats}{Integer; number of inner CV repeats. Defaults to 10.}
 
-\item{lambda_rule}{Character scalar; λ selection rule. "1se" (1 standard error rule, sparser) or "min" (minimum CV error). Defaults to "1se".}
+\item{lambda_rule}{Character scalar; lambda selection rule. "1se" (1 standard error rule, sparser) or "min" (minimum CV error). Defaults to "1se".}
 
 \item{min_folds}{Integer; minimum number of outer folds that must select a gene for consensus. Defaults to 2.}
 
@@ -100,7 +100,7 @@ A list with elements:
 }
 \item{splits}{List containing outer/inner splits used (or reference to folds_demo)}
 \item{seeds}{List of seeds used for reproducibility}
-\item{cv_results}{List of inner CV results (λ tuning per outer fold)}
+\item{cv_results}{List of inner CV results (lambda tuning per outer fold)}
 \item{aggregation}{List containing aggregation metadata (method, min_folds, consensus_genes)}
 }
 }
@@ -112,7 +112,7 @@ Uses in-fold preprocessing and coefficient aggregation (Option 2) for stability 
 This function implements nested cross-validation with:
 \itemize{
 \item \strong{Outer CV}: Model evaluation on held-out test sets
-\item \strong{Inner CV}: Hyperparameter tuning (λ selection) within each outer fold
+\item \strong{Inner CV}: Hyperparameter tuning (lambda selection) within each outer fold
 \item \strong{In-fold preprocessing}: Transforms/filters and gene selection within folds only (anti-leakage)
 \item \strong{Coefficient aggregation}: Option 2 - aggregates coefficients across outer folds for stability
 }

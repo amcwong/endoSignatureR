@@ -71,5 +71,4 @@ p <- plotEndometrialHeatmap(mat_t,
     show_row_names = TRUE, scale = "row"
 )
 ComplexHeatmap::draw(p)
-
 }

@@ -14,15 +14,14 @@ RoxygenNote: 7.3.3
 Suggests: 
     knitr,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    pROC
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Imports: 
     glmnet,
     ggplot2,
-    SummarizedExperiment,
     readr,
-    dplyr,
     scales,
     stats,
     limma,
@@ -33,3 +32,4 @@ Imports:
 Depends: 
     R (>= 3.5)
 LazyData: true
+LazyDataCompression: xz

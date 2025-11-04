@@ -7,8 +7,32 @@
 esr_loadPretrainedSignature()
 }
 \value{
-A list containing the signature and any required recipe metadata. Placeholder implementation for Phase 0.
+A list containing:
+\describe{
+\item{panel}{Character vector of consensus gene IDs with non-zero coefficients}
+\item{coefficients}{Named numeric vector of coefficients for panel genes}
+\item{intercept}{Numeric scalar; logistic regression intercept}
+\item{selection_frequency}{Named integer vector; selection frequency across outer folds}
+\item{recipe}{List of preprocessing parameters (transform, cpm_min, top_k, etc.)}
+\item{stability}{List containing optional bootstrap frequency information}
+}
 }
 \description{
-Loads the shipped pre-trained PS vs PIS signature artifacts.
+Loads the shipped pre-trained PS vs PIS signature artifacts from \verb{inst/extdata/pretrained-signature/}.
+}
+\details{
+This function loads pre-trained signature artifacts that were trained on the full GSE201926 dataset.
+The signature artifacts are stored in \verb{inst/extdata/pretrained-signature/} and include:
+\itemize{
+\item \code{endometrial_signature.csv}: Gene panel with coefficients and selection frequencies
+\item \code{endometrial_recipe.json}: Preprocessing recipe and training parameters
+\item \code{endometrial_stability.csv} (optional): Bootstrap stability frequencies
+}
+}
+\examples{
+signature <- esr_loadPretrainedSignature()
+length(signature$panel)
+head(signature$coefficients)
+signature$recipe$preprocessing
+
 }
