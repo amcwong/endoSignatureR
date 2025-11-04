@@ -1,9 +1,10 @@
 citHeader("To cite endoSignatureR in publications use:")
 
-citEntry("manual",
-  title = "endoSignatureR: Endometrial Signature Tools",
-  author = personList(person(given = 'Andrew', family = 'Wong')),
-  year = format(Sys.Date(), '%Y'),
-  note = "R package version 0.0.0.9000",
-  url = 'https://github.com/<org>/EndoSignatureR'
+citEntry(entry = "Unpublished",
+  title = "endoSignatureR: Leakage-Safe Gene Signature Discovery for Small RNA-seq Cohorts",
+  author = personList(person(given = "Andrew", family = "Wong", email = "andrew.wong@example.com", role = c("aut", "cre"))),
+  year = "2025",
+  note = "R package version 0.0.0.9000 (unpublished)",
+  textVersion = "Wong A (2025). endoSignatureR: Leakage-Safe Gene Signature Discovery for Small RNA-seq Cohorts. R package version 0.0.0.9000 (unpublished). <https://github.com/amcwong/endoSignatureR>.",
+  url = "https://github.com/amcwong/endoSignatureR"
 )
