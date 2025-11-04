@@ -20,18 +20,42 @@ count](https://img.shields.io/github/languages/count/amcwong/endoSignatureR)
 
 ## Description
 
-`EndoSignatureR` is a domain-specific R package for endometrial lesion
-classification. It ships with a pre-trained PS vs PIS gene signature
-derived from GSE201926 and provides two workflows:
+`EndoSignatureR` is an R package designed to make it easy for
+researchers to analyze and compare small endometrial bulk RNA-seq
+datasets using a standardized, reproducible workflow. It provides
+ready-to-use preprocessing, validation, and classification functions
+built around a pre-trained endometrial gene signature derived from
+public data such as GSE201926. The package ensures that new datasets are
+processed using the same transformations, gene identifiers, and scaling
+as the reference, allowing users to generate consistent signature
+scores, perform differential analyses, and visualize results through
+clear, publication-ready plots.
 
-- Rapid Classification (Mode 1): apply the shipped signature to
+By offering a unified analysis pipeline, `EndoSignatureR` helps overcome
+the fragmentation of endometrial transcriptomic data across studies.
+Researchers can easily benchmark their own experiments against public
+references, explore molecular similarities and differences across
+hormonal states or disease conditions, and reproduce analysis steps
+without extensive coding. This tool aims to accelerate exploratory and
+comparative endometrial research by providing a transparent, extensible
+foundation for small-scale RNA-seq investigations.
+
+The package ships with a pre-trained PS vs PIS gene signature derived
+from GSE201926 and provides three complementary workflows:
+
+- **Rapid Classification (Mode 1):** Apply the shipped signature to
   unlabeled RNA-seq samples to obtain PS vs PIS predictions with
   confidence.
-- Signature Validation (Mode 2): train/validate a new signature on
+- **Signature Validation (Mode 2):** Train/validate a new signature on
   labeled cohorts using best practices (in-fold preprocessing, DE
   screening, nested cross-validation, LASSO with calibration, and
   optional stability selection), then compare to the pre-trained
   signature.
+- **Visualization & Analysis (Mode 3):** Perform standalone QC,
+  exploratory analysis, and differential expression visualization on
+  endometrial data without requiring training or classification. Can be
+  used independently or after running Modes 1 or 2 to unlock additional
+  signature-specific and performance visualizations.
 
 This package centralizes typical multi-step analyses (QC, DE screening,
 model training, calibration, performance visualization, and export of
@@ -82,8 +106,7 @@ browseVignettes("endoSignatureR")
     optional stability selection.
 5.  `esr_compareSignatures(pretrained_result, new_result)`: compare
     pre-trained vs new signature performance.
-6.  Export/report helpers: `esr_exportSignature(...)`,
-    `esr_reportEndometrial(...)`.
+6.  Export helpers: `esr_exportSignature(...)`.
 
 Plotting helpers (examples):
 
@@ -99,57 +122,158 @@ An overview of the package is illustrated below.
 
 ![](./inst/extdata/Workflow.png)
 
+### Three-Mode Workflow
+
+The package provides three workflows:
+
+**Mode 1: Rapid Classification** - Apply the pre-trained signature to
+unlabeled samples for PS vs PIS predictions.
+
+![](./inst/extdata/mode_1.png)
+
+**Mode 2: Signature Validation** - Train and validate a new signature on
+labeled cohorts using best practices.
+
+![](./inst/extdata/mode_2.png)
+
+**Mode 3: Visualization & Analysis** - Perform standalone QC,
+exploratory analysis, and differential expression visualization.
+
+![](./inst/extdata/mode_3.png)
+
 ## Contributions
 
-The author of the package is Andrew WOng. The author designed and
+The author of the package is Andrew Wong. The author designed and
 implemented the endometrial-specific workflows and functions listed
 above, integrating established methods (DE screening, LASSO via glmnet,
 nested cross-validation) into a cohesive package for PS vs PIS
 classification and validation.
 
-Generative AI tools (e.g., OpenAI ChatGPT) were used for branstorming,
-code completions, debugging, and drafting where noted; all outputs were
-reviewed and validated by the author.
+Generative AI tools (e.g., GitHub Copilot, ChatGPT) were used for
+brainstorming, code completions, debugging, and drafting where noted;
+all outputs were reviewed and validated by the author. Notably, GitHub
+Copilot was used extensively throughout creating the test suite and
+ChatGPT was used for commenting and proofreading.
 
 ## References
 
-- R Core Team (2025). *R: A Language and Environment for Statistical
-  Computing*. R Foundation for Statistical Computing, Vienna, Austria.
-  <https://www.R-project.org/>.
-
-- Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis*.
-  Springer-Verlag, New York.
-
-- Wickham, H., Hester, J., & Chang, W. (2024). *devtools: Tools to Make
-  Developing R Packages Easier*. R package.
-  <https://CRAN.R-project.org/package=devtools>.
-
-- Love, M. I., Huber, W., & Anders, S. (2014). Moderated estimation of
-  fold change and dispersion for RNA-seq data with DESeq2. *Genome
-  Biology*, 15(12), 550. <doi:10.1186/s13059-014-0550-8>.
-
-- Friedman, J., Hastie, T., & Tibshirani, R. (2010). Regularization
-  Paths for Generalized Linear Models via Coordinate Descent. *Journal
-  of Statistical Software*, 33(1), 1–22. (glmnet).
-
-- Robin, X., et al. (2011). pROC: an open-source package for R and S+ to
-  analyze and compare ROC curves. *BMC Bioinformatics*, 12, 77.
-  <doi:10.1186/1471-2105-12-77>.
-
-- Gu, Z., Eils, R., & Schlesner, M. (2016). Complex heatmaps reveal
-  patterns and correlations in multidimensional genomic data.
-  *Bioinformatics*, 32(18), 2847–2849. (ComplexHeatmap).
+- Allaire, J. J., Xie, Y., Dervieux, C., McPherson, J., Luraschi, J.,
+  Ushey, K., Atkins, A., Wickham, H., Cheng, J., Chang, W., &
+  Iannone, R. (2024). rmarkdown: Dynamic documents for R. R package.
+  <https://CRAN.R-project.org/package=rmarkdown>.
 
 - Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression
   Omnibus: NCBI gene expression and hybridization array data repository.
-  *Nucleic Acids Research*, 30(1), 207–210. <doi:10.1093/nar/30.1.207>.
+  Nucleic Acids Research, 30(1), 207–210.
+  <https://doi.org/10.1093/nar/30.1.207>.
 
-- GEO Series GSE201926. Available from:
-  <https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE201926>.
+- Friedman, J., Hastie, T., & Tibshirani, R. (2010). Regularization
+  paths for generalized linear models via coordinate descent. Journal of
+  Statistical Software, 33(1), 1–22. <doi:10.18637/jss.v033.i01>
+  <https://doi.org/10.18637/jss.v033.i01>.
+
+- GitHub & OpenAI. (2025). GitHub Copilot: AI-powered code completion
+  assistant. GitHub, Inc., San Francisco, USA.
+  <https://github.com/features/copilot>.
+
+- Gu, Z., Eils, R., & Schlesner, M. (2016). Complex heatmaps reveal
+  patterns and correlations in multidimensional genomic data.
+  Bioinformatics. <doi:10.1093/bioinformatics/btw313>
+
+- Gu, Z., Gu, T., Eils, R., Schlesner, M., & Brors, B. (2014). circlize
+  implements and enhances circular visualization in R. Bioinformatics,
+  30(19), 2811–2812.
+
+- Frick, H., Chow, F., Kuhn, M., Mahoney, M., Silge, J., & Wickham, H.
+  (2025). rsample: General resampling infrastructure. R package.
+  <https://CRAN.R-project.org/package=rsample>.
+
+- Love, M. I., Huber, W., & Anders, S. (2014). Moderated estimation of
+  fold change and dispersion for RNA-seq data with DESeq2. Genome
+  Biology, 15(12), 550. <https://doi.org/10.1186/s13059-014-0550-8>.
+
+- Ooms, J. (2014). The jsonlite package: A practical and consistent
+  mapping between JSON data and R objects. arXiv:1403.2805 \[stat.CO\].
+  <https://arxiv.org/abs/1403.2805>.
+
+- OpenAI. (2025). ChatGPT (GPT-5) \[Large language model\]. OpenAI, San
+  Francisco, USA. <https://chat.openai.com/>.
+
+- R Core Team (2025). R: A language and environment for statistical
+  computing. R Foundation for Statistical Computing, Vienna, Austria.
+  <https://www.R-project.org/>.
+
+- Ritchie, M. E., Phipson, B., Wu, D., Hu, Y., Law, C. W., Shi, W., &
+  Smyth, G. K. (2015). limma powers differential expression analyses for
+  RNA-sequencing and microarray studies. Nucleic Acids Research, 43(7),
+  e47.
+
+- Robin, X., et al. (2011). pROC: an open-source package for R and S+ to
+  analyze and compare ROC curves. BMC Bioinformatics, 12, 77.
+  <https://doi.org/10.1186/1471-2105-12-77>.
 
 - Silva, A. (2019–2025). TestingPackage: R Package Illustrating
   Components of an R package for BCB410H. GitHub.
   <https://github.com/anjalisilva/TestingPackage>.
+
+- Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+  Springer-Verlag New York.
+
+- Wickham, H. (2011). testthat: Get started with testing. The R Journal,
+  3, 5-10. <https://CRAN.R-project.org/package=testthat>.
+
+- Wickham, H., Pedersen, T., & Seidel, D. (2025). scales: Scale
+  functions for visualization. R package.
+  <https://CRAN.R-project.org/package=scales>.
+
+- Wickham, H., Hester, J., & Chang, W. (2024). devtools: Tools to Make
+  Developing R Packages Easier. R package.
+  <https://CRAN.R-project.org/package=devtools>.
+
+- Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+  text data. R package. <https://CRAN.R-project.org/package=readr>.
+
+- Xie, Y. (2025). knitr: A general-purpose package for dynamic report
+  generation in R. R package.
+  <https://CRAN.R-project.org/package=knitr>.
+
+## Statistical Assumptions
+
+The signature creation process in `EndoSignatureR` relies on several
+statistical assumptions:
+
+1.  **Data type**: Bulk RNA-seq gene counts from endometrial tissue (not
+    single-cell, not microarray, not other tissues). The pre-trained
+    signature is specific to endometrial tissue and is not portable
+    across tissues or divergent processing pipelines.
+
+2.  **Design**: Binary labels (PS vs PIS) with independent biological
+    replicates. The package supports only binary classification;
+    multiclass or continuous outcomes are out of scope for v1.
+
+3.  **Modeling**: Linear log-odds relationship (logistic regression)
+    with L1 penalty (LASSO) that selects a sparse set of genes. The L1
+    penalty drives most coefficients to zero, yielding an interpretable
+    gene signature.
+
+4.  **Resampling**: Nested cross-validation is used as a proxy for
+    generalization in small-n datasets. Leave-pair-out (LPO)
+    cross-validation is used when n is tiny and class-balanced to
+    maximize training data while maintaining valid test sets.
+
+5.  **Feature selection**: DE screening improves stability in p≫n
+    scenarios (where the number of features greatly exceeds the number
+    of samples). Top-K gene selection based on differential expression
+    statistics helps focus the model on biologically relevant features.
+
+6.  **Anti-leakage**: All preprocessing operations (transformation,
+    filtering, gene selection) occur inside cross-validation folds to
+    avoid data leakage. Preprocessing parameters are computed from
+    training data only, then applied to test data.
+
+These assumptions are important for proper interpretation of signature
+results and should be considered when applying the package to new
+datasets.
 
 ## Acknowledgements
 

@@ -86,6 +86,22 @@ An overview of the package is illustrated below.
 
 ![](./inst/extdata/Workflow.png)
 
+### Three-Mode Workflow
+
+The package provides three workflows:
+
+**Mode 1: Rapid Classification** - Apply the pre-trained signature to unlabeled samples for PS vs PIS predictions.
+
+![](./inst/extdata/mode_1.png)
+
+**Mode 2: Signature Validation** - Train and validate a new signature on labeled cohorts using best practices.
+
+![](./inst/extdata/mode_2.png)
+
+**Mode 3: Visualization & Analysis** - Perform standalone QC, exploratory analysis, and differential expression visualization.
+
+![](./inst/extdata/mode_3.png)
+
 ## Contributions
 
 The author of the package is Andrew Wong. The author designed and implemented the endometrial-specific workflows and functions listed above, integrating established methods (DE screening, LASSO via glmnet, nested cross-validation) into a cohesive package for PS vs PIS classification and validation.
