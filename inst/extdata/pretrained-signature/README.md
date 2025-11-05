@@ -45,3 +45,4 @@ The pre-trained signature can be loaded using `esr_loadPretrainedSignature()` (P
 
 For more information, see the package vignette: `vignette("endoSignatureR-intro", package = "endoSignatureR")`
 
+

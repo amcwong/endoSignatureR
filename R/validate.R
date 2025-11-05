@@ -593,96 +593,98 @@ esr_compareThresholds <- function(predictions, labels, thresholds = seq(0.1, 0.9
 #
 # @export
 esr_computeConfusionMatrix <- function(predictions, labels, threshold = 0.5) {
-  # Validate inputs
-  if (is.null(predictions)) {
-    stop("predictions must be provided")
-  }
+    # Validate inputs
+    if (is.null(predictions)) {
+        stop("predictions must be provided")
+    }
 
-  if (is.null(labels)) {
-    stop("labels must be provided")
-  }
+    if (is.null(labels)) {
+        stop("labels must be provided")
+    }
 
-  # Handle list result (if alerts included)
-  if (is.list(predictions) && "predictions" %in% names(predictions)) {
-    predictions_df <- predictions$predictions
-  } else if (is.data.frame(predictions)) {
-    predictions_df <- predictions
-  } else {
-    stop("predictions must be a data.frame or list with predictions element")
-  }
+    # Handle list result (if alerts included)
+    if (is.list(predictions) && "predictions" %in% names(predictions)) {
+        predictions_df <- predictions$predictions
+    } else if (is.data.frame(predictions)) {
+        predictions_df <- predictions
+    } else {
+        stop("predictions must be a data.frame or list with predictions element")
+    }
 
-  # Validate required columns
-  if (!"probability" %in% names(predictions_df)) {
-    stop("predictions must contain 'probability' column")
-  }
+    # Validate required columns
+    if (!"probability" %in% names(predictions_df)) {
+        stop("predictions must contain 'probability' column")
+    }
 
-  # Check lengths match
-  if (nrow(predictions_df) != length(labels)) {
-    stop("predictions and labels must have same length")
-  }
+    # Check lengths match
+    if (nrow(predictions_df) != length(labels)) {
+        stop("predictions and labels must have same length")
+    }
 
-  # Validate threshold
-  if (!is.numeric(threshold) || threshold < 0 || threshold > 1) {
-    stop("threshold must be numeric between 0 and 1")
-  }
+    # Validate threshold
+    if (!is.numeric(threshold) || threshold < 0 || threshold > 1) {
+        stop("threshold must be numeric between 0 and 1")
+    }
 
-  # Extract probabilities
-  probs <- predictions_df$probability
+    # Extract probabilities
+    probs <- predictions_df$probability
 
-  # Convert labels to factor (PS/PIS)
-  if (is.factor(labels)) {
-    labels_char <- as.character(labels)
-  } else {
-    labels_char <- as.character(labels)
-  }
+    # Convert labels to factor (PS/PIS)
+    if (is.factor(labels)) {
+        labels_char <- as.character(labels)
+    } else {
+        labels_char <- as.character(labels)
+    }
 
-  # Handle binary labels (0/1)
-  labels_binary <- ifelse(labels_char == "PS" | labels_char == "0" | labels_char == 0, 0, 1)
-  labels_factor <- factor(ifelse(labels_binary == 0, "PS", "PIS"), levels = c("PS", "PIS"))
+    # Handle binary labels (0/1)
+    labels_binary <- ifelse(labels_char == "PS" | labels_char == "0" | labels_char == 0, 0, 1)
+    labels_factor <- factor(ifelse(labels_binary == 0, "PS", "PIS"), levels = c("PS", "PIS"))
 
-  # Apply threshold to get binary predictions
-  preds_binary <- ifelse(probs >= threshold, 1, 0)
-  preds_factor <- factor(ifelse(preds_binary == 0, "PS", "PIS"), levels = c("PS", "PIS"))
+    # Apply threshold to get binary predictions
+    preds_binary <- ifelse(probs >= threshold, 1, 0)
+    preds_factor <- factor(ifelse(preds_binary == 0, "PS", "PIS"), levels = c("PS", "PIS"))
 
-  # Compute confusion matrix
-  cm <- table(Predicted = preds_factor, Actual = labels_factor)
+    # Compute confusion matrix
+    cm <- table(Predicted = preds_factor, Actual = labels_factor)
 
-  # Extract values
-  tn <- cm["PS", "PS"]
-  fp <- cm["PIS", "PS"]
-  fn <- cm["PS", "PIS"]
-  tp <- cm["PIS", "PIS"]
+    # Extract values
+    tn <- cm["PS", "PS"]
+    fp <- cm["PIS", "PS"]
+    fn <- cm["PS", "PIS"]
+    tp <- cm["PIS", "PIS"]
 
-  # Handle NA values (if no samples in a category)
-  tn <- if (is.na(tn)) 0 else tn
-  fp <- if (is.na(fp)) 0 else fp
-  fn <- if (is.na(fn)) 0 else fn
-  tp <- if (is.na(tp)) 0 else tp
+    # Handle NA values (if no samples in a category)
+    tn <- if (is.na(tn)) 0 else tn
+    fp <- if (is.na(fp)) 0 else fp
+    fn <- if (is.na(fn)) 0 else fn
+    tp <- if (is.na(tp)) 0 else tp
 
-  # Compute performance metrics
-  total <- tp + tn + fp + fn
+    # Compute performance metrics
+    total <- tp + tn + fp + fn
 
-  accuracy <- if (total > 0) (tp + tn) / total else NA_real_
-  sensitivity <- if ((tp + fn) > 0) tp / (tp + fn) else NA_real_
-  specificity <- if ((tn + fp) > 0) tn / (tn + fp) else NA_real_
-  ppv <- if ((tp + fp) > 0) tp / (tp + fp) else NA_real_
-  npv <- if ((tn + fn) > 0) tn / (tn + fn) else NA_real_
-  f1 <- if ((ppv + sensitivity) > 0) 2 * (ppv * sensitivity) / (ppv + sensitivity) else NA_real_
+    accuracy <- if (total > 0) (tp + tn) / total else NA_real_
+    sensitivity <- if ((tp + fn) > 0) tp / (tp + fn) else NA_real_
+    specificity <- if ((tn + fp) > 0) tn / (tn + fp) else NA_real_
+    ppv <- if ((tp + fp) > 0) tp / (tp + fp) else NA_real_
+    npv <- if ((tn + fn) > 0) tn / (tn + fn) else NA_real_
+    f1 <- if ((ppv + sensitivity) > 0) 2 * (ppv * sensitivity) / (ppv + sensitivity) else NA_real_
 
-  # Create metrics data.frame
-  metrics_df <- data.frame(
-    metric = c("Accuracy", "Sensitivity (Recall)", "Specificity",
-               "PPV (Precision)", "NPV", "F1 Score"),
-    value = c(accuracy, sensitivity, specificity, ppv, npv, f1),
-    stringsAsFactors = FALSE
-  )
+    # Create metrics data.frame
+    metrics_df <- data.frame(
+        metric = c(
+            "Accuracy", "Sensitivity (Recall)", "Specificity",
+            "PPV (Precision)", "NPV", "F1 Score"
+        ),
+        value = c(accuracy, sensitivity, specificity, ppv, npv, f1),
+        stringsAsFactors = FALSE
+    )
 
-  # Return results
-  return(list(
-    confusion_matrix = cm,
-    metrics = metrics_df,
-    threshold = threshold
-  ))
+    # Return results
+    return(list(
+        confusion_matrix = cm,
+        metrics = metrics_df,
+        threshold = threshold
+    ))
 }
 
 # Compare Performance Across Multiple Thresholds
@@ -711,48 +713,48 @@ esr_computeConfusionMatrix <- function(predictions, labels, threshold = 0.5) {
 #
 # @export
 esr_compareThresholds <- function(predictions, labels, thresholds = seq(0.1, 0.9, 0.1)) {
-  # Validate inputs
-  if (is.null(predictions)) {
-    stop("predictions must be provided")
-  }
+    # Validate inputs
+    if (is.null(predictions)) {
+        stop("predictions must be provided")
+    }
 
-  if (is.null(labels)) {
-    stop("labels must be provided")
-  }
+    if (is.null(labels)) {
+        stop("labels must be provided")
+    }
 
-  if (!is.numeric(thresholds) || any(thresholds < 0 | thresholds > 1)) {
-    stop("thresholds must be numeric values between 0 and 1")
-  }
+    if (!is.numeric(thresholds) || any(thresholds < 0 | thresholds > 1)) {
+        stop("thresholds must be numeric values between 0 and 1")
+    }
 
-  # Compute metrics for each threshold
-  results_list <- lapply(thresholds, function(thresh) {
-    cm_result <- esr_computeConfusionMatrix(predictions, labels, threshold = thresh)
-    metrics <- cm_result$metrics
+    # Compute metrics for each threshold
+    results_list <- lapply(thresholds, function(thresh) {
+        cm_result <- esr_computeConfusionMatrix(predictions, labels, threshold = thresh)
+        metrics <- cm_result$metrics
 
-    # Extract values
-    accuracy <- metrics$value[metrics$metric == "Accuracy"]
-    sensitivity <- metrics$value[metrics$metric == "Sensitivity (Recall)"]
-    specificity <- metrics$value[metrics$metric == "Specificity"]
-    ppv <- metrics$value[metrics$metric == "PPV (Precision)"]
-    npv <- metrics$value[metrics$metric == "NPV"]
-    f1 <- metrics$value[metrics$metric == "F1 Score"]
+        # Extract values
+        accuracy <- metrics$value[metrics$metric == "Accuracy"]
+        sensitivity <- metrics$value[metrics$metric == "Sensitivity (Recall)"]
+        specificity <- metrics$value[metrics$metric == "Specificity"]
+        ppv <- metrics$value[metrics$metric == "PPV (Precision)"]
+        npv <- metrics$value[metrics$metric == "NPV"]
+        f1 <- metrics$value[metrics$metric == "F1 Score"]
 
-    return(data.frame(
-      threshold = thresh,
-      accuracy = accuracy,
-      sensitivity = sensitivity,
-      specificity = specificity,
-      ppv = ppv,
-      npv = npv,
-      f1 = f1,
-      stringsAsFactors = FALSE
-    ))
-  })
+        return(data.frame(
+            threshold = thresh,
+            accuracy = accuracy,
+            sensitivity = sensitivity,
+            specificity = specificity,
+            ppv = ppv,
+            npv = npv,
+            f1 = f1,
+            stringsAsFactors = FALSE
+        ))
+    })
 
-  # Combine results
-  comparison_df <- do.call(rbind, results_list)
+    # Combine results
+    comparison_df <- do.call(rbind, results_list)
 
-  return(comparison_df)
+    return(comparison_df)
 }
 
 # [END]
