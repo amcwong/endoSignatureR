@@ -290,20 +290,22 @@ esr_loadPretrainedSignature <- function() {
 #'
 #' @return If alerts are generated, returns a list with:
 #' \describe{
-#'   \item{predictions}{Data.frame with per-sample predictions containing:}
-#'   \itemize{
-#'     \item{sample}{Character; sample IDs (colnames of X_new)}
-#'     \item{score}{Numeric; raw signature score (linear combination)}
-#'     \item{probability}{Numeric; calibrated probability (if calibration available) or sigmoid-transformed score}
-#'     \item{prediction}{Factor; binary predictions (PS or PIS) based on threshold}
-#'     \item{confidence_lower}{Numeric; lower confidence bound (if confidence = TRUE)}
-#'     \item{confidence_upper}{Numeric; upper confidence bound (if confidence = TRUE)}
+#'   \item{predictions}{Data.frame with per-sample predictions containing columns:
+#'     \describe{
+#'       \item{sample}{Character; sample IDs (colnames of X_new)}
+#'       \item{score}{Numeric; raw signature score (linear combination)}
+#'       \item{probability}{Numeric; calibrated probability (if calibration available) or sigmoid-transformed score}
+#'       \item{prediction}{Factor; binary predictions (PS or PIS) based on threshold}
+#'       \item{confidence_lower}{Numeric; lower confidence bound (if confidence = TRUE)}
+#'       \item{confidence_upper}{Numeric; upper confidence bound (if confidence = TRUE)}
+#'     }
 #'   }
-#'   \item{alerts}{Data.frame with validation alerts containing:}
-#'   \itemize{
-#'     \item{type}{Character; alert type (warning, info, error)}
-#'     \item{message}{Character; alert message}
-#'     \item{severity}{Character; severity level (low, medium, high)}
+#'   \item{alerts}{Data.frame with validation alerts containing columns:
+#'     \describe{
+#'       \item{type}{Character; alert type (warning, info, error)}
+#'       \item{message}{Character; alert message}
+#'       \item{severity}{Character; severity level (low, medium, high)}
+#'     }
 #'   }
 #' }
 #' If no alerts are generated, returns the predictions data.frame directly (for backward compatibility).
