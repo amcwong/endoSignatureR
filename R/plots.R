@@ -1674,26 +1674,26 @@ plotEndometrialComparison <- function(pretrained_result = NULL, new_result,
 #'
 #' # Create coefficient lollipop plot
 #' p_coef <- plotEndometrialCoefLollipop(
-#'   signature = signature,
-#'   top_n = 20,
-#'   order_by = "magnitude"
+#'     signature = signature,
+#'     top_n = 20,
+#'     order_by = "magnitude"
 #' )
 #' print(p_coef)
 #'
 #' # With gene annotations
 #' data(gse201926_annot_min)
 #' p_coef_annot <- plotEndometrialCoefLollipop(
-#'   signature = signature,
-#'   annot = gse201926_annot_min,
-#'   top_n = 20
+#'     signature = signature,
+#'     annot = gse201926_annot_min,
+#'     top_n = 20
 #' )
 #' print(p_coef_annot)
 #' }
 #'
 #' @export
 plotEndometrialCoefLollipop <- function(signature, annot = NULL, top_n = NULL,
-                                       order_by = c("magnitude", "value", "gene"),
-                                       show_labels = TRUE, color_by = c("sign", "none")) {
+                                        order_by = c("magnitude", "value", "gene"),
+                                        show_labels = TRUE, color_by = c("sign", "none")) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("ggplot2 package is required for plotting")
     }
@@ -1922,21 +1922,21 @@ plotEndometrialCoefLollipop <- function(signature, annot = NULL, top_n = NULL,
 #'
 #' # Create stability bars plot (if stability info available)
 #' if (!is.null(signature$stability)) {
-#'   p_stab <- plotEndometrialStabilityBars(
-#'     signature = signature,
-#'     frequency_type = "bootstrap",
-#'     top_n = 20,
-#'     threshold = 0.6
-#'   )
-#'   print(p_stab)
+#'     p_stab <- plotEndometrialStabilityBars(
+#'         signature = signature,
+#'         frequency_type = "bootstrap",
+#'         top_n = 20,
+#'         threshold = 0.6
+#'     )
+#'     print(p_stab)
 #' }
 #' }
 #'
 #' @export
 plotEndometrialStabilityBars <- function(signature, annot = NULL,
-                                        frequency_type = c("bootstrap", "selection", "both"),
-                                        top_n = NULL, threshold = NULL,
-                                        show_labels = TRUE, color_palette = NULL) {
+                                         frequency_type = c("bootstrap", "selection", "both"),
+                                         top_n = NULL, threshold = NULL,
+                                         show_labels = TRUE, color_palette = NULL) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("ggplot2 package is required for plotting")
     }
@@ -2176,5 +2176,8 @@ plotEndometrialStabilityBars <- function(signature, annot = NULL,
 
     return(p)
 }
+
+# Suppress R CMD check notes for .data used in ggplot2::aes()
+utils::globalVariables(".data")
 
 # [END]

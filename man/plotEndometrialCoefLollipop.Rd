@@ -53,18 +53,18 @@ signature <- esr_loadPretrainedSignature()
 
 # Create coefficient lollipop plot
 p_coef <- plotEndometrialCoefLollipop(
-  signature = signature,
-  top_n = 20,
-  order_by = "magnitude"
+    signature = signature,
+    top_n = 20,
+    order_by = "magnitude"
 )
 print(p_coef)
 
 # With gene annotations
 data(gse201926_annot_min)
 p_coef_annot <- plotEndometrialCoefLollipop(
-  signature = signature,
-  annot = gse201926_annot_min,
-  top_n = 20
+    signature = signature,
+    annot = gse201926_annot_min,
+    top_n = 20
 )
 print(p_coef_annot)
 }

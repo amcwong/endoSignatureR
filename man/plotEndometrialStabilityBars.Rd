@@ -56,13 +56,13 @@ signature <- esr_loadPretrainedSignature()
 
 # Create stability bars plot (if stability info available)
 if (!is.null(signature$stability)) {
-  p_stab <- plotEndometrialStabilityBars(
-    signature = signature,
-    frequency_type = "bootstrap",
-    top_n = 20,
-    threshold = 0.6
-  )
-  print(p_stab)
+    p_stab <- plotEndometrialStabilityBars(
+        signature = signature,
+        frequency_type = "bootstrap",
+        top_n = 20,
+        threshold = 0.6
+    )
+    print(p_stab)
 }
 }
 

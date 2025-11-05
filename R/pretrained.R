@@ -158,73 +158,8 @@ esr_loadPretrainedSignature <- function() {
   return(signature)
 }
 
-#' Classify Endometrial Samples Using a Signature
-#'
-#' Applies a pre-trained signature to new endometrial samples and returns predictions with confidence scores.
-#'
-#' @param X_new A matrix/data.frame of gene expression (genes x samples) for new samples.
-#'   Must have rownames (gene IDs) and colnames (sample IDs).
-#' @param signature Optional signature list; if NULL, loads the shipped pre-trained signature.
-#' @param threshold Decision threshold for positive class. Defaults to 0.5. Can be numeric (0-1) or "youden" (requires labeled validation data via y_new).
-#' @param confidence Logical; whether to compute confidence outputs. Defaults to TRUE.
-#' @param y_new Optional vector of validation labels (PS/PIS or 0/1). Required if threshold = "youden".
-#'
-#' @return If alerts are generated, returns a list with:
-#' \describe{
-#'   \item{predictions}{Data.frame with per-sample predictions containing:}
-#'   \itemize{
-#'     \item{sample}{Character; sample IDs (colnames of X_new)}
-#'     \item{score}{Numeric; raw signature score (linear combination)}
-#'     \item{probability}{Numeric; calibrated probability (if calibration available) or sigmoid-transformed score}
-#'     \item{prediction}{Factor; binary predictions (PS or PIS) based on threshold}
-#'     \item{confidence_lower}{Numeric; lower confidence bound (if confidence = TRUE)}
-#'     \item{confidence_upper}{Numeric; upper confidence bound (if confidence = TRUE)}
-#'   }
-#'   \item{alerts}{Data.frame with validation alerts containing:}
-#'   \itemize{
-#'     \item{type}{Character; alert type (warning, info, error)}
-#'     \item{message}{Character; alert message}
-#'     \item{severity}{Character; severity level (low, medium, high)}
-#'   }
-#' }
-#' If no alerts are generated, returns the predictions data.frame directly (for backward compatibility).
-#'
-#' @details
-#' This function applies a pre-trained signature to new endometrial samples:
-#' - Validates data structure and performs domain/tissue checks (ID mapping, missing genes)
-#' - Applies preprocessing recipe (transform, filter) to match training pipeline
-#' - Computes signature scores using linear combination
-#' - Applies calibration if available (Platt scaling or isotonic regression)
-#' - Applies threshold to get binary predictions (PS vs PIS)
-#' - Computes confidence intervals if requested
-#'
-#' Domain checks include:
-#' - Gene ID namespace matching (warns if mapping rate < 80%)
-#' - Missing signature gene handling (sets to 0 with warning)
-#' - Class imbalance detection (if pheno provided)
-#'
-#' @importFrom utils head
-#' @examples
-#' # Load signature
-#' signature <- esr_loadPretrainedSignature()
-#'
-#' # Load sample data (treat as unlabeled)
-#' data(gse201926_sample)
-#' X_new <- gse201926_sample$counts
-#'
-#' # Classify samples
-#' predictions <- esr_classifyEndometrial(
-#'   X_new = X_new,
-#'   signature = signature,
-#'   threshold = 0.5,
-#'   confidence = TRUE
-#' )
-#'
-#' # View predictions
-#' head(predictions)
-#' table(predictions$prediction)
-#'
 # Internal helper for Youden threshold selection
+#' @keywords internal
 .select_threshold_youden <- function(probabilities, labels) {
   # Validate inputs
   if (!is.numeric(probabilities)) {
@@ -342,6 +277,72 @@ esr_loadPretrainedSignature <- function() {
   }
 }
 
+#' Classify Endometrial Samples Using a Signature
+#'
+#' Applies a pre-trained signature to new endometrial samples and returns predictions with confidence scores.
+#'
+#' @param X_new A matrix/data.frame of gene expression (genes x samples) for new samples.
+#'   Must have rownames (gene IDs) and colnames (sample IDs).
+#' @param signature Optional signature list; if NULL, loads the shipped pre-trained signature.
+#' @param threshold Decision threshold for positive class. Defaults to 0.5. Can be numeric (0-1) or "youden" (requires labeled validation data via y_new).
+#' @param confidence Logical; whether to compute confidence outputs. Defaults to TRUE.
+#' @param y_new Optional vector of validation labels (PS/PIS or 0/1). Required if threshold = "youden".
+#'
+#' @return If alerts are generated, returns a list with:
+#' \describe{
+#'   \item{predictions}{Data.frame with per-sample predictions containing:}
+#'   \itemize{
+#'     \item{sample}{Character; sample IDs (colnames of X_new)}
+#'     \item{score}{Numeric; raw signature score (linear combination)}
+#'     \item{probability}{Numeric; calibrated probability (if calibration available) or sigmoid-transformed score}
+#'     \item{prediction}{Factor; binary predictions (PS or PIS) based on threshold}
+#'     \item{confidence_lower}{Numeric; lower confidence bound (if confidence = TRUE)}
+#'     \item{confidence_upper}{Numeric; upper confidence bound (if confidence = TRUE)}
+#'   }
+#'   \item{alerts}{Data.frame with validation alerts containing:}
+#'   \itemize{
+#'     \item{type}{Character; alert type (warning, info, error)}
+#'     \item{message}{Character; alert message}
+#'     \item{severity}{Character; severity level (low, medium, high)}
+#'   }
+#' }
+#' If no alerts are generated, returns the predictions data.frame directly (for backward compatibility).
+#'
+#' @details
+#' This function applies a pre-trained signature to new endometrial samples:
+#' - Validates data structure and performs domain/tissue checks (ID mapping, missing genes)
+#' - Applies preprocessing recipe (transform, filter) to match training pipeline
+#' - Computes signature scores using linear combination
+#' - Applies calibration if available (Platt scaling or isotonic regression)
+#' - Applies threshold to get binary predictions (PS vs PIS)
+#' - Computes confidence intervals if requested
+#'
+#' Domain checks include:
+#' - Gene ID namespace matching (warns if mapping rate < 80%)
+#' - Missing signature gene handling (sets to 0 with warning)
+#' - Class imbalance detection (if pheno provided)
+#'
+#' @importFrom utils head
+#' @examples
+#' # Load signature
+#' signature <- esr_loadPretrainedSignature()
+#'
+#' # Load sample data (treat as unlabeled)
+#' data(gse201926_sample)
+#' X_new <- gse201926_sample$counts
+#'
+#' # Classify samples
+#' predictions <- esr_classifyEndometrial(
+#'   X_new = X_new,
+#'   signature = signature,
+#'   threshold = 0.5,
+#'   confidence = TRUE
+#' )
+#'
+#' # View predictions
+#' head(predictions)
+#' table(predictions$prediction)
+#'
 #' @export
 esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, confidence = TRUE, y_new = NULL) {
   # Load signature if not provided

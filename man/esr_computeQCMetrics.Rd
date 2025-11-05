@@ -40,9 +40,9 @@ and filtering statistics for endometrial RNA-seq data.
 data(gse201926_sample)
 mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
 qc_metrics <- esr_computeQCMetrics(
-  counts = gse201926_sample$counts,
-  mat_t = mat_t,
-  pheno = gse201926_sample$pheno
+    counts = gse201926_sample$counts,
+    mat_t = mat_t,
+    pheno = gse201926_sample$pheno
 )
 head(qc_metrics)
 }

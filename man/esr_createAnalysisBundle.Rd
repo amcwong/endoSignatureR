@@ -78,18 +78,18 @@ mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
 de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
 top_genes <- esr_selectTopGenes(de_table = de_table, n = 10, by = "de")
 qc_metrics <- esr_computeQCMetrics(
-  counts = gse201926_sample$counts,
-  mat_t = mat_t,
-  pheno = gse201926_sample$pheno
+    counts = gse201926_sample$counts,
+    mat_t = mat_t,
+    pheno = gse201926_sample$pheno
 )
 
 bundle <- esr_createAnalysisBundle(
-  counts_t = mat_t,
-  de_table = de_table,
-  selected_genes = top_genes,
-  qc_metrics = qc_metrics,
-  pheno = gse201926_sample$pheno,
-  annot = gse201926_sample$annot
+    counts_t = mat_t,
+    de_table = de_table,
+    selected_genes = top_genes,
+    qc_metrics = qc_metrics,
+    pheno = gse201926_sample$pheno,
+    annot = gse201926_sample$annot
 )
 
 # Access bundle components
