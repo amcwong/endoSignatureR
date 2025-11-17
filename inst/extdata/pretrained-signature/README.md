@@ -11,7 +11,7 @@ This directory contains the pre-trained PS vs PIS signature artifacts trained on
 
 ## Training Parameters
 
-The pre-trained signature was trained using the Phase 2 pipeline (`esr_trainEndometrialSignature()`) with the following parameters:
+The pre-trained signature was trained using the pipeline (`esr_trainEndometrialSignature()`) with the following parameters:
 
 - **Dataset**: Full GSE201926 (all 12 samples, all genes after filtering)
 - **Transform**: log1p-CPM transformation
@@ -41,8 +41,11 @@ stability_path <- system.file("extdata", "pretrained-signature", "endometrial_st
 
 ## Usage
 
-The pre-trained signature can be loaded using `esr_loadPretrainedSignature()` (Phase 3.2) and applied to new endometrial samples using `esr_classifyEndometrial()`.
+The pre-trained signature can be loaded using `esr_loadPretrainedSignature()` and applied to new endometrial samples using `esr_classifyEndometrial()`.
 
 For more information, see the package vignette: `vignette("endoSignatureR-intro", package = "endoSignatureR")`
+
+
+
 
 
