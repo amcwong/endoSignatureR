@@ -8,6 +8,10 @@
 #'
 #' @return A ggplot object showing PC1 vs PC2 colored by group.
 #'
+#' @import ggplot2
+#' @import ComplexHeatmap
+#' @importFrom scales pretty_breaks
+#' @importFrom circlize colorRamp2
 #' @importFrom utils head
 #' @examples
 #' data(gse201926_sample)
