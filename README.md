@@ -3,8 +3,7 @@
 
 # EndoSignatureR
 
-Endometrial RNA-seq Signature Discovery, Classification, and
-Visualization.
+Leakage-Safe Gene Signature Discovery for Small RNA-seq Cohorts
 
 <!-- badges: start -->
 
@@ -70,18 +69,39 @@ during validation.
 
 To install the latest version of the package:
 
+**Note**: This package depends on Bioconductor packages
+(`ComplexHeatmap` and `limma`). You must install Bioconductor
+dependencies first:
+
 ``` r
+# Install BiocManager if not already installed
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+
+# Install Bioconductor dependencies
+BiocManager::install(c("ComplexHeatmap", "limma"))
+
+# Install devtools if not already installed
 install.packages("devtools")
+
+# Install endoSignatureR from GitHub
 library("devtools")
 devtools::install_github("amcwong/endoSignatureR", build_vignettes = TRUE)
 library("endoSignatureR")
 ```
 
-To run the Shiny app:
+**Alternative**: You can also use `BiocManager::install()` which handles
+both CRAN and Bioconductor dependencies automatically:
 
 ``` r
-runEndoSignatureR()
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+BiocManager::install("amcwong/endoSignatureR", build_vignettes = TRUE)
 ```
+
+To run the shinyApp: Under construction
 
 ## Overview
 
@@ -91,7 +111,8 @@ data(package = "endoSignatureR") # optional
 browseVignettes("endoSignatureR")
 ```
 
-`EndoSignatureR` provides core functions aligned with the plan:
+`EndoSignatureR` provides core functions aligned with the following
+plan:
 
 1.  `esr_validateEndometrial(X, pheno, annot = NULL, label_col = "group")`:
     endometrial-specific schema/ID checks; returns cleaned objects and
@@ -118,9 +139,8 @@ Plotting helpers (examples):
 - Performance: `plotEndometrialROC`, `plotEndometrialPR`,
   `plotEndometrialCalibration`, `plotEndometrialComparison`
 
-An overview of the package is illustrated below.
-
-![](./inst/extdata/Workflow.png)
+<!-- An overview of the package is illustrated below.
+&#10;![](./inst/extdata/Workflow.png) -->
 
 ### Three-Mode Workflow
 
@@ -149,11 +169,34 @@ above, integrating established methods (DE screening, LASSO via glmnet,
 nested cross-validation) into a cohesive package for PS vs PIS
 classification and validation.
 
-Generative AI tools (e.g., GitHub Copilot, ChatGPT) were used for
-brainstorming, code completions, debugging, and drafting where noted;
-all outputs were reviewed and validated by the author. Notably, GitHub
-Copilot was used extensively throughout creating the test suite and
-ChatGPT was used for commenting and proofreading.
+Contributions from other packages/sources for each function: The core
+analysis functions (`esr_trainEndometrialSignature`,
+`esr_validateEndometrial`, `esr_analyzeDifferentialExpression`) build
+upon `glmnet` (Friedman et al., 2010) for LASSO regularization, `limma`
+(Ritchie et al., 2015) for differential expression analysis, and
+`rsample` (Frick et al., 2025) for cross-validation resampling. The
+plotting functions (`plotEndometrial*`) use `ggplot2` (Wickham, 2016)
+for base graphics, `ComplexHeatmap` (Gu et al., 2016) for heatmap
+visualization, and `circlize` (Gu et al., 2014) for circular
+visualizations. The data loading functions (`endo_load_*`, `esr_load*`)
+use `readr` (Wickham et al., 2024) for file I/O and `jsonlite` (Ooms,
+2014) for JSON parsing. The calibration functions (`calibrate_*`,
+`compute_*`) implement established methods (Platt scaling, isotonic
+regression) using base R `stats` functions. The export functions
+(`esr_export*`, `export_*`) use `jsonlite` for JSON export and base R
+for CSV export.
+
+Contributions from generative AI tool(s) for each function: GitHub
+Copilot was used extensively throughout the test suite
+(`tests/testthat/test-*.R`) for generating test cases, assertions, and
+test fixtures. It was also used for code completions in R source files,
+particularly for repetitive patterns in plotting functions and data
+validation logic. ChatGPT was used for commenting and proofreading
+documentation (roxygen comments), README sections, and vignettes. It was
+also used for brainstorming function signatures and workflow design in
+early development stages. All outputs from AI tools were reviewed,
+validated, and modified by the author before inclusion. No AI-generated
+code was used verbatim without review.
 
 ## References
 
@@ -237,7 +280,9 @@ ChatGPT was used for commenting and proofreading.
   generation in R. R package.
   <https://CRAN.R-project.org/package=knitr>.
 
-## Statistical Assumptions
+## Other Topics
+
+### Statistical Assumptions
 
 The signature creation process in `EndoSignatureR` relies on several
 statistical assumptions:
@@ -275,7 +320,7 @@ These assumptions are important for proper interpretation of signature
 results and should be considered when applying the package to new
 datasets.
 
-## Acknowledgements
+### Acknowledgements
 
 This package was developed as part of an assessment for 2025 BCB410H:
 Applied Bioinformatics course at the University of Toronto, Toronto,
@@ -283,7 +328,7 @@ CANADA. `EndoSignatureR` welcomes issues, enhancement requests, and
 other contributions. To submit an issue, use the GitHub issues page for
 your repository.
 
-## SessionInfo
+### SessionInfo
 
 R version 4.5.1 (2025-06-13) Platform: aarch64-apple-darwin20 Running
 under: macOS Sequoia 15.6.1
@@ -299,46 +344,45 @@ en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
 time zone: America/Toronto tzcode source: internal
 
-attached base packages: \[1\] stats graphics grDevices utils datasets
-methods base
+attached base packages: \[1\] grid stats graphics grDevices utils
+datasets methods base
 
-other attached packages: \[1\] endoSignatureR_0.0.0.9000 usethis_3.2.1
-dplyr_1.1.4 readr_2.1.5  
-\[5\] R.utils_2.13.0 R.oo_1.27.1 R.methodsS3_1.8.2 testthat_3.2.3
+other attached packages: \[1\] ComplexHeatmap_2.24.1 ggplot2_4.0.0
+glmnet_4.1-10 Matrix_1.7-3  
+\[5\] rsample_1.3.1 endoSignatureR_0.0.0.9000 testthat_3.2.3
 
-loaded via a namespace (and not attached): \[1\] httr2_1.2.1
-remotes_2.5.0 rlang_1.1.6  
-\[4\] magrittr_2.0.4 matrixStats_1.5.0 compiler_4.5.1  
-\[7\] roxygen2_7.3.3 callr_3.7.6 vctrs_0.6.5  
-\[10\] stringr_1.5.2 pkgconfig_2.0.3 shape_1.4.6.1  
-\[13\] crayon_1.5.3 fastmap_1.2.0 XVector_0.48.0  
-\[16\] ellipsis_0.3.2 utf8_1.2.6 rmarkdown_2.29  
-\[19\] sessioninfo_1.2.3 tzdb_0.5.0 UCSC.utils_1.4.0  
-\[22\] ps_1.9.1 purrr_1.1.0 bit_4.6.0  
-\[25\] xfun_0.53 gert_2.1.5 glmnet_4.1-10  
-\[28\] cachem_1.1.0 GenomeInfoDb_1.44.3 jsonlite_2.0.0  
-\[31\] DelayedArray_0.34.1 parallel_4.5.1 prettyunits_1.2.0  
-\[34\] R6_2.6.1 stringi_1.8.7 RColorBrewer_1.1-3  
-\[37\] pkgload_1.4.1 GenomicRanges_1.60.0 brio_1.1.5  
-\[40\] Rcpp_1.1.0 SummarizedExperiment_1.38.1 iterators_1.0.14  
-\[43\] knitr_1.50 IRanges_2.42.0 gitcreds_0.1.2  
-\[46\] Matrix_1.7-3 splines_4.5.1 tidyselect_1.2.1  
-\[49\] abind_1.4-8 rstudioapi_0.17.1 yaml_2.3.10  
-\[52\] codetools_0.2-20 curl_7.0.0 processx_3.8.6  
-\[55\] pkgbuild_1.4.8 lattice_0.22-7 tibble_3.3.0  
-\[58\] Biobase_2.68.0 withr_3.0.2 S7_0.2.0  
-\[61\] askpass_1.2.1 evaluate_1.0.5 desc_1.4.3  
-\[64\] survival_3.8-3 xml2_1.4.0 pillar_1.11.1  
-\[67\] BiocManager_1.30.26 MatrixGenerics_1.20.0 whisker_0.4.1  
-\[70\] foreach_1.5.2 stats4_4.5.1 generics_0.1.4  
-\[73\] vroom_1.6.6 rprojroot_2.1.1 credentials_2.0.3  
-\[76\] xopen_1.0.1 hms_1.1.3 S4Vectors_0.46.0  
-\[79\] ggplot2_4.0.0 commonmark_2.0.0 scales_1.4.0  
-\[82\] glue_1.8.0 tools_4.5.1 sys_3.4.3  
-\[85\] fs_1.6.6 grid_4.5.1 gh_1.5.0  
-\[88\] devtools_2.4.6 GenomeInfoDbData_1.2.14 cli_3.6.5  
-\[91\] rappdirs_0.3.3 rcmdcheck_1.4.0 S4Arrays_1.8.1  
-\[94\] gtable_0.3.6 digest_0.6.37 BiocGenerics_0.54.1  
-\[97\] SparseArray_1.8.1 farver_2.1.2 memoise_2.0.1  
-\[100\] htmltools_0.5.8.1 lifecycle_1.0.4 httr_1.4.7  
-\[103\] openssl_2.3.3 bit64_4.6.0-1
+loaded via a namespace (and not attached): \[1\] tidyselect_1.2.1
+dplyr_1.1.4 farver_2.1.2 S7_0.2.0 fastmap_1.2.0  
+\[6\] pROC_1.19.0.1 digest_0.6.37 lifecycle_1.0.4 cluster_2.1.8.1
+waldo_0.6.2  
+\[11\] ellipsis_0.3.2 survival_3.8-3 statmod_1.5.0 magrittr_2.0.4
+compiler_4.5.1  
+\[16\] rlang_1.1.6 tools_4.5.1 yaml_2.3.10 knitr_1.50 labeling_0.4.3  
+\[21\] bit_4.6.0 pkgbuild_1.4.8 xml2_1.4.0 RColorBrewer_1.1-3
+pkgload_1.4.1  
+\[26\] withr_3.0.2 purrr_1.1.0 BiocGenerics_0.54.1 desc_1.4.3
+stats4_4.5.1  
+\[31\] roxygen2_7.3.3 future_1.67.0 colorspace_2.1-2 globals_0.18.0
+scales_1.4.0  
+\[36\] iterators_1.0.14 cli_3.6.5 rmarkdown_2.29 crayon_1.5.3
+generics_0.1.4  
+\[41\] remotes_2.5.0 rstudioapi_0.17.1 tzdb_0.5.0 rjson_0.2.23
+commonmark_2.0.0  
+\[46\] sessioninfo_1.2.3 cachem_1.1.0 stringr_1.5.2 splines_4.5.1
+parallel_4.5.1  
+\[51\] matrixStats_1.5.0 vctrs_0.6.5 devtools_2.4.6 jsonlite_2.0.0
+IRanges_2.42.0  
+\[56\] hms_1.1.4 GetoptLong_1.0.5 S4Vectors_0.46.0 bit64_4.6.0-1
+clue_0.3-66  
+\[61\] listenv_0.10.0 foreach_1.5.2 limma_3.64.3 tidyr_1.3.1
+parallelly_1.45.1  
+\[66\] glue_1.8.0 codetools_0.2-20 stringi_1.8.7 shape_1.4.6.1
+gtable_0.3.6  
+\[71\] tibble_3.3.0 furrr_0.3.1 pillar_1.11.1 htmltools_0.5.8.1
+brio_1.1.5  
+\[76\] circlize_0.4.16 R6_2.6.1 doParallel_1.0.17 rprojroot_2.1.1
+vroom_1.6.6  
+\[81\] evaluate_1.0.5 lattice_0.22-7 readr_2.1.5 png_0.1-8
+memoise_2.0.1  
+\[86\] Rcpp_1.1.0 xfun_0.53 fs_1.6.6 usethis_3.2.1 pkgconfig_2.0.3  
+\[91\] GlobalOptions_0.1.2

@@ -100,9 +100,9 @@ Plotting helpers (examples):
 - DE/Signature: `plotEndometrialMA`, `plotEndometrialVolcano`, `plotEndometrialHeatmap`, `plotEndometrialCoefLollipop`, `plotEndometrialStabilityBars`
 - Performance: `plotEndometrialROC`, `plotEndometrialPR`, `plotEndometrialCalibration`, `plotEndometrialComparison`
 
-An overview of the package is illustrated below.
+<!-- An overview of the package is illustrated below.
 
-![](./inst/extdata/Workflow.png)
+![](./inst/extdata/Workflow.png) -->
 
 ### Three-Mode Workflow
 
