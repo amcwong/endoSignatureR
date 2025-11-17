@@ -46,11 +46,33 @@ The package will be developed and tested on a recent R version and platform; see
 
 To install the latest version of the package:
 
+**Note**: This package depends on Bioconductor packages (`ComplexHeatmap` and `limma`). You must install Bioconductor dependencies first:
+
 ```r
+# Install BiocManager if not already installed
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+
+# Install Bioconductor dependencies
+BiocManager::install(c("ComplexHeatmap", "limma"))
+
+# Install devtools if not already installed
 install.packages("devtools")
+
+# Install endoSignatureR from GitHub
 library("devtools")
 devtools::install_github("amcwong/endoSignatureR", build_vignettes = TRUE)
 library("endoSignatureR")
+```
+
+**Alternative**: You can also use `BiocManager::install()` which handles both CRAN and Bioconductor dependencies automatically:
+
+```r
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+BiocManager::install("amcwong/endoSignatureR", build_vignettes = TRUE)
 ```
 
 To run the shinyApp: Under construction
@@ -148,7 +170,9 @@ Contributions from generative AI tool(s) for each function: GitHub Copilot was u
 
 - Xie, Y. (2025). knitr: A general-purpose package for dynamic report generation in R. R package. <https://CRAN.R-project.org/package=knitr>.
 
-## Statistical Assumptions
+## Other Topics
+
+### Statistical Assumptions
 
 The signature creation process in `EndoSignatureR` relies on several statistical assumptions:
 
@@ -166,11 +190,11 @@ The signature creation process in `EndoSignatureR` relies on several statistical
 
 These assumptions are important for proper interpretation of signature results and should be considered when applying the package to new datasets.
 
-## Acknowledgements
+### Acknowledgements
 
 This package was developed as part of an assessment for 2025 BCB410H: Applied Bioinformatics course at the University of Toronto, Toronto, CANADA. `EndoSignatureR` welcomes issues, enhancement requests, and other contributions. To submit an issue, use the GitHub issues page for your repository.
 
-## SessionInfo
+### SessionInfo
 
 R version 4.5.1 (2025-06-13)
 Platform: aarch64-apple-darwin20
