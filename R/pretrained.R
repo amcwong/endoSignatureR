@@ -19,6 +19,8 @@
 #' - `endometrial_recipe.json`: Preprocessing recipe and training parameters
 #' - `endometrial_stability.csv` (optional): Bootstrap stability frequencies
 #'
+#' @import readr
+#' @import jsonlite
 #' @examples
 #' signature <- esr_loadPretrainedSignature()
 #' length(signature$panel)
