@@ -28,7 +28,8 @@ Imports:
     ComplexHeatmap,
     circlize,
     rsample,
-    jsonlite
+    jsonlite,
+    shiny
 Depends: 
     R (>= 3.5)
 LazyData: true
