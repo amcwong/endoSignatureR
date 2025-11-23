@@ -594,3 +594,9 @@ This vignette demonstrated the Mode 3 (Standalone Visualization & Analysis) work
 11. **Analysis Bundle**: Package all outputs together for unified API and reproducibility
 
 This workflow enables quality assessment and exploratory analysis before proceeding to signature training (Mode 2) or classification tasks (Mode 1). The DE analysis and visualization steps help identify candidate genes for downstream signature selection (Phase 1.3) or training workflows (Phase 2). The analysis bundle provides a unified structure for exporting results, sharing with collaborators, and integrating with Shiny apps (Phase 4).
+
+## Session Info
+
+```{r sessionInfo}
+sessionInfo()
+```

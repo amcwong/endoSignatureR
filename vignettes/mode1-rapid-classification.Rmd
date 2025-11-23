@@ -516,3 +516,9 @@ For more information, see:
 - Package introduction: `vignette("endoSignatureR-intro", package = "endoSignatureR")`
 - Mode 2 workflow: `vignette("mode2-signature-validation", package = "endoSignatureR")`
 - Mode 3 visualization: `vignette("mode3-visualization-analysis", package = "endoSignatureR")`
+
+## Session Info
+
+```{r sessionInfo}
+sessionInfo()
+```

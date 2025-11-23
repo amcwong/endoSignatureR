@@ -957,3 +957,9 @@ Mode 2 (Signature Validation) provides a comprehensive pipeline for training and
 13. **Determinism**: Fixed seeds ensure reproducible results
 
 Phases 2.1-2.5 establish core training, calibration, stability, visualization, and export functionality that maintains best practices for small-sample ML while enabling reproducible signature sharing and model transparency.
+
+## Session Info
+
+```{r sessionInfo}
+sessionInfo()
+```

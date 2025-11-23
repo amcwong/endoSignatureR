@@ -299,3 +299,9 @@ The classification function may issue warnings for:
 - **Missing genes**: Signature genes not found in new data (set to 0 with warning)
 
 These warnings help identify potential data compatibility issues. The function will still return predictions, but they may be less reliable if many genes are missing.
+
+## Session Info
+
+```{r sessionInfo}
+sessionInfo()
+```
