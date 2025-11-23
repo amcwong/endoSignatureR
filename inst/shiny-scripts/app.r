@@ -204,9 +204,13 @@ server <- function(input, output, session) {
         volcanoPlotGenerated = FALSE,
         heatmapPlotGenerated = FALSE,
         # Plot parameters
-        maPlotParams = list(fdr_threshold = 0.05, log2fc_threshold = 1),
-        volcanoPlotParams = list(fdr_threshold = 0.05, log2fc_threshold = 1),
-        heatmapPlotParams = list(n_genes = 50, scale = "row", show_row_names = FALSE)
+        maPlotParams = list(fdr_threshold = 0.05, log2fc_threshold = 1, point_size = 1.5, point_alpha = 0.6, legend_position = "right", theme = "bw"),
+        volcanoPlotParams = list(fdr_threshold = 0.05, log2fc_threshold = 1, point_size = 1.5, point_alpha = 0.6, legend_position = "right", theme = "bw"),
+        heatmapPlotParams = list(n_genes = 50, scale = "row", show_row_names = FALSE),
+        # QC/EDA plot parameters
+        libsizePlotParams = list(point_size = 2, point_alpha = 0.6, bins = 30, legend_position = "right", theme = "bw"),
+        zerosPlotParams = list(bins = 30, theme = "bw"),
+        pcaPlotParams = list(point_size = 4, point_alpha = 0.8, legend_position = "right", theme = "bw")
     )
 
     # Load pre-trained signature on app startup
@@ -296,16 +300,114 @@ server <- function(input, output, session) {
                 h3("Quality Control and Exploratory Data Analysis"),
                 br(),
                 h4("Library Size"),
-                plotOutput("libsizePlot", height = "400px"),
-                downloadButton("downloadLibsize", "Download Plot"),
-                br(), br(),
+                fluidRow(
+                    column(
+                        6,
+                        plotOutput("libsizePlot", height = "400px"),
+                        downloadButton("downloadLibsize", "Download Plot")
+                    ),
+                    column(
+                        6,
+                        h5("Styling Options"),
+                        numericInput("libsizePointSize", "Point Size",
+                            value = 2, min = 0.5, max = 10, step = 0.5
+                        ),
+                        sliderInput("libsizePointAlpha", "Point Transparency",
+                            value = 0.6, min = 0, max = 1, step = 0.1
+                        ),
+                        numericInput("libsizeBins", "Histogram Bins",
+                            value = 30, min = 10, max = 100, step = 5
+                        ),
+                        selectInput("libsizeTheme", "Theme",
+                            choices = list(
+                                "Black & White" = "bw",
+                                "Classic" = "classic",
+                                "Minimal" = "minimal",
+                                "Light" = "light",
+                                "Dark" = "dark"
+                            ),
+                            selected = "bw"
+                        ),
+                        selectInput("libsizeLegendPos", "Legend Position",
+                            choices = list(
+                                "Right" = "right",
+                                "Left" = "left",
+                                "Top" = "top",
+                                "Bottom" = "bottom",
+                                "None" = "none"
+                            ),
+                            selected = "right"
+                        ),
+                        actionButton("updateLibsize", "Update Plot", class = "btn-primary")
+                    )
+                ),
+                br(), br(), hr(), br(),
                 h4("Percentage of Zeros"),
-                plotOutput("zerosPlot", height = "400px"),
-                downloadButton("downloadZeros", "Download Plot"),
-                br(), br(),
+                fluidRow(
+                    column(
+                        6,
+                        plotOutput("zerosPlot", height = "400px"),
+                        downloadButton("downloadZeros", "Download Plot")
+                    ),
+                    column(
+                        6,
+                        h5("Styling Options"),
+                        numericInput("zerosBins", "Histogram Bins",
+                            value = 30, min = 10, max = 100, step = 5
+                        ),
+                        selectInput("zerosTheme", "Theme",
+                            choices = list(
+                                "Black & White" = "bw",
+                                "Classic" = "classic",
+                                "Minimal" = "minimal",
+                                "Light" = "light",
+                                "Dark" = "dark"
+                            ),
+                            selected = "bw"
+                        ),
+                        actionButton("updateZeros", "Update Plot", class = "btn-primary")
+                    )
+                ),
+                br(), br(), hr(), br(),
                 h4("Principal Component Analysis (PCA)"),
-                plotOutput("pcaPlot", height = "500px"),
-                downloadButton("downloadPCA", "Download Plot")
+                fluidRow(
+                    column(
+                        6,
+                        plotOutput("pcaPlot", height = "500px"),
+                        downloadButton("downloadPCA", "Download Plot")
+                    ),
+                    column(
+                        6,
+                        h5("Styling Options"),
+                        numericInput("pcaPointSize", "Point Size",
+                            value = 4, min = 1, max = 10, step = 0.5
+                        ),
+                        sliderInput("pcaPointAlpha", "Point Transparency",
+                            value = 0.8, min = 0, max = 1, step = 0.1
+                        ),
+                        selectInput("pcaTheme", "Theme",
+                            choices = list(
+                                "Black & White" = "bw",
+                                "Classic" = "classic",
+                                "Minimal" = "minimal",
+                                "Light" = "light",
+                                "Dark" = "dark"
+                            ),
+                            selected = "bw"
+                        ),
+                        selectInput("pcaLegendPos", "Legend Position",
+                            choices = list(
+                                "Right" = "right",
+                                "Left" = "left",
+                                "Top" = "top",
+                                "Bottom" = "bottom",
+                                "None" = "none"
+                            ),
+                            selected = "right"
+                        ),
+                        actionButton("updatePCA", "Update Plot", class = "btn-primary")
+                    )
+                )
             ),
 
             # DE Tab
@@ -350,12 +452,14 @@ server <- function(input, output, session) {
                         h5("Customize Plot Settings"),
                         p("Adjust thresholds and click 'Update Plot' to regenerate with new settings."),
                         fluidRow(
-                            column(6,
+                            column(
+                                6,
                                 numericInput("maFDR", "FDR Threshold",
                                     value = 0.05, min = 0.001, max = 1, step = 0.01
                                 )
                             ),
-                            column(6,
+                            column(
+                                6,
                                 numericInput("maLog2FC", "log2FC Threshold",
                                     value = 1, min = 0, max = 10, step = 0.1
                                 )
@@ -377,12 +481,14 @@ server <- function(input, output, session) {
                         h5("Customize Plot Settings"),
                         p("Adjust thresholds and click 'Update Plot' to regenerate with new settings."),
                         fluidRow(
-                            column(6,
+                            column(
+                                6,
                                 numericInput("volcanoFDR", "FDR Threshold",
                                     value = 0.05, min = 0.001, max = 1, step = 0.01
                                 )
                             ),
-                            column(6,
+                            column(
+                                6,
                                 numericInput("volcanoLog2FC", "log2FC Threshold",
                                     value = 1, min = 0, max = 10, step = 0.1
                                 )
@@ -404,12 +510,14 @@ server <- function(input, output, session) {
                         h5("Customize Plot Settings"),
                         p("Adjust number of genes, scaling, and display options. Click 'Update Plot' to regenerate with new settings."),
                         fluidRow(
-                            column(4,
+                            column(
+                                4,
                                 numericInput("heatmapGenes", "Number of Genes",
                                     value = 50, min = 10, max = 500, step = 10
                                 )
                             ),
-                            column(4,
+                            column(
+                                4,
                                 selectInput("heatmapScale", "Scaling Method",
                                     choices = list(
                                         "Row (z-score per gene)" = "row",
@@ -419,7 +527,8 @@ server <- function(input, output, session) {
                                     selected = "row"
                                 )
                             ),
-                            column(4,
+                            column(
+                                4,
                                 checkboxInput("heatmapShowRowNames", "Show Gene Names", value = FALSE),
                                 br(),
                                 actionButton("generateHeatmap", "Update Heatmap", class = "btn-primary")
@@ -869,25 +978,84 @@ server <- function(input, output, session) {
     })
 
     # QC/EDA Plots
+    # Update Libsize Plot
+    observeEvent(input$updateLibsize, {
+        if (!values$dataLoaded) {
+            return()
+        }
+        # Replace entire list to trigger reactivity
+        values$libsizePlotParams <- list(
+            point_size = input$libsizePointSize,
+            point_alpha = input$libsizePointAlpha,
+            bins = input$libsizeBins,
+            theme = input$libsizeTheme,
+            legend_position = input$libsizeLegendPos
+        )
+    })
+
     output$libsizePlot <- renderPlot({
         if (!values$dataLoaded) {
             return(NULL)
         }
-        endoSignatureR::plotEndometrialLibsize(values$counts, values$pheno)
+        endoSignatureR::plotEndometrialLibsize(
+            values$counts, values$pheno,
+            point_size = values$libsizePlotParams$point_size,
+            point_alpha = values$libsizePlotParams$point_alpha,
+            bins = values$libsizePlotParams$bins,
+            legend_position = values$libsizePlotParams$legend_position,
+            theme = values$libsizePlotParams$theme
+        )
+    })
+
+    # Update Zeros Plot
+    observeEvent(input$updateZeros, {
+        if (!values$dataLoaded) {
+            return()
+        }
+        # Replace entire list to trigger reactivity
+        values$zerosPlotParams <- list(
+            bins = input$zerosBins,
+            theme = input$zerosTheme
+        )
     })
 
     output$zerosPlot <- renderPlot({
         if (!values$dataLoaded) {
             return(NULL)
         }
-        endoSignatureR::plotEndometrialZeros(values$counts, by = "sample")
+        endoSignatureR::plotEndometrialZeros(
+            values$counts,
+            by = "sample",
+            bins = values$zerosPlotParams$bins,
+            theme = values$zerosPlotParams$theme
+        )
+    })
+
+    # Update PCA Plot
+    observeEvent(input$updatePCA, {
+        if (!values$dataLoaded) {
+            return()
+        }
+        # Replace entire list to trigger reactivity
+        values$pcaPlotParams <- list(
+            point_size = input$pcaPointSize,
+            point_alpha = input$pcaPointAlpha,
+            theme = input$pcaTheme,
+            legend_position = input$pcaLegendPos
+        )
     })
 
     output$pcaPlot <- renderPlot({
         if (!values$dataLoaded) {
             return(NULL)
         }
-        endoSignatureR::plotEndometrialPCA(values$counts_t, values$pheno)
+        endoSignatureR::plotEndometrialPCA(
+            values$counts_t, values$pheno,
+            point_size = values$pcaPlotParams$point_size,
+            point_alpha = values$pcaPlotParams$point_alpha,
+            legend_position = values$pcaPlotParams$legend_position,
+            theme = values$pcaPlotParams$theme
+        )
     })
 
     # Generate MA Plot (regenerate with custom settings)
@@ -897,6 +1065,7 @@ server <- function(input, output, session) {
         }
         values$maPlotParams$fdr_threshold <- input$maFDR
         values$maPlotParams$log2fc_threshold <- input$maLog2FC
+        # Note: styling parameters can be added here if UI controls are added
         values$maPlotGenerated <- TRUE
     })
 
@@ -907,7 +1076,11 @@ server <- function(input, output, session) {
         endoSignatureR::plotEndometrialMA(
             values$de_table,
             fdr_threshold = values$maPlotParams$fdr_threshold,
-            log2fc_threshold = values$maPlotParams$log2fc_threshold
+            log2fc_threshold = values$maPlotParams$log2fc_threshold,
+            point_size = values$maPlotParams$point_size,
+            point_alpha = values$maPlotParams$point_alpha,
+            legend_position = values$maPlotParams$legend_position,
+            theme = values$maPlotParams$theme
         )
     })
 
@@ -918,6 +1091,7 @@ server <- function(input, output, session) {
         }
         values$volcanoPlotParams$fdr_threshold <- input$volcanoFDR
         values$volcanoPlotParams$log2fc_threshold <- input$volcanoLog2FC
+        # Note: styling parameters can be added here if UI controls are added
         values$volcanoPlotGenerated <- TRUE
     })
 
@@ -928,7 +1102,11 @@ server <- function(input, output, session) {
         endoSignatureR::plotEndometrialVolcano(
             values$de_table,
             fdr_threshold = values$volcanoPlotParams$fdr_threshold,
-            log2fc_threshold = values$volcanoPlotParams$log2fc_threshold
+            log2fc_threshold = values$volcanoPlotParams$log2fc_threshold,
+            point_size = values$volcanoPlotParams$point_size,
+            point_alpha = values$volcanoPlotParams$point_alpha,
+            legend_position = values$volcanoPlotParams$legend_position,
+            theme = values$volcanoPlotParams$theme
         )
     })
 
@@ -1002,7 +1180,14 @@ server <- function(input, output, session) {
         filename = "libsize_plot.png",
         content = function(file) {
             ggplot2::ggsave(file,
-                plot = endoSignatureR::plotEndometrialLibsize(values$counts, values$pheno),
+                plot = endoSignatureR::plotEndometrialLibsize(
+                    values$counts, values$pheno,
+                    point_size = values$libsizePlotParams$point_size,
+                    point_alpha = values$libsizePlotParams$point_alpha,
+                    bins = values$libsizePlotParams$bins,
+                    legend_position = values$libsizePlotParams$legend_position,
+                    theme = values$libsizePlotParams$theme
+                ),
                 width = 10, height = 6, dpi = 300
             )
         }
@@ -1012,7 +1197,12 @@ server <- function(input, output, session) {
         filename = "zeros_plot.png",
         content = function(file) {
             ggplot2::ggsave(file,
-                plot = endoSignatureR::plotEndometrialZeros(values$counts, by = "sample"),
+                plot = endoSignatureR::plotEndometrialZeros(
+                    values$counts,
+                    by = "sample",
+                    bins = values$zerosPlotParams$bins,
+                    theme = values$zerosPlotParams$theme
+                ),
                 width = 10, height = 6, dpi = 300
             )
         }
@@ -1022,7 +1212,13 @@ server <- function(input, output, session) {
         filename = "pca_plot.png",
         content = function(file) {
             ggplot2::ggsave(file,
-                plot = endoSignatureR::plotEndometrialPCA(values$counts_t, values$pheno),
+                plot = endoSignatureR::plotEndometrialPCA(
+                    values$counts_t, values$pheno,
+                    point_size = values$pcaPlotParams$point_size,
+                    point_alpha = values$pcaPlotParams$point_alpha,
+                    legend_position = values$pcaPlotParams$legend_position,
+                    theme = values$pcaPlotParams$theme
+                ),
                 width = 10, height = 8, dpi = 300
             )
         }
@@ -1038,7 +1234,11 @@ server <- function(input, output, session) {
                 plot = endoSignatureR::plotEndometrialMA(
                     values$de_table,
                     fdr_threshold = values$maPlotParams$fdr_threshold,
-                    log2fc_threshold = values$maPlotParams$log2fc_threshold
+                    log2fc_threshold = values$maPlotParams$log2fc_threshold,
+                    point_size = values$maPlotParams$point_size,
+                    point_alpha = values$maPlotParams$point_alpha,
+                    legend_position = values$maPlotParams$legend_position,
+                    theme = values$maPlotParams$theme
                 ),
                 width = 10, height = 8, dpi = 300
             )
@@ -1055,7 +1255,11 @@ server <- function(input, output, session) {
                 plot = endoSignatureR::plotEndometrialVolcano(
                     values$de_table,
                     fdr_threshold = values$volcanoPlotParams$fdr_threshold,
-                    log2fc_threshold = values$volcanoPlotParams$log2fc_threshold
+                    log2fc_threshold = values$volcanoPlotParams$log2fc_threshold,
+                    point_size = values$volcanoPlotParams$point_size,
+                    point_alpha = values$volcanoPlotParams$point_alpha,
+                    legend_position = values$volcanoPlotParams$legend_position,
+                    theme = values$volcanoPlotParams$theme
                 ),
                 width = 10, height = 8, dpi = 300
             )
