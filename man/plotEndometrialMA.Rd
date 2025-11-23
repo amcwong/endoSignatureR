@@ -9,7 +9,11 @@ plotEndometrialMA(
   fdr_threshold = 0.05,
   log2fc_threshold = 1,
   highlight_genes = NULL,
-  annot_col = NULL
+  annot_col = NULL,
+  point_size = 1.5,
+  point_alpha = 0.6,
+  legend_position = c("right", "left", "top", "bottom", "none"),
+  theme = c("bw", "classic", "minimal", "light", "dark")
 )
 }
 \arguments{
@@ -22,6 +26,14 @@ plotEndometrialMA(
 \item{highlight_genes}{Optional character vector of gene IDs to highlight (e.g., with labels).}
 
 \item{annot_col}{Optional character scalar; column name in de_table for gene annotations (not yet used).}
+
+\item{point_size}{Numeric; size of points in the plot. Defaults to 1.5.}
+
+\item{point_alpha}{Numeric; transparency of points (0-1). Defaults to 0.6.}
+
+\item{legend_position}{Character scalar; position of legend ("right", "left", "top", "bottom", "none"). Defaults to "right".}
+
+\item{theme}{Character scalar; ggplot2 theme ("bw", "classic", "minimal", "light", "dark"). Defaults to "bw".}
 }
 \value{
 A ggplot object showing MA plot with significance coloring.

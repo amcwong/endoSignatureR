@@ -4,7 +4,15 @@
 \alias{plotEndometrialPCA}
 \title{Plot Endometrial PCA}
 \usage{
-plotEndometrialPCA(mat_t, pheno = NULL, group_col = "group")
+plotEndometrialPCA(
+  mat_t,
+  pheno = NULL,
+  group_col = "group",
+  point_size = 4,
+  point_alpha = 0.8,
+  legend_position = c("right", "left", "top", "bottom", "none"),
+  theme = c("bw", "classic", "minimal", "light", "dark")
+)
 }
 \arguments{
 \item{mat_t}{A samples x genes transformed matrix.}
@@ -12,6 +20,14 @@ plotEndometrialPCA(mat_t, pheno = NULL, group_col = "group")
 \item{pheno}{Optional data.frame with sample metadata containing a \code{group} column for coloring.}
 
 \item{group_col}{Character scalar; name of the phenotype column for group coloring. Defaults to "group".}
+
+\item{point_size}{Numeric; size of points in the plot. Defaults to 4.}
+
+\item{point_alpha}{Numeric; transparency of points (0-1). Defaults to 0.8.}
+
+\item{legend_position}{Character scalar; position of legend ("right", "left", "top", "bottom", "none"). Defaults to "right".}
+
+\item{theme}{Character scalar; ggplot2 theme ("bw", "classic", "minimal", "light", "dark"). Defaults to "bw".}
 }
 \value{
 A ggplot object showing PC1 vs PC2 colored by group.

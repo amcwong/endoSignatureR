@@ -10,7 +10,11 @@ plotEndometrialVolcano(
   log2fc_threshold = 1,
   highlight_genes = NULL,
   pvalue_col = "FDR",
-  log2fc_col = "log2FC"
+  log2fc_col = "log2FC",
+  point_size = 1.5,
+  point_alpha = 0.6,
+  legend_position = c("right", "left", "top", "bottom", "none"),
+  theme = c("bw", "classic", "minimal", "light", "dark")
 )
 }
 \arguments{
@@ -25,6 +29,14 @@ plotEndometrialVolcano(
 \item{pvalue_col}{Character scalar; column name for p-values to plot. Defaults to "FDR".}
 
 \item{log2fc_col}{Character scalar; column name for log2 fold change. Defaults to "log2FC".}
+
+\item{point_size}{Numeric; size of points in the plot. Defaults to 1.5.}
+
+\item{point_alpha}{Numeric; transparency of points (0-1). Defaults to 0.6.}
+
+\item{legend_position}{Character scalar; position of legend ("right", "left", "top", "bottom", "none"). Defaults to "right".}
+
+\item{theme}{Character scalar; ggplot2 theme ("bw", "classic", "minimal", "light", "dark"). Defaults to "bw".}
 }
 \value{
 A ggplot object showing Volcano plot with significance coloring.

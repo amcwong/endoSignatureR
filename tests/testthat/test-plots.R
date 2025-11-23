@@ -37,6 +37,40 @@ test_that("plotEndometrialPCA is deterministic with fixed seed", {
   expect_equal(p1$data, p2$data)
 })
 
+test_that("plotEndometrialPCA accepts styling parameters", {
+  data(gse201926_sample)
+
+  mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+
+  # Test with different styling parameters
+  expect_no_error({
+    p1 <- plotEndometrialPCA(mat_t,
+      pheno = gse201926_sample$pheno,
+      point_size = 5, point_alpha = 0.7,
+      legend_position = "bottom", theme = "minimal"
+    )
+    expect_s3_class(p1, "ggplot")
+  })
+
+  # Test all theme options
+  themes <- c("bw", "classic", "minimal", "light", "dark")
+  for (th in themes) {
+    expect_no_error({
+      p <- plotEndometrialPCA(mat_t, pheno = gse201926_sample$pheno, theme = th)
+      expect_s3_class(p, "ggplot")
+    })
+  }
+
+  # Test all legend positions
+  legend_positions <- c("right", "left", "top", "bottom", "none")
+  for (pos in legend_positions) {
+    expect_no_error({
+      p <- plotEndometrialPCA(mat_t, pheno = gse201926_sample$pheno, legend_position = pos)
+      expect_s3_class(p, "ggplot")
+    })
+  }
+})
+
 test_that("plotEndometrialLibsize returns ggplot object", {
   data(gse201926_sample)
 
@@ -53,6 +87,29 @@ test_that("plotEndometrialLibsize works without pheno", {
 
   expect_s3_class(p, "ggplot")
   expect_no_error(print(p))
+})
+
+test_that("plotEndometrialLibsize accepts styling parameters", {
+  data(gse201926_sample)
+
+  # Test with different styling parameters
+  expect_no_error({
+    p1 <- plotEndometrialLibsize(gse201926_sample$counts,
+      pheno = gse201926_sample$pheno,
+      point_size = 3, point_alpha = 0.5, bins = 40,
+      legend_position = "top", theme = "classic"
+    )
+    expect_s3_class(p1, "ggplot")
+  })
+
+  # Test all theme options
+  themes <- c("bw", "classic", "minimal", "light", "dark")
+  for (th in themes) {
+    expect_no_error({
+      p <- plotEndometrialLibsize(gse201926_sample$counts, theme = th)
+      expect_s3_class(p, "ggplot")
+    })
+  }
 })
 
 test_that("plotEndometrialZeros returns ggplot object", {
@@ -72,6 +129,28 @@ test_that("plotEndometrialZeros handles both by options", {
 
   expect_no_error(plotEndometrialZeros(gse201926_sample$counts, by = "gene"))
   expect_no_error(plotEndometrialZeros(gse201926_sample$counts, by = "sample"))
+})
+
+test_that("plotEndometrialZeros accepts styling parameters", {
+  data(gse201926_sample)
+
+  # Test with different styling parameters
+  expect_no_error({
+    p1 <- plotEndometrialZeros(gse201926_sample$counts,
+      by = "sample",
+      bins = 50, theme = "minimal"
+    )
+    expect_s3_class(p1, "ggplot")
+  })
+
+  # Test all theme options
+  themes <- c("bw", "classic", "minimal", "light", "dark")
+  for (th in themes) {
+    expect_no_error({
+      p <- plotEndometrialZeros(gse201926_sample$counts, by = "gene", theme = th)
+      expect_s3_class(p, "ggplot")
+    })
+  }
 })
 
 test_that("all plots can be generated from gse201926_sample without errors", {
@@ -120,6 +199,31 @@ test_that("plotEndometrialMA works with highlight_genes", {
   expect_no_error(print(p))
 })
 
+test_that("plotEndometrialMA accepts styling parameters", {
+  data(gse201926_sample)
+
+  mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+  de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
+
+  # Test with different styling parameters
+  expect_no_error({
+    p1 <- plotEndometrialMA(de_table,
+      point_size = 2, point_alpha = 0.5,
+      legend_position = "bottom", theme = "minimal"
+    )
+    expect_s3_class(p1, "ggplot")
+  })
+
+  # Test all theme options
+  themes <- c("bw", "classic", "minimal", "light", "dark")
+  for (th in themes) {
+    expect_no_error({
+      p <- plotEndometrialMA(de_table, theme = th)
+      expect_s3_class(p, "ggplot")
+    })
+  }
+})
+
 test_that("plotEndometrialVolcano returns ggplot object with expected layers", {
   data(gse201926_sample)
 
@@ -146,6 +250,31 @@ test_that("plotEndometrialVolcano works with highlight_genes", {
 
   expect_s3_class(p, "ggplot")
   expect_no_error(print(p))
+})
+
+test_that("plotEndometrialVolcano accepts styling parameters", {
+  data(gse201926_sample)
+
+  mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+  de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
+
+  # Test with different styling parameters
+  expect_no_error({
+    p1 <- plotEndometrialVolcano(de_table,
+      point_size = 2, point_alpha = 0.5,
+      legend_position = "bottom", theme = "minimal"
+    )
+    expect_s3_class(p1, "ggplot")
+  })
+
+  # Test all theme options
+  themes <- c("bw", "classic", "minimal", "light", "dark")
+  for (th in themes) {
+    expect_no_error({
+      p <- plotEndometrialVolcano(de_table, theme = th)
+      expect_s3_class(p, "ggplot")
+    })
+  }
 })
 
 test_that("plotEndometrialMA and plotEndometrialVolcano handle edge cases", {

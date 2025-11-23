@@ -4,12 +4,21 @@
 \alias{plotEndometrialZeros}
 \title{Plot Endometrial Zero Counts}
 \usage{
-plotEndometrialZeros(counts, by = c("gene", "sample"))
+plotEndometrialZeros(
+  counts,
+  by = c("gene", "sample"),
+  bins = 30,
+  theme = c("bw", "classic", "minimal", "light", "dark")
+)
 }
 \arguments{
 \item{counts}{A matrix/data.frame of raw counts (genes x samples).}
 
 \item{by}{Character scalar; "gene" (default) or "sample" to compute zeros per gene or per sample.}
+
+\item{bins}{Numeric; number of bins for histogram. Defaults to 30.}
+
+\item{theme}{Character scalar; ggplot2 theme ("bw", "classic", "minimal", "light", "dark"). Defaults to "bw".}
 }
 \value{
 A ggplot object showing zero count percentage distribution.

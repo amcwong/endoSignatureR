@@ -5,6 +5,10 @@
 #' @param mat_t A samples x genes transformed matrix.
 #' @param pheno Optional data.frame with sample metadata containing a `group` column for coloring.
 #' @param group_col Character scalar; name of the phenotype column for group coloring. Defaults to "group".
+#' @param point_size Numeric; size of points in the plot. Defaults to 4.
+#' @param point_alpha Numeric; transparency of points (0-1). Defaults to 0.8.
+#' @param legend_position Character scalar; position of legend ("right", "left", "top", "bottom", "none"). Defaults to "right".
+#' @param theme Character scalar; ggplot2 theme ("bw", "classic", "minimal", "light", "dark"). Defaults to "bw".
 #'
 #' @return A ggplot object showing PC1 vs PC2 colored by group.
 #'
@@ -18,9 +22,23 @@
 #' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
 #' plotEndometrialPCA(mat_t, pheno = gse201926_sample$pheno)
 #' @export
-plotEndometrialPCA <- function(mat_t, pheno = NULL, group_col = "group") {
+plotEndometrialPCA <- function(mat_t, pheno = NULL, group_col = "group",
+                               point_size = 4, point_alpha = 0.8,
+                               legend_position = c("right", "left", "top", "bottom", "none"),
+                               theme = c("bw", "classic", "minimal", "light", "dark")) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("ggplot2 package is required for plotting")
+    }
+
+    # Validate styling parameters
+    legend_position <- match.arg(legend_position)
+    theme <- match.arg(theme)
+
+    if (!is.numeric(point_size) || point_size <= 0) {
+        stop("point_size must be a positive numeric value")
+    }
+    if (!is.numeric(point_alpha) || point_alpha < 0 || point_alpha > 1) {
+        stop("point_alpha must be a numeric value between 0 and 1")
     }
 
     # Compute PCA
@@ -56,7 +74,7 @@ plotEndometrialPCA <- function(mat_t, pheno = NULL, group_col = "group") {
 
     # Create plot with better point distinction
     p <- ggplot2::ggplot(pca_df, ggplot2::aes(x = .data$PC1, y = .data$PC2, color = .data$group, shape = .data$group)) +
-        ggplot2::geom_point(size = 4, alpha = 0.8, stroke = 1.2) +
+        ggplot2::geom_point(size = point_size, alpha = point_alpha, stroke = 1.2) +
         ggplot2::scale_shape_manual(values = c("PIS" = 16, "PS" = 17, "1" = 16)) + # Different shapes for groups
         ggplot2::labs(
             x = paste0("PC1 (", round(var_explained[1] * 100, 1), "%)"),
@@ -65,10 +83,17 @@ plotEndometrialPCA <- function(mat_t, pheno = NULL, group_col = "group") {
             color = "Group",
             shape = "Group"
         ) +
-        ggplot2::theme_bw() +
+        # Apply theme
+        switch(theme,
+            "bw" = ggplot2::theme_bw(),
+            "classic" = ggplot2::theme_classic(),
+            "minimal" = ggplot2::theme_minimal(),
+            "light" = ggplot2::theme_light(),
+            "dark" = ggplot2::theme_dark()
+        ) +
         ggplot2::theme(
             plot.title = ggplot2::element_text(hjust = 0.5),
-            legend.position = "right"
+            legend.position = legend_position
         ) +
         # Add sample count annotation
         ggplot2::annotate(
@@ -90,6 +115,11 @@ plotEndometrialPCA <- function(mat_t, pheno = NULL, group_col = "group") {
 #' @param counts A matrix/data.frame of raw counts (genes x samples).
 #' @param pheno Optional data.frame with sample metadata containing a `group` column for grouping.
 #' @param group_col Character scalar; name of the phenotype column for grouping. Defaults to "group".
+#' @param point_size Numeric; size of points in jitter plot (when grouping available). Defaults to 2.
+#' @param point_alpha Numeric; transparency of points (0-1). Defaults to 0.6.
+#' @param bins Numeric; number of bins for histogram (when no grouping). Defaults to 30.
+#' @param legend_position Character scalar; position of legend ("right", "left", "top", "bottom", "none"). Defaults to "right".
+#' @param theme Character scalar; ggplot2 theme ("bw", "classic", "minimal", "light", "dark"). Defaults to "bw".
 #'
 #' @return A ggplot object showing library size distribution (histogram or boxplot by group).
 #'
@@ -97,10 +127,28 @@ plotEndometrialPCA <- function(mat_t, pheno = NULL, group_col = "group") {
 #' data(gse201926_sample)
 #' plotEndometrialLibsize(gse201926_sample$counts, pheno = gse201926_sample$pheno)
 #' @export
-plotEndometrialLibsize <- function(counts, pheno = NULL, group_col = "group") {
+plotEndometrialLibsize <- function(counts, pheno = NULL, group_col = "group",
+                                   point_size = 2, point_alpha = 0.6, bins = 30,
+                                   legend_position = c("right", "left", "top", "bottom", "none"),
+                                   theme = c("bw", "classic", "minimal", "light", "dark")) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("ggplot2 package is required for plotting")
     }
+
+    # Validate styling parameters
+    legend_position <- match.arg(legend_position)
+    theme <- match.arg(theme)
+
+    if (!is.numeric(point_size) || point_size <= 0) {
+        stop("point_size must be a positive numeric value")
+    }
+    if (!is.numeric(point_alpha) || point_alpha < 0 || point_alpha > 1) {
+        stop("point_alpha must be a numeric value between 0 and 1")
+    }
+    if (!is.numeric(bins) || bins <= 0) {
+        stop("bins must be a positive integer")
+    }
+    bins <- as.integer(bins)
 
     # Convert to matrix if needed
     if (!is.matrix(counts)) {
@@ -138,17 +186,24 @@ plotEndometrialLibsize <- function(counts, pheno = NULL, group_col = "group") {
         # Boxplot if grouping available
         p <- ggplot2::ggplot(lib_df, ggplot2::aes(x = .data$group, y = .data$library_size, fill = .data$group)) +
             ggplot2::geom_boxplot(alpha = 0.7, outlier.shape = NA) +
-            ggplot2::geom_jitter(width = 0.2, height = 0, size = 2, alpha = 0.6, color = "black") +
+            ggplot2::geom_jitter(width = 0.2, height = 0, size = point_size, alpha = point_alpha, color = "black") +
             ggplot2::labs(
                 x = "Group",
                 y = "Library Size (total counts)",
                 title = paste0("Library Size Distribution by Group (n = ", n_samples, " samples)"),
                 fill = "Group"
             ) +
-            ggplot2::theme_bw() +
+            # Apply theme
+            switch(theme,
+                "bw" = ggplot2::theme_bw(),
+                "classic" = ggplot2::theme_classic(),
+                "minimal" = ggplot2::theme_minimal(),
+                "light" = ggplot2::theme_light(),
+                "dark" = ggplot2::theme_dark()
+            ) +
             ggplot2::theme(
                 plot.title = ggplot2::element_text(hjust = 0.5),
-                legend.position = "right"
+                legend.position = legend_position
             ) +
             # Add sample count annotation
             ggplot2::annotate(
@@ -162,13 +217,20 @@ plotEndometrialLibsize <- function(counts, pheno = NULL, group_col = "group") {
     } else {
         # Histogram if no grouping
         p <- ggplot2::ggplot(lib_df, ggplot2::aes(x = .data$library_size)) +
-            ggplot2::geom_histogram(bins = 30, fill = "steelblue", alpha = 0.7, color = "black") +
+            ggplot2::geom_histogram(bins = bins, fill = "steelblue", alpha = 0.7, color = "black") +
             ggplot2::labs(
                 x = "Library Size (total counts)",
                 y = "Frequency",
                 title = paste0("Library Size Distribution (n = ", n_samples, " samples)")
             ) +
-            ggplot2::theme_bw() +
+            # Apply theme
+            switch(theme,
+                "bw" = ggplot2::theme_bw(),
+                "classic" = ggplot2::theme_classic(),
+                "minimal" = ggplot2::theme_minimal(),
+                "light" = ggplot2::theme_light(),
+                "dark" = ggplot2::theme_dark()
+            ) +
             ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5)) +
             # Add sample count annotation
             ggplot2::annotate(
@@ -190,6 +252,8 @@ plotEndometrialLibsize <- function(counts, pheno = NULL, group_col = "group") {
 #'
 #' @param counts A matrix/data.frame of raw counts (genes x samples).
 #' @param by Character scalar; "gene" (default) or "sample" to compute zeros per gene or per sample.
+#' @param bins Numeric; number of bins for histogram. Defaults to 30.
+#' @param theme Character scalar; ggplot2 theme ("bw", "classic", "minimal", "light", "dark"). Defaults to "bw".
 #'
 #' @return A ggplot object showing zero count percentage distribution.
 #'
@@ -198,12 +262,19 @@ plotEndometrialLibsize <- function(counts, pheno = NULL, group_col = "group") {
 #' plotEndometrialZeros(gse201926_sample$counts, by = "gene")
 #' plotEndometrialZeros(gse201926_sample$counts, by = "sample")
 #' @export
-plotEndometrialZeros <- function(counts, by = c("gene", "sample")) {
+plotEndometrialZeros <- function(counts, by = c("gene", "sample"),
+                                 bins = 30, theme = c("bw", "classic", "minimal", "light", "dark")) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("ggplot2 package is required for plotting")
     }
 
     by <- match.arg(by)
+    theme <- match.arg(theme)
+
+    if (!is.numeric(bins) || bins <= 0) {
+        stop("bins must be a positive integer")
+    }
+    bins <- as.integer(bins)
 
     # Convert to matrix if needed
     if (!is.matrix(counts)) {
@@ -253,7 +324,7 @@ plotEndometrialZeros <- function(counts, by = c("gene", "sample")) {
 
     # Create plot with clearer percentage display
     p <- ggplot2::ggplot(zero_df, ggplot2::aes(x = .data$pct_zeros)) +
-        ggplot2::geom_histogram(bins = 30, fill = "steelblue", alpha = 0.7, color = "black") +
+        ggplot2::geom_histogram(bins = bins, fill = "steelblue", alpha = 0.7, color = "black") +
         ggplot2::scale_x_continuous(
             labels = function(x) paste0(x, "%"),
             breaks = scales::pretty_breaks(n = 6)
@@ -263,7 +334,14 @@ plotEndometrialZeros <- function(counts, by = c("gene", "sample")) {
             y = "Frequency",
             title = paste0(title_text, " (n = ", n_items, " ", item_type, ")")
         ) +
-        ggplot2::theme_bw() +
+        # Apply theme
+        switch(theme,
+            "bw" = ggplot2::theme_bw(),
+            "classic" = ggplot2::theme_classic(),
+            "minimal" = ggplot2::theme_minimal(),
+            "light" = ggplot2::theme_light(),
+            "dark" = ggplot2::theme_dark()
+        ) +
         ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5)) +
         # Add count annotation
         ggplot2::annotate(
@@ -304,6 +382,10 @@ plotEndometrialZeros <- function(counts, by = c("gene", "sample")) {
 #' @param log2fc_threshold Numeric; log2 fold change threshold for large effect. Defaults to 1.
 #' @param highlight_genes Optional character vector of gene IDs to highlight (e.g., with labels).
 #' @param annot_col Optional character scalar; column name in de_table for gene annotations (not yet used).
+#' @param point_size Numeric; size of points in the plot. Defaults to 1.5.
+#' @param point_alpha Numeric; transparency of points (0-1). Defaults to 0.6.
+#' @param legend_position Character scalar; position of legend ("right", "left", "top", "bottom", "none"). Defaults to "right".
+#' @param theme Character scalar; ggplot2 theme ("bw", "classic", "minimal", "light", "dark"). Defaults to "bw".
 #'
 #' @return A ggplot object showing MA plot with significance coloring.
 #'
@@ -316,9 +398,23 @@ plotEndometrialZeros <- function(counts, by = c("gene", "sample")) {
 plotEndometrialMA <- function(de_table, fdr_threshold = 0.05,
                               log2fc_threshold = 1,
                               highlight_genes = NULL,
-                              annot_col = NULL) {
+                              annot_col = NULL,
+                              point_size = 1.5, point_alpha = 0.6,
+                              legend_position = c("right", "left", "top", "bottom", "none"),
+                              theme = c("bw", "classic", "minimal", "light", "dark")) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("ggplot2 package is required for plotting")
+    }
+
+    # Validate styling parameters
+    legend_position <- match.arg(legend_position)
+    theme <- match.arg(theme)
+
+    if (!is.numeric(point_size) || point_size <= 0) {
+        stop("point_size must be a positive numeric value")
+    }
+    if (!is.numeric(point_alpha) || point_alpha < 0 || point_alpha > 1) {
+        stop("point_alpha must be a numeric value between 0 and 1")
     }
 
     # Validate required columns
@@ -364,7 +460,7 @@ plotEndometrialMA <- function(de_table, fdr_threshold = 0.05,
 
     # Create plot
     p <- ggplot2::ggplot(de_table, ggplot2::aes(x = .data$AveExpr, y = .data$log2FC, color = .data$significant)) +
-        ggplot2::geom_point(alpha = 0.6, size = 1.5) +
+        ggplot2::geom_point(alpha = point_alpha, size = point_size) +
         ggplot2::geom_hline(yintercept = log2fc_threshold, linetype = "dashed", color = "gray40", linewidth = 0.5) +
         ggplot2::geom_hline(yintercept = -log2fc_threshold, linetype = "dashed", color = "gray40", linewidth = 0.5) +
         ggplot2::geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.3) +
@@ -382,10 +478,17 @@ plotEndometrialMA <- function(de_table, fdr_threshold = 0.05,
             y = "Log2 Fold Change",
             title = paste0("MA Plot (n = ", n_total, " genes, FDR < ", fdr_threshold, ", |log2FC| >= ", log2fc_threshold, ")")
         ) +
-        ggplot2::theme_bw() +
+        # Apply theme
+        switch(theme,
+            "bw" = ggplot2::theme_bw(),
+            "classic" = ggplot2::theme_classic(),
+            "minimal" = ggplot2::theme_minimal(),
+            "light" = ggplot2::theme_light(),
+            "dark" = ggplot2::theme_dark()
+        ) +
         ggplot2::theme(
             plot.title = ggplot2::element_text(hjust = 0.5),
-            legend.position = "right"
+            legend.position = legend_position
         ) +
         # Add annotation
         ggplot2::annotate(
@@ -426,6 +529,10 @@ plotEndometrialMA <- function(de_table, fdr_threshold = 0.05,
 #' @param highlight_genes Optional character vector of gene IDs to highlight (e.g., with labels).
 #' @param pvalue_col Character scalar; column name for p-values to plot. Defaults to "FDR".
 #' @param log2fc_col Character scalar; column name for log2 fold change. Defaults to "log2FC".
+#' @param point_size Numeric; size of points in the plot. Defaults to 1.5.
+#' @param point_alpha Numeric; transparency of points (0-1). Defaults to 0.6.
+#' @param legend_position Character scalar; position of legend ("right", "left", "top", "bottom", "none"). Defaults to "right".
+#' @param theme Character scalar; ggplot2 theme ("bw", "classic", "minimal", "light", "dark"). Defaults to "bw".
 #'
 #' @return A ggplot object showing Volcano plot with significance coloring.
 #'
@@ -439,9 +546,23 @@ plotEndometrialVolcano <- function(de_table, fdr_threshold = 0.05,
                                    log2fc_threshold = 1,
                                    highlight_genes = NULL,
                                    pvalue_col = "FDR",
-                                   log2fc_col = "log2FC") {
+                                   log2fc_col = "log2FC",
+                                   point_size = 1.5, point_alpha = 0.6,
+                                   legend_position = c("right", "left", "top", "bottom", "none"),
+                                   theme = c("bw", "classic", "minimal", "light", "dark")) {
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("ggplot2 package is required for plotting")
+    }
+
+    # Validate styling parameters
+    legend_position <- match.arg(legend_position)
+    theme <- match.arg(theme)
+
+    if (!is.numeric(point_size) || point_size <= 0) {
+        stop("point_size must be a positive numeric value")
+    }
+    if (!is.numeric(point_alpha) || point_alpha < 0 || point_alpha > 1) {
+        stop("point_alpha must be a numeric value between 0 and 1")
     }
 
     # Validate required columns
@@ -498,7 +619,7 @@ plotEndometrialVolcano <- function(de_table, fdr_threshold = 0.05,
 
     # Create plot
     p <- ggplot2::ggplot(de_table, ggplot2::aes(x = .data$log2FC_plot, y = .data$neg_log10_pval, color = .data$significant)) +
-        ggplot2::geom_point(alpha = 0.6, size = 1.5) +
+        ggplot2::geom_point(alpha = point_alpha, size = point_size) +
         ggplot2::geom_vline(xintercept = log2fc_threshold, linetype = "dashed", color = "gray40", linewidth = 0.5) +
         ggplot2::geom_vline(xintercept = -log2fc_threshold, linetype = "dashed", color = "gray40", linewidth = 0.5) +
         ggplot2::geom_vline(xintercept = 0, linetype = "solid", color = "black", linewidth = 0.3) +
@@ -518,10 +639,17 @@ plotEndometrialVolcano <- function(de_table, fdr_threshold = 0.05,
             y = paste0("-Log10(", pvalue_col, ")"),
             title = paste0("Volcano Plot (n = ", n_total, " genes, ", pvalue_col, " < ", fdr_threshold, ", |log2FC| >= ", log2fc_threshold, ")")
         ) +
-        ggplot2::theme_bw() +
+        # Apply theme
+        switch(theme,
+            "bw" = ggplot2::theme_bw(),
+            "classic" = ggplot2::theme_classic(),
+            "minimal" = ggplot2::theme_minimal(),
+            "light" = ggplot2::theme_light(),
+            "dark" = ggplot2::theme_dark()
+        ) +
         ggplot2::theme(
             plot.title = ggplot2::element_text(hjust = 0.5),
-            legend.position = "right"
+            legend.position = legend_position
         ) +
         # Add quadrants annotation
         ggplot2::annotate(

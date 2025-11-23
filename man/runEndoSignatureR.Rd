@@ -16,7 +16,9 @@ workflow for analyzing endometrial bulk RNA-seq datasets:
 \details{
 \itemize{
 \item \strong{Mode 1: Rapid Classification} - Apply pre-trained signature to
-unlabeled samples for PS vs PIS predictions (coming soon)
+unlabeled samples for PS vs PIS predictions with confidence intervals. Results
+include predictions table and signature visualization plots (coefficient lollipop,
+stability bars).
 \item \strong{Mode 2: Signature Validation} - Train and validate a new
 signature on labeled cohorts using best practices (coming soon)
 \item \strong{Mode 3: Visualization & Analysis} - Perform QC, exploratory
@@ -32,10 +34,12 @@ zeros, PCA)
 \item Running differential expression analysis
 \item Visualizing results (MA plots, volcano plots, heatmaps)
 \item Exporting analysis results and plots
+\item Applying pre-trained signature for classification (Mode 1)
+\item Viewing signature visualization plots after classification (Mode 1)
 }
 
-Mode 3 (Visualization & Analysis) is fully implemented. Modes 1 and 2 will
-be available in future releases.
+Mode 1 (Rapid Classification) and Mode 3 (Visualization & Analysis) are fully
+implemented. Mode 2 will be available in a future release.
 }
 \examples{
 \dontrun{

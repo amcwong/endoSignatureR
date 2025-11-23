@@ -4,7 +4,16 @@
 \alias{plotEndometrialLibsize}
 \title{Plot Endometrial Library Sizes}
 \usage{
-plotEndometrialLibsize(counts, pheno = NULL, group_col = "group")
+plotEndometrialLibsize(
+  counts,
+  pheno = NULL,
+  group_col = "group",
+  point_size = 2,
+  point_alpha = 0.6,
+  bins = 30,
+  legend_position = c("right", "left", "top", "bottom", "none"),
+  theme = c("bw", "classic", "minimal", "light", "dark")
+)
 }
 \arguments{
 \item{counts}{A matrix/data.frame of raw counts (genes x samples).}
@@ -12,6 +21,16 @@ plotEndometrialLibsize(counts, pheno = NULL, group_col = "group")
 \item{pheno}{Optional data.frame with sample metadata containing a \code{group} column for grouping.}
 
 \item{group_col}{Character scalar; name of the phenotype column for grouping. Defaults to "group".}
+
+\item{point_size}{Numeric; size of points in jitter plot (when grouping available). Defaults to 2.}
+
+\item{point_alpha}{Numeric; transparency of points (0-1). Defaults to 0.6.}
+
+\item{bins}{Numeric; number of bins for histogram (when no grouping). Defaults to 30.}
+
+\item{legend_position}{Character scalar; position of legend ("right", "left", "top", "bottom", "none"). Defaults to "right".}
+
+\item{theme}{Character scalar; ggplot2 theme ("bw", "classic", "minimal", "light", "dark"). Defaults to "bw".}
 }
 \value{
 A ggplot object showing library size distribution (histogram or boxplot by group).
