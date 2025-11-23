@@ -16,6 +16,7 @@
 #'   \item{issues}{A data.frame with columns `type` and `message` containing detected validation issues}
 #' }
 #'
+#' @import limma
 #' @examples
 #' data(gse201926_sample)
 #' result <- esr_validateEndometrial(

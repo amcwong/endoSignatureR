@@ -27,6 +27,8 @@
 #' If `result` is provided, the export includes full metadata (performance metrics, calibration info, stability info).
 #' If only `signature` is provided, the export includes signature information only (model card will be minimal).
 #'
+#' @import readr
+#' @import jsonlite
 #' @examples
 #' \dontrun{
 #' library(rsample)

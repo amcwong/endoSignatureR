@@ -285,6 +285,7 @@ endo_load_tpm <- function() {
 #' counts <- esr_loadCountsFromFile("my_counts.csv.gz", gene_id_col = "EnsemblID")
 #' }
 #'
+#' @import readr
 #' @export
 esr_loadCountsFromFile <- function(file_path, gene_id_col = "GeneID",
                                    sample_id_col = NULL, transpose = FALSE, ...) {

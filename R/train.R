@@ -99,6 +99,8 @@
 #' result$metrics$auc
 #' result$metrics$accuracy
 #' }
+#' @import glmnet
+#' @import rsample
 #' @importFrom stats coef predict glm binomial median approx var isoreg
 #' @importFrom utils data head
 #' @export
