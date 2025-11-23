@@ -1,5 +1,5 @@
 # EndoSignatureR Shiny Application
-# Mode 3: Standalone Visualization & Analysis
+# Three-Mode Workflow: Mode 1 (Rapid Classification), Mode 2 (Signature Validation), Mode 3 (Visualization & Analysis)
 
 library(shiny)
 
@@ -7,127 +7,169 @@ library(shiny)
 ui <- fluidPage(
     titlePanel("EndoSignatureR: Endometrial RNA-seq Analysis"),
 
-    # Sidebar layout
-    sidebarLayout(
-        sidebarPanel(
-            h3("Mode 3: Visualization & Analysis"),
-            p("Upload endometrial RNA-seq data or use demo data to perform quality control,
-        exploratory analysis, and differential expression visualization."),
-            br(),
+    # Main tabset with three modes
+    tabsetPanel(
+        id = "modeTabs",
 
-            # Demo data section
-            h4("Demo Data"),
-            p("Load or download the bundled demo dataset (gse201926_sample):"),
-            actionButton("loadDemo", "Load Demo Data", class = "btn-primary"),
-            br(), br(),
-            downloadButton("downloadDemo", "Download Demo Data", class = "btn-secondary"),
-            br(), br(),
-            hr(),
-
-            # Data upload section
-            h4("Upload Your Data"),
-            p("Upload your own endometrial RNA-seq data files:"),
-            fileInput("countsFile", "Counts Matrix (TSV/CSV)",
-                accept = c(".tsv", ".csv", ".txt"),
-                placeholder = "Genes × Samples"
-            ),
-            fileInput("phenoFile", "Phenotype Metadata (TSV/CSV)",
-                accept = c(".tsv", ".csv", ".txt"),
-                placeholder = "sample_id, group columns"
-            ),
-            fileInput("annotFile", "Annotation Data (TSV/CSV, optional)",
-                accept = c(".tsv", ".csv", ".txt"),
-                placeholder = "Gene annotations"
-            ),
-            br(),
-
-            # Data status
-            verbatimTextOutput("dataStatus"),
-            br(),
-
-            # DE analysis controls
-            h4("Differential Expression"),
-            p("Run differential expression analysis:"),
-            numericInput("topGenes", "Number of top genes for heatmap",
-                value = 50, min = 10, max = 500, step = 10
-            ),
-            p("Genes are selected by FDR (ascending), then by absolute log2FC (descending)."),
-            actionButton("runDE", "Run DE Analysis", class = "btn-success"),
-            br(), br(),
-
-            # Status messages
-            verbatimTextOutput("statusMessage")
-        ),
-        mainPanel(
-            tabsetPanel(
-                id = "mainTabs",
-
-                # QC/EDA Tab
-                tabPanel(
-                    "QC/EDA",
-                    h3("Quality Control and Exploratory Data Analysis"),
+        # Mode 1: Rapid Classification
+        tabPanel(
+            "Mode 1: Rapid Classification",
+            sidebarLayout(
+                sidebarPanel(
+                    h3("Mode 1: Rapid Classification"),
+                    p("Apply pre-trained signature to unlabeled endometrial samples for PS vs PIS predictions."),
                     br(),
-                    h4("Library Size"),
-                    plotOutput("libsizePlot", height = "400px"),
-                    downloadButton("downloadLibsize", "Download Plot"),
-                    br(), br(),
-                    h4("Percentage of Zeros"),
-                    plotOutput("zerosPlot", height = "400px"),
-                    downloadButton("downloadZeros", "Download Plot"),
-                    br(), br(),
-                    h4("Principal Component Analysis (PCA)"),
-                    plotOutput("pcaPlot", height = "500px"),
-                    downloadButton("downloadPCA", "Download Plot")
-                ),
 
-                # DE Tab
-                tabPanel(
-                    "Differential Expression",
-                    h3("Differential Expression Analysis"),
-                    br(),
-                    conditionalPanel(
-                        condition = "output.deRun == false",
-                        p("Click 'Run DE Analysis' in the sidebar to perform differential expression analysis.")
+                    # Demo data section
+                    h4("Demo Data"),
+                    p("Load or download unlabeled demo dataset (gse201926_sample, counts only):"),
+                    actionButton("loadDemoMode1", "Load Demo Data", class = "btn-primary"),
+                    br(), br(),
+                    downloadButton("downloadDemoMode1", "Download Demo Data", class = "btn-secondary"),
+                    br(), br(),
+                    hr(),
+
+                    # Data upload section
+                    h4("Upload Your Data"),
+                    p("Upload unlabeled endometrial RNA-seq data (counts matrix only, no phenotype labels):"),
+                    fileInput("countsFileMode1", "Counts Matrix (TSV/CSV)",
+                        accept = c(".tsv", ".csv", ".txt"),
+                        placeholder = "Genes × Samples"
                     ),
-                    conditionalPanel(
-                        condition = "output.deRun == true",
-                        h4("MA Plot"),
-                        plotOutput("maPlot", height = "500px"),
-                        downloadButton("downloadMA", "Download Plot"),
-                        br(), br(),
-                        h4("Volcano Plot"),
-                        plotOutput("volcanoPlot", height = "500px"),
-                        downloadButton("downloadVolcano", "Download Plot"),
-                        br(), br(),
-                        h4("Heatmap"),
-                        plotOutput("heatmapPlot", height = "600px"),
-                        downloadButton("downloadHeatmap", "Download Plot"),
-                        br(), br(),
-                        h4("DE Results Table"),
-                        p("Showing top 50 genes. Use export to download full table."),
-                        tableOutput("deTable")
-                    )
-                ),
+                    fileInput("annotFileMode1", "Annotation Data (TSV/CSV, optional)",
+                        accept = c(".tsv", ".csv", ".txt"),
+                        placeholder = "Gene annotations"
+                    ),
+                    br(),
 
-                # Export Tab
-                tabPanel(
-                    "Export",
-                    h3("Export Results"),
+                    # Data status
+                    verbatimTextOutput("dataStatusMode1"),
                     br(),
-                    p("Download analysis results and plots:"),
+
+                    # Signature information
+                    h4("Pre-trained Signature"),
+                    verbatimTextOutput("signatureInfo"),
                     br(),
-                    h4("Analysis Bundle"),
-                    p("Complete analysis bundle (RDS format):"),
-                    downloadButton("downloadBundle", "Download Analysis Bundle"),
+
+                    # Classification controls
+                    h4("Classification"),
+                    p("Apply pre-trained signature to classify samples:"),
+                    numericInput("thresholdMode1", "Classification Threshold",
+                        value = 0.5, min = 0, max = 1, step = 0.05
+                    ),
+                    checkboxInput("confidenceMode1", "Include Confidence Intervals", value = TRUE),
+                    br(),
+                    actionButton("runClassification", "Classify Samples", class = "btn-success"),
                     br(), br(),
-                    h4("Individual Components"),
-                    downloadButton("downloadCountsT", "Download Transformed Counts (TSV)"),
+
+                    # Status messages
+                    verbatimTextOutput("statusMessageMode1")
+                ),
+                mainPanel(
+                    tabsetPanel(
+                        id = "mode1Tabs",
+
+                        # Results Tab
+                        tabPanel(
+                            "Results",
+                            h3("Classification Results"),
+                            br(),
+                            conditionalPanel(
+                                condition = "output.classificationRun == false",
+                                p("Click 'Classify Samples' in the sidebar to run classification.")
+                            ),
+                            conditionalPanel(
+                                condition = "output.classificationRun == true",
+                                h4("Summary"),
+                                verbatimTextOutput("classificationSummary"),
+                                br(),
+                                h4("Predictions Table"),
+                                p("Download full results using the button below."),
+                                downloadButton("downloadPredictions", "Download Predictions (CSV)"),
+                                br(), br(),
+                                tableOutput("predictionsTable"),
+                                br(), br(),
+                                hr(),
+                                h4("Signature Visualization"),
+                                p("Visualization of the pre-trained signature used for classification."),
+                                br(),
+                                h5("Coefficient Lollipop Plot"),
+                                p("Shows the coefficients (weights) for each gene in the signature panel."),
+                                plotOutput("coefLollipopPlot", height = "600px"),
+                                downloadButton("downloadCoefLollipop", "Download Plot"),
+                                br(), br(),
+                                conditionalPanel(
+                                    condition = "output.stabilityAvailable == true",
+                                    h5("Stability Bars Plot"),
+                                    p("Shows the selection frequency of genes across cross-validation folds."),
+                                    plotOutput("stabilityBarsPlot", height = "600px"),
+                                    downloadButton("downloadStabilityBars", "Download Plot")
+                                ),
+                                conditionalPanel(
+                                    condition = "output.stabilityAvailable == false",
+                                    h5("Stability Bars Plot"),
+                                    p("Stability information is not available for the pre-trained signature.")
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        ),
+
+        # Mode 2: Signature Validation (Placeholder)
+        tabPanel(
+            "Mode 2: Signature Validation",
+            h3("Mode 2: Signature Validation"),
+            p("This mode will be available in a future release."),
+            p("Mode 2 allows you to train and validate a new signature on labeled endometrial cohorts.")
+        ),
+
+        # Mode 3: Visualization & Analysis
+        tabPanel(
+            "Mode 3: Visualization & Analysis",
+            sidebarLayout(
+                sidebarPanel(
+                    h3("Mode 3: Visualization & Analysis"),
+                    p("Upload endometrial RNA-seq data or use demo data to perform quality control,
+        exploratory analysis, and differential expression visualization."),
+                    br(),
+
+                    # Demo data section
+                    h4("Demo Data"),
+                    p("Load or download the bundled demo dataset (gse201926_sample):"),
+                    actionButton("loadDemoMode3", "Load Demo Data", class = "btn-primary"),
                     br(), br(),
-                    downloadButton("downloadDETable", "Download DE Table (TSV)"),
+                    downloadButton("downloadDemoMode3", "Download Demo Data", class = "btn-secondary"),
                     br(), br(),
-                    downloadButton("downloadQCMetrics", "Download QC Metrics (TSV)"),
-                    br(), br(),
-                    downloadButton("downloadSelectedGenes", "Download Selected Genes (TSV)")
+                    hr(),
+
+                    # Data upload section
+                    h4("Upload Your Data"),
+                    p("Upload your own endometrial RNA-seq data files:"),
+                    fileInput("countsFileMode3", "Counts Matrix (TSV/CSV)",
+                        accept = c(".tsv", ".csv", ".txt"),
+                        placeholder = "Genes × Samples"
+                    ),
+                    fileInput("phenoFileMode3", "Phenotype Metadata (TSV/CSV)",
+                        accept = c(".tsv", ".csv", ".txt"),
+                        placeholder = "sample_id, group columns"
+                    ),
+                    fileInput("annotFileMode3", "Annotation Data (TSV/CSV, optional)",
+                        accept = c(".tsv", ".csv", ".txt"),
+                        placeholder = "Gene annotations"
+                    ),
+                    br(),
+
+                    # Data status
+                    verbatimTextOutput("dataStatusMode3"),
+                    br(),
+
+                    # Status messages
+                    verbatimTextOutput("statusMessageMode3")
+                ),
+                mainPanel(
+                    uiOutput("mode3TabsUI")
                 )
             )
         )
@@ -138,6 +180,15 @@ ui <- fluidPage(
 server <- function(input, output, session) {
     # Reactive values to store data
     values <- reactiveValues(
+        # Mode 1 data
+        counts_mode1 = NULL,
+        annot_mode1 = NULL,
+        predictions = NULL,
+        signature = NULL,
+        mode1_completed = FALSE,
+        classificationRun = FALSE,
+
+        # Mode 3 data
         counts = NULL,
         pheno = NULL,
         annot = NULL,
@@ -147,17 +198,476 @@ server <- function(input, output, session) {
         selected_genes = NULL,
         bundle = NULL,
         dataLoaded = FALSE,
-        deRun = FALSE
+        deRun = FALSE,
+        # Plot generation flags
+        maPlotGenerated = FALSE,
+        volcanoPlotGenerated = FALSE,
+        heatmapPlotGenerated = FALSE,
+        # Plot parameters
+        maPlotParams = list(fdr_threshold = 0.05, log2fc_threshold = 1),
+        volcanoPlotParams = list(fdr_threshold = 0.05, log2fc_threshold = 1),
+        heatmapPlotParams = list(n_genes = 50, scale = "row", show_row_names = FALSE)
     )
 
-    # Output flag for DE tab conditional panel
+    # Load pre-trained signature on app startup
+    observe({
+        tryCatch(
+            {
+                values$signature <- endoSignatureR::esr_loadPretrainedSignature()
+            },
+            error = function(e) {
+                # Signature loading will fail gracefully if files not found
+                # User will see error message in signature info output
+            }
+        )
+    })
+
+    # Display signature information (for Mode 1)
+    output$signatureInfo <- renderText({
+        if (is.null(values$signature)) {
+            return("Pre-trained signature not available. Please ensure package is properly installed.")
+        }
+        paste(
+            "Pre-trained signature loaded successfully!\n",
+            "Panel size:", length(values$signature$panel), "genes\n",
+            "Preprocessing:", values$signature$recipe$preprocessing$transform %||% "log1p-cpm\n",
+            "Trained on: GSE201926 dataset"
+        )
+    })
+
+    # Display signature information (for Signature Plots tab)
+    output$signatureInfoMode3 <- renderText({
+        if (is.null(values$signature)) {
+            return("Pre-trained signature not available.")
+        }
+        paste(
+            "Pre-trained signature loaded successfully!\n",
+            "Panel size:", length(values$signature$panel), "genes\n",
+            "Preprocessing:", values$signature$recipe$preprocessing$transform %||% "log1p-cpm\n",
+            "Trained on: GSE201926 dataset"
+        )
+    })
+
+    # Output flags for conditional panels
+    output$classificationRun <- reactive({
+        values$classificationRun
+    })
+    outputOptions(output, "classificationRun", suspendWhenHidden = FALSE)
+
+    output$mode1Completed <- reactive({
+        values$mode1_completed
+    })
+    outputOptions(output, "mode1Completed", suspendWhenHidden = FALSE)
+
+    output$stabilityAvailable <- reactive({
+        if (is.null(values$signature)) {
+            return(FALSE)
+        }
+        !is.null(values$signature$stability) || !is.null(values$signature$selection_frequency)
+    })
+    outputOptions(output, "stabilityAvailable", suspendWhenHidden = FALSE)
+
     output$deRun <- reactive({
         values$deRun
     })
     outputOptions(output, "deRun", suspendWhenHidden = FALSE)
 
-    # Load demo data
-    observeEvent(input$loadDemo, {
+    output$maPlotGenerated <- reactive({
+        values$maPlotGenerated
+    })
+    outputOptions(output, "maPlotGenerated", suspendWhenHidden = FALSE)
+
+    output$volcanoPlotGenerated <- reactive({
+        values$volcanoPlotGenerated
+    })
+    outputOptions(output, "volcanoPlotGenerated", suspendWhenHidden = FALSE)
+
+    output$heatmapPlotGenerated <- reactive({
+        values$heatmapPlotGenerated
+    })
+    outputOptions(output, "heatmapPlotGenerated", suspendWhenHidden = FALSE)
+
+    # Render Mode 3 tabs (QC/EDA, DE, Export)
+    output$mode3TabsUI <- renderUI({
+        tabs <- list(
+            # QC/EDA Tab
+            tabPanel(
+                "QC/EDA",
+                h3("Quality Control and Exploratory Data Analysis"),
+                br(),
+                h4("Library Size"),
+                plotOutput("libsizePlot", height = "400px"),
+                downloadButton("downloadLibsize", "Download Plot"),
+                br(), br(),
+                h4("Percentage of Zeros"),
+                plotOutput("zerosPlot", height = "400px"),
+                downloadButton("downloadZeros", "Download Plot"),
+                br(), br(),
+                h4("Principal Component Analysis (PCA)"),
+                plotOutput("pcaPlot", height = "500px"),
+                downloadButton("downloadPCA", "Download Plot")
+            ),
+
+            # DE Tab
+            tabPanel(
+                "Differential Expression",
+                h3("Differential Expression Analysis"),
+                br(),
+
+                # DE Analysis Container at Top
+                wellPanel(
+                    h4("Run Differential Expression Analysis"),
+                    p("Genes are selected by FDR (ascending), then by absolute log2FC (descending)."),
+                    conditionalPanel(
+                        condition = "output.dataLoaded == false",
+                        p(strong("Please load data first in the sidebar."), style = "color: red;")
+                    ),
+                    conditionalPanel(
+                        condition = "output.dataLoaded == true && output.deRun == false",
+                        actionButton("runDE", "Run DE Analysis", class = "btn-success btn-lg"),
+                        br(), br(),
+                        verbatimTextOutput("deStatusMessage")
+                    ),
+                    conditionalPanel(
+                        condition = "output.deRun == true",
+                        p(strong("DE Analysis Complete!"), style = "color: green;"),
+                        p("All plots have been generated with default settings. Use the sections below to customize and regenerate individual plots."),
+                        verbatimTextOutput("deStatusMessage")
+                    )
+                ),
+                br(), br(),
+                conditionalPanel(
+                    condition = "output.deRun == true",
+                    # MA Plot Section
+                    h4("MA Plot"),
+                    conditionalPanel(
+                        condition = "output.maPlotGenerated == true",
+                        plotOutput("maPlot", height = "500px"),
+                        downloadButton("downloadMA", "Download Plot"),
+                        br(), br()
+                    ),
+                    wellPanel(
+                        h5("Customize Plot Settings"),
+                        p("Adjust thresholds and click 'Update Plot' to regenerate with new settings."),
+                        fluidRow(
+                            column(6,
+                                numericInput("maFDR", "FDR Threshold",
+                                    value = 0.05, min = 0.001, max = 1, step = 0.01
+                                )
+                            ),
+                            column(6,
+                                numericInput("maLog2FC", "log2FC Threshold",
+                                    value = 1, min = 0, max = 10, step = 0.1
+                                )
+                            )
+                        ),
+                        actionButton("generateMA", "Update MA Plot", class = "btn-primary")
+                    ),
+                    br(), br(), hr(), br(),
+
+                    # Volcano Plot Section
+                    h4("Volcano Plot"),
+                    conditionalPanel(
+                        condition = "output.volcanoPlotGenerated == true",
+                        plotOutput("volcanoPlot", height = "500px"),
+                        downloadButton("downloadVolcano", "Download Plot"),
+                        br(), br()
+                    ),
+                    wellPanel(
+                        h5("Customize Plot Settings"),
+                        p("Adjust thresholds and click 'Update Plot' to regenerate with new settings."),
+                        fluidRow(
+                            column(6,
+                                numericInput("volcanoFDR", "FDR Threshold",
+                                    value = 0.05, min = 0.001, max = 1, step = 0.01
+                                )
+                            ),
+                            column(6,
+                                numericInput("volcanoLog2FC", "log2FC Threshold",
+                                    value = 1, min = 0, max = 10, step = 0.1
+                                )
+                            )
+                        ),
+                        actionButton("generateVolcano", "Update Volcano Plot", class = "btn-primary")
+                    ),
+                    br(), br(), hr(), br(),
+
+                    # Heatmap Section
+                    h4("Heatmap"),
+                    conditionalPanel(
+                        condition = "output.heatmapPlotGenerated == true",
+                        plotOutput("heatmapPlot", height = "600px"),
+                        downloadButton("downloadHeatmap", "Download Plot"),
+                        br(), br()
+                    ),
+                    wellPanel(
+                        h5("Customize Plot Settings"),
+                        p("Adjust number of genes, scaling, and display options. Click 'Update Plot' to regenerate with new settings."),
+                        fluidRow(
+                            column(4,
+                                numericInput("heatmapGenes", "Number of Genes",
+                                    value = 50, min = 10, max = 500, step = 10
+                                )
+                            ),
+                            column(4,
+                                selectInput("heatmapScale", "Scaling Method",
+                                    choices = list(
+                                        "Row (z-score per gene)" = "row",
+                                        "Column (z-score per sample)" = "column",
+                                        "None" = "none"
+                                    ),
+                                    selected = "row"
+                                )
+                            ),
+                            column(4,
+                                checkboxInput("heatmapShowRowNames", "Show Gene Names", value = FALSE),
+                                br(),
+                                actionButton("generateHeatmap", "Update Heatmap", class = "btn-primary")
+                            )
+                        )
+                    ),
+                    br(), br(), hr(), br(),
+
+                    # DE Results Table
+                    h4("DE Results Table"),
+                    p("Showing top 50 genes. Use export to download full table."),
+                    tableOutput("deTable")
+                )
+            )
+        )
+
+        # Add Export Tab
+        tabs <- append(tabs, list(
+            tabPanel(
+                "Export",
+                h3("Export Results"),
+                br(),
+                p("Download analysis results and plots:"),
+                br(),
+                h4("Analysis Bundle"),
+                p("Complete analysis bundle (RDS format):"),
+                downloadButton("downloadBundle", "Download Analysis Bundle"),
+                br(), br(),
+                h4("Individual Components"),
+                downloadButton("downloadCountsT", "Download Transformed Counts (TSV)"),
+                br(), br(),
+                downloadButton("downloadDETable", "Download DE Table (TSV)"),
+                br(), br(),
+                downloadButton("downloadQCMetrics", "Download QC Metrics (TSV)"),
+                br(), br(),
+                downloadButton("downloadSelectedGenes", "Download Selected Genes (TSV)")
+            )
+        ))
+
+        # Return tabsetPanel with all tabs
+        do.call(tabsetPanel, c(list(id = "mode3Tabs"), tabs))
+    })
+
+    # ===== MODE 1: RAPID CLASSIFICATION =====
+
+    # Load Mode 1 demo data
+    observeEvent(input$loadDemoMode1, {
+        tryCatch(
+            {
+                demo_data <- endoSignatureR::endo_load_demo()
+                # For Mode 1, use only counts (unlabeled)
+                values$counts_mode1 <- demo_data$counts
+                values$annot_mode1 <- demo_data$annot
+
+                output$dataStatusMode1 <- renderText({
+                    paste(
+                        "Demo data loaded successfully (unlabeled)!\n",
+                        "Samples:", ncol(values$counts_mode1), "\n",
+                        "Genes:", nrow(values$counts_mode1)
+                    )
+                })
+
+                output$statusMessageMode1 <- renderText("Demo data loaded successfully!")
+            },
+            error = function(e) {
+                output$statusMessageMode1 <- renderText(paste("Error loading demo data:", e$message))
+            }
+        )
+    })
+
+    # Download Mode 1 demo data
+    output$downloadDemoMode1 <- downloadHandler(
+        filename = function() {
+            "gse201926_sample_unlabeled.zip"
+        },
+        content = function(file) {
+            temp_dir <- tempdir()
+            demo_data <- endoSignatureR::endo_load_demo()
+
+            # Write counts (unlabeled)
+            readr::write_tsv(
+                as.data.frame(demo_data$counts),
+                file.path(temp_dir, "gse201926_sample_unlabeled_counts.tsv")
+            )
+
+            # Write annot (optional)
+            readr::write_tsv(
+                demo_data$annot,
+                file.path(temp_dir, "gse201926_sample_annot.tsv")
+            )
+
+            # Create zip file
+            utils::zip(file,
+                files = c(
+                    file.path(temp_dir, "gse201926_sample_unlabeled_counts.tsv"),
+                    file.path(temp_dir, "gse201926_sample_annot.tsv")
+                ),
+                flags = "-j"
+            )
+        }
+    )
+
+    # Load Mode 1 uploaded data
+    observeEvent(
+        {
+            input$countsFileMode1
+            input$annotFileMode1
+        },
+        {
+            if (!is.null(input$countsFileMode1)) {
+                tryCatch(
+                    {
+                        # Load counts
+                        values$counts_mode1 <- endoSignatureR::esr_loadCountsFromFile(input$countsFileMode1$datapath)
+
+                        # Load annot if provided
+                        if (!is.null(input$annotFileMode1)) {
+                            values$annot_mode1 <- endoSignatureR::esr_loadAnnotFromFile(input$annotFileMode1$datapath)
+                        } else {
+                            values$annot_mode1 <- NULL
+                        }
+
+                        # Validate data (pheno is optional for unlabeled data)
+                        validation <- endoSignatureR::esr_validateEndometrial(
+                            values$counts_mode1,
+                            pheno = NULL, values$annot_mode1
+                        )
+
+                        values$counts_mode1 <- validation$X
+                        values$annot_mode1 <- validation$annot
+
+                        output$dataStatusMode1 <- renderText({
+                            paste(
+                                "Data loaded successfully!\n",
+                                "Samples:", ncol(values$counts_mode1), "\n",
+                                "Genes:", nrow(values$counts_mode1), "\n",
+                                if (nrow(validation$issues) > 0) {
+                                    paste("\nWarnings:", nrow(validation$issues))
+                                } else {
+                                    "\nNo validation issues"
+                                }
+                            )
+                        })
+
+                        output$statusMessageMode1 <- renderText("Data loaded and validated successfully!")
+                    },
+                    error = function(e) {
+                        output$statusMessageMode1 <- renderText(paste("Error loading data:", e$message))
+                    }
+                )
+            }
+        }
+    )
+
+    # Run classification
+    observeEvent(input$runClassification, {
+        if (is.null(values$counts_mode1)) {
+            output$statusMessageMode1 <- renderText("Please load data first!")
+            return()
+        }
+
+        if (is.null(values$signature)) {
+            output$statusMessageMode1 <- renderText("Pre-trained signature not available. Please ensure package is properly installed.")
+            return()
+        }
+
+        tryCatch(
+            {
+                output$statusMessageMode1 <- renderText("Running classification...")
+
+                # Run classification
+                values$predictions <- endoSignatureR::esr_classifyEndometrial(
+                    X_new = values$counts_mode1,
+                    signature = values$signature,
+                    threshold = input$thresholdMode1,
+                    confidence = input$confidenceMode1
+                )
+
+                # Set completion flags
+                values$classificationRun <- TRUE
+                values$mode1_completed <- TRUE
+
+                output$statusMessageMode1 <- renderText("Classification completed successfully!")
+
+                # Automatically navigate to Results tab
+                updateTabsetPanel(session, "mode1Tabs", selected = "Results")
+            },
+            error = function(e) {
+                output$statusMessageMode1 <- renderText(paste("Error in classification:", e$message))
+            }
+        )
+    })
+
+    # Classification summary
+    output$classificationSummary <- renderText({
+        if (is.null(values$predictions)) {
+            return(NULL)
+        }
+
+        n_ps <- sum(values$predictions$prediction == "PS", na.rm = TRUE)
+        n_pis <- sum(values$predictions$prediction == "PIS", na.rm = TRUE)
+        n_total <- nrow(values$predictions)
+
+        summary_text <- paste(
+            "Total samples:", n_total, "\n",
+            "PS predictions:", n_ps, "\n",
+            "PIS predictions:", n_pis
+        )
+
+        if ("confidence_interval_lower" %in% names(values$predictions)) {
+            mean_conf <- mean(
+                values$predictions$confidence_interval_upper - values$predictions$confidence_interval_lower,
+                na.rm = TRUE
+            )
+            summary_text <- paste(
+                summary_text, "\n",
+                "Mean confidence interval width:", round(mean_conf, 3)
+            )
+        }
+
+        return(summary_text)
+    })
+
+    # Predictions table
+    output$predictionsTable <- renderTable(
+        {
+            if (is.null(values$predictions)) {
+                return(NULL)
+            }
+            values$predictions
+        },
+        digits = 4
+    )
+
+    # Download predictions
+    output$downloadPredictions <- downloadHandler(
+        filename = "predictions.csv",
+        content = function(file) {
+            if (!is.null(values$predictions)) {
+                readr::write_csv(values$predictions, file)
+            }
+        }
+    )
+
+    # ===== MODE 3: VISUALIZATION & ANALYSIS =====
+
+    # Load Mode 3 demo data
+    observeEvent(input$loadDemoMode3, {
         tryCatch(
             {
                 demo_data <- endoSignatureR::endo_load_demo()
@@ -176,7 +686,7 @@ server <- function(input, output, session) {
                     pheno = values$pheno
                 )
 
-                output$dataStatus <- renderText({
+                output$dataStatusMode3 <- renderText({
                     paste(
                         "Demo data loaded successfully!\n",
                         "Samples:", ncol(values$counts), "\n",
@@ -184,27 +694,23 @@ server <- function(input, output, session) {
                     )
                 })
 
-                output$statusMessage <- renderText("Demo data loaded successfully!")
+                output$statusMessageMode3 <- renderText("Demo data loaded successfully!")
             },
             error = function(e) {
-                output$statusMessage <- renderText(paste("Error loading demo data:", e$message))
+                output$statusMessageMode3 <- renderText(paste("Error loading demo data:", e$message))
             }
         )
     })
 
-    # Download demo data
-    output$downloadDemo <- downloadHandler(
+    # Download Mode 3 demo data
+    output$downloadDemoMode3 <- downloadHandler(
         filename = function() {
             "gse201926_sample_demo.zip"
         },
         content = function(file) {
-            # Create temporary directory
             temp_dir <- tempdir()
-
-            # Load demo data
             demo_data <- endoSignatureR::endo_load_demo()
 
-            # Write files
             readr::write_tsv(
                 as.data.frame(demo_data$counts),
                 file.path(temp_dir, "gse201926_sample_counts.tsv")
@@ -218,7 +724,6 @@ server <- function(input, output, session) {
                 file.path(temp_dir, "gse201926_sample_annot.tsv")
             )
 
-            # Create zip file
             utils::zip(file,
                 files = c(
                     file.path(temp_dir, "gse201926_sample_counts.tsv"),
@@ -226,35 +731,30 @@ server <- function(input, output, session) {
                     file.path(temp_dir, "gse201926_sample_annot.tsv")
                 ),
                 flags = "-j"
-            ) # -j stores just the file names, not the paths
+            )
         }
     )
 
-    # Load uploaded data
+    # Load Mode 3 uploaded data
     observeEvent(
         {
-            input$countsFile
-            input$phenoFile
-            input$annotFile
+            input$countsFileMode3
+            input$phenoFileMode3
+            input$annotFileMode3
         },
         {
-            if (!is.null(input$countsFile) && !is.null(input$phenoFile)) {
+            if (!is.null(input$countsFileMode3) && !is.null(input$phenoFileMode3)) {
                 tryCatch(
                     {
-                        # Load counts
-                        values$counts <- endoSignatureR::esr_loadCountsFromFile(input$countsFile$datapath)
+                        values$counts <- endoSignatureR::esr_loadCountsFromFile(input$countsFileMode3$datapath)
+                        values$pheno <- endoSignatureR::esr_loadPhenoFromFile(input$phenoFileMode3$datapath)
 
-                        # Load pheno
-                        values$pheno <- endoSignatureR::esr_loadPhenoFromFile(input$phenoFile$datapath)
-
-                        # Load annot if provided
-                        if (!is.null(input$annotFile)) {
-                            values$annot <- endoSignatureR::esr_loadAnnotFromFile(input$annotFile$datapath)
+                        if (!is.null(input$annotFileMode3)) {
+                            values$annot <- endoSignatureR::esr_loadAnnotFromFile(input$annotFileMode3$datapath)
                         } else {
                             values$annot <- NULL
                         }
 
-                        # Validate data
                         validation <- endoSignatureR::esr_validateEndometrial(
                             values$counts, values$pheno, values$annot
                         )
@@ -263,10 +763,8 @@ server <- function(input, output, session) {
                         values$pheno <- validation$pheno
                         values$annot <- validation$annot
 
-                        # Transform counts
                         values$counts_t <- endoSignatureR::esr_transform_log1p_cpm(values$counts)
 
-                        # Compute QC metrics
                         values$qc_metrics <- endoSignatureR::esr_computeQCMetrics(
                             counts = values$counts,
                             mat_t = values$counts_t,
@@ -275,7 +773,7 @@ server <- function(input, output, session) {
 
                         values$dataLoaded <- TRUE
 
-                        output$dataStatus <- renderText({
+                        output$dataStatusMode3 <- renderText({
                             paste(
                                 "Data loaded successfully!\n",
                                 "Samples:", ncol(values$counts), "\n",
@@ -288,41 +786,46 @@ server <- function(input, output, session) {
                             )
                         })
 
-                        output$statusMessage <- renderText("Data loaded and validated successfully!")
+                        output$statusMessageMode3 <- renderText("Data loaded and validated successfully!")
                     },
                     error = function(e) {
-                        output$statusMessage <- renderText(paste("Error loading data:", e$message))
+                        output$statusMessageMode3 <- renderText(paste("Error loading data:", e$message))
                     }
                 )
             }
         }
     )
 
+    # Output flag for data loaded
+    output$dataLoaded <- reactive({
+        values$dataLoaded
+    })
+    outputOptions(output, "dataLoaded", suspendWhenHidden = FALSE)
+
     # Run DE analysis
     observeEvent(input$runDE, {
         if (!values$dataLoaded) {
-            output$statusMessage <- renderText("Please load data first!")
+            output$deStatusMessage <- renderText("Error: Please load data first!")
             return()
         }
 
         tryCatch(
             {
-                output$statusMessage <- renderText("Running differential expression analysis...")
+                output$deStatusMessage <- renderText("Running differential expression analysis...")
 
-                # Run DE analysis
                 values$de_table <- endoSignatureR::esr_analyzeDifferentialExpression(
                     mat_t = values$counts_t,
                     pheno = values$pheno
                 )
 
-                # Select top genes (sorts by FDR then abs_log2FC)
+                # Select top genes (default 50 for initial selection)
+                # Users can adjust number when generating heatmap
                 values$selected_genes <- endoSignatureR::esr_selectTopGenes(
                     de_table = values$de_table,
-                    n = input$topGenes,
+                    n = 50,
                     by = "de"
                 )
 
-                # Create analysis bundle
                 values$bundle <- endoSignatureR::esr_createAnalysisBundle(
                     counts_t = values$counts_t,
                     de_table = values$de_table,
@@ -333,10 +836,34 @@ server <- function(input, output, session) {
                 )
 
                 values$deRun <- TRUE
-                output$statusMessage <- renderText("Differential expression analysis completed!")
+
+                # Generate all plots automatically with default settings
+                values$maPlotParams$fdr_threshold <- 0.05
+                values$maPlotParams$log2fc_threshold <- 1
+                values$maPlotGenerated <- TRUE
+
+                values$volcanoPlotParams$fdr_threshold <- 0.05
+                values$volcanoPlotParams$log2fc_threshold <- 1
+                values$volcanoPlotGenerated <- TRUE
+
+                values$heatmapPlotParams$n_genes <- 50
+                values$heatmapPlotParams$scale <- "row"
+                values$heatmapPlotParams$show_row_names <- FALSE
+                values$heatmapPlotGenerated <- TRUE
+
+                output$statusMessageMode3 <- renderText("Differential expression analysis completed!")
+                output$deStatusMessage <- renderText({
+                    paste(
+                        "DE Analysis completed successfully!\n",
+                        "Total genes analyzed:", nrow(values$de_table), "\n",
+                        "Top", length(values$selected_genes), "genes selected for heatmap.\n",
+                        "All plots generated with default settings."
+                    )
+                })
             },
             error = function(e) {
-                output$statusMessage <- renderText(paste("Error in DE analysis:", e$message))
+                output$deStatusMessage <- renderText(paste("Error in DE analysis:", e$message))
+                output$statusMessageMode3 <- renderText(paste("Error in DE analysis:", e$message))
             }
         )
     })
@@ -363,29 +890,75 @@ server <- function(input, output, session) {
         endoSignatureR::plotEndometrialPCA(values$counts_t, values$pheno)
     })
 
-    # DE Plots
-    output$maPlot <- renderPlot({
+    # Generate MA Plot (regenerate with custom settings)
+    observeEvent(input$generateMA, {
         if (!values$deRun || is.null(values$de_table)) {
+            return()
+        }
+        values$maPlotParams$fdr_threshold <- input$maFDR
+        values$maPlotParams$log2fc_threshold <- input$maLog2FC
+        values$maPlotGenerated <- TRUE
+    })
+
+    output$maPlot <- renderPlot({
+        if (!values$maPlotGenerated || is.null(values$de_table)) {
             return(NULL)
         }
-        endoSignatureR::plotEndometrialMA(values$de_table)
+        endoSignatureR::plotEndometrialMA(
+            values$de_table,
+            fdr_threshold = values$maPlotParams$fdr_threshold,
+            log2fc_threshold = values$maPlotParams$log2fc_threshold
+        )
+    })
+
+    # Generate Volcano Plot (regenerate with custom settings)
+    observeEvent(input$generateVolcano, {
+        if (!values$deRun || is.null(values$de_table)) {
+            return()
+        }
+        values$volcanoPlotParams$fdr_threshold <- input$volcanoFDR
+        values$volcanoPlotParams$log2fc_threshold <- input$volcanoLog2FC
+        values$volcanoPlotGenerated <- TRUE
     })
 
     output$volcanoPlot <- renderPlot({
-        if (!values$deRun || is.null(values$de_table)) {
+        if (!values$volcanoPlotGenerated || is.null(values$de_table)) {
             return(NULL)
         }
-        endoSignatureR::plotEndometrialVolcano(values$de_table)
+        endoSignatureR::plotEndometrialVolcano(
+            values$de_table,
+            fdr_threshold = values$volcanoPlotParams$fdr_threshold,
+            log2fc_threshold = values$volcanoPlotParams$log2fc_threshold
+        )
+    })
+
+    # Generate Heatmap (regenerate with custom settings)
+    observeEvent(input$generateHeatmap, {
+        if (!values$deRun || is.null(values$de_table)) {
+            return()
+        }
+        # Update selected genes based on new number
+        values$selected_genes <- endoSignatureR::esr_selectTopGenes(
+            de_table = values$de_table,
+            n = input$heatmapGenes,
+            by = "de"
+        )
+        values$heatmapPlotParams$n_genes <- input$heatmapGenes
+        values$heatmapPlotParams$scale <- input$heatmapScale
+        values$heatmapPlotParams$show_row_names <- input$heatmapShowRowNames
+        values$heatmapPlotGenerated <- TRUE
     })
 
     output$heatmapPlot <- renderPlot({
-        if (!values$deRun || is.null(values$selected_genes)) {
+        if (!values$heatmapPlotGenerated || is.null(values$selected_genes)) {
             return(NULL)
         }
         endoSignatureR::plotEndometrialHeatmap(
             mat_t = values$counts_t,
             genes = values$selected_genes,
-            pheno = values$pheno
+            pheno = values$pheno,
+            scale = values$heatmapPlotParams$scale,
+            show_row_names = values$heatmapPlotParams$show_row_names
         )
     })
 
@@ -395,11 +968,34 @@ server <- function(input, output, session) {
             if (!values$deRun || is.null(values$de_table)) {
                 return(NULL)
             }
-            # Show top 50 rows
             head(values$de_table, 50)
         },
         digits = 4
     )
+
+    # Signature Plots (shown in Mode 1 Results tab after classification)
+    output$coefLollipopPlot <- renderPlot({
+        if (is.null(values$signature) || !values$classificationRun) {
+            return(NULL)
+        }
+        endoSignatureR::plotEndometrialCoefLollipop(
+            signature = values$signature,
+            annot = values$annot_mode1
+        )
+    })
+
+    output$stabilityBarsPlot <- renderPlot({
+        if (is.null(values$signature) || !values$classificationRun) {
+            return(NULL)
+        }
+        if (is.null(values$signature$stability) && is.null(values$signature$selection_frequency)) {
+            return(NULL)
+        }
+        endoSignatureR::plotEndometrialStabilityBars(
+            signature = values$signature,
+            annot = values$annot_mode1
+        )
+    })
 
     # Download handlers for plots
     output$downloadLibsize <- downloadHandler(
@@ -435,8 +1031,15 @@ server <- function(input, output, session) {
     output$downloadMA <- downloadHandler(
         filename = "ma_plot.png",
         content = function(file) {
+            if (!values$maPlotGenerated || is.null(values$de_table)) {
+                return()
+            }
             ggplot2::ggsave(file,
-                plot = endoSignatureR::plotEndometrialMA(values$de_table),
+                plot = endoSignatureR::plotEndometrialMA(
+                    values$de_table,
+                    fdr_threshold = values$maPlotParams$fdr_threshold,
+                    log2fc_threshold = values$maPlotParams$log2fc_threshold
+                ),
                 width = 10, height = 8, dpi = 300
             )
         }
@@ -445,8 +1048,15 @@ server <- function(input, output, session) {
     output$downloadVolcano <- downloadHandler(
         filename = "volcano_plot.png",
         content = function(file) {
+            if (!values$volcanoPlotGenerated || is.null(values$de_table)) {
+                return()
+            }
             ggplot2::ggsave(file,
-                plot = endoSignatureR::plotEndometrialVolcano(values$de_table),
+                plot = endoSignatureR::plotEndometrialVolcano(
+                    values$de_table,
+                    fdr_threshold = values$volcanoPlotParams$fdr_threshold,
+                    log2fc_threshold = values$volcanoPlotParams$log2fc_threshold
+                ),
                 width = 10, height = 8, dpi = 300
             )
         }
@@ -455,13 +1065,44 @@ server <- function(input, output, session) {
     output$downloadHeatmap <- downloadHandler(
         filename = "heatmap_plot.png",
         content = function(file) {
+            if (!values$heatmapPlotGenerated || is.null(values$selected_genes)) {
+                return()
+            }
             png(file, width = 12, height = 10, units = "in", res = 300)
             ComplexHeatmap::draw(endoSignatureR::plotEndometrialHeatmap(
                 mat_t = values$counts_t,
                 genes = values$selected_genes,
-                pheno = values$pheno
+                pheno = values$pheno,
+                scale = values$heatmapPlotParams$scale,
+                show_row_names = values$heatmapPlotParams$show_row_names
             ))
             dev.off()
+        }
+    )
+
+    output$downloadCoefLollipop <- downloadHandler(
+        filename = "coef_lollipop_plot.png",
+        content = function(file) {
+            ggplot2::ggsave(file,
+                plot = endoSignatureR::plotEndometrialCoefLollipop(
+                    signature = values$signature,
+                    annot = values$annot_mode1
+                ),
+                width = 10, height = 8, dpi = 300
+            )
+        }
+    )
+
+    output$downloadStabilityBars <- downloadHandler(
+        filename = "stability_bars_plot.png",
+        content = function(file) {
+            ggplot2::ggsave(file,
+                plot = endoSignatureR::plotEndometrialStabilityBars(
+                    signature = values$signature,
+                    annot = values$annot_mode1
+                ),
+                width = 10, height = 8, dpi = 300
+            )
         }
     )
 
@@ -470,7 +1111,6 @@ server <- function(input, output, session) {
         filename = "analysis_bundle.rds",
         content = function(file) {
             if (is.null(values$bundle)) {
-                # Create bundle if not exists
                 values$bundle <- endoSignatureR::esr_createAnalysisBundle(
                     counts_t = values$counts_t,
                     de_table = values$de_table,
