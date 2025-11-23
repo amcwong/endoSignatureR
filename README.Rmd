@@ -75,7 +75,11 @@ if (!requireNamespace("BiocManager", quietly = TRUE)) {
 BiocManager::install("amcwong/endoSignatureR", build_vignettes = TRUE)
 ```
 
-To run the shinyApp: Under construction
+To run the shinyApp:
+
+```r
+runEndoSignatureR()
+```
 
 ## Overview
 
