@@ -178,6 +178,9 @@ ui <- fluidPage(
 
 # Define server logic
 server <- function(input, output, session) {
+    # Increase maximum upload size to 500MB (default is 5MB)
+    options(shiny.maxRequestSize = 500 * 1024^2)
+
     # Reactive values to store data
     values <- reactiveValues(
         # Mode 1 data
@@ -448,24 +451,53 @@ server <- function(input, output, session) {
                         downloadButton("downloadMA", "Download Plot"),
                         br(), br()
                     ),
-                    wellPanel(
-                        h5("Customize Plot Settings"),
-                        p("Adjust thresholds and click 'Update Plot' to regenerate with new settings."),
-                        fluidRow(
-                            column(
-                                6,
-                                numericInput("maFDR", "FDR Threshold",
-                                    value = 0.05, min = 0.001, max = 1, step = 0.01
+                    tags$details(
+                        tags$summary(h5("Customize MA Plot Settings", style = "cursor: pointer; padding: 8px; border: 2px solid #337ab7; border-radius: 4px; background-color: #f5f5f5;")),
+                        wellPanel(
+                            style = "border: 2px solid #337ab7; margin-top: 10px;",
+                            p("Adjust thresholds and styling options, then click 'Update Plot' to regenerate with new settings."),
+                            fluidRow(
+                                column(
+                                    6,
+                                    numericInput("maFDR", "FDR Threshold",
+                                        value = 0.05, min = 0.001, max = 1, step = 0.01
+                                    ),
+                                    numericInput("maLog2FC", "log2FC Threshold",
+                                        value = 1, min = 0, max = 10, step = 0.1
+                                    )
+                                ),
+                                column(
+                                    6,
+                                    numericInput("maPointSize", "Point Size",
+                                        value = 1.5, min = 0.5, max = 5, step = 0.5
+                                    ),
+                                    sliderInput("maPointAlpha", "Point Transparency",
+                                        value = 0.6, min = 0, max = 1, step = 0.1
+                                    ),
+                                    selectInput("maTheme", "Theme",
+                                        choices = list(
+                                            "Black & White" = "bw",
+                                            "Classic" = "classic",
+                                            "Minimal" = "minimal",
+                                            "Light" = "light",
+                                            "Dark" = "dark"
+                                        ),
+                                        selected = "bw"
+                                    ),
+                                    selectInput("maLegendPos", "Legend Position",
+                                        choices = list(
+                                            "Right" = "right",
+                                            "Left" = "left",
+                                            "Top" = "top",
+                                            "Bottom" = "bottom",
+                                            "None" = "none"
+                                        ),
+                                        selected = "right"
+                                    )
                                 )
                             ),
-                            column(
-                                6,
-                                numericInput("maLog2FC", "log2FC Threshold",
-                                    value = 1, min = 0, max = 10, step = 0.1
-                                )
-                            )
-                        ),
-                        actionButton("generateMA", "Update MA Plot", class = "btn-primary")
+                            actionButton("generateMA", "Update MA Plot", class = "btn-primary")
+                        )
                     ),
                     br(), br(), hr(), br(),
 
@@ -477,24 +509,53 @@ server <- function(input, output, session) {
                         downloadButton("downloadVolcano", "Download Plot"),
                         br(), br()
                     ),
-                    wellPanel(
-                        h5("Customize Plot Settings"),
-                        p("Adjust thresholds and click 'Update Plot' to regenerate with new settings."),
-                        fluidRow(
-                            column(
-                                6,
-                                numericInput("volcanoFDR", "FDR Threshold",
-                                    value = 0.05, min = 0.001, max = 1, step = 0.01
+                    tags$details(
+                        tags$summary(h5("Customize Volcano Plot Settings", style = "cursor: pointer; padding: 8px; border: 2px solid #337ab7; border-radius: 4px; background-color: #f5f5f5;")),
+                        wellPanel(
+                            style = "border: 2px solid #337ab7; margin-top: 10px;",
+                            p("Adjust thresholds and styling options, then click 'Update Plot' to regenerate with new settings."),
+                            fluidRow(
+                                column(
+                                    6,
+                                    numericInput("volcanoFDR", "FDR Threshold",
+                                        value = 0.05, min = 0.001, max = 1, step = 0.01
+                                    ),
+                                    numericInput("volcanoLog2FC", "log2FC Threshold",
+                                        value = 1, min = 0, max = 10, step = 0.1
+                                    )
+                                ),
+                                column(
+                                    6,
+                                    numericInput("volcanoPointSize", "Point Size",
+                                        value = 1.5, min = 0.5, max = 5, step = 0.5
+                                    ),
+                                    sliderInput("volcanoPointAlpha", "Point Transparency",
+                                        value = 0.6, min = 0, max = 1, step = 0.1
+                                    ),
+                                    selectInput("volcanoTheme", "Theme",
+                                        choices = list(
+                                            "Black & White" = "bw",
+                                            "Classic" = "classic",
+                                            "Minimal" = "minimal",
+                                            "Light" = "light",
+                                            "Dark" = "dark"
+                                        ),
+                                        selected = "bw"
+                                    ),
+                                    selectInput("volcanoLegendPos", "Legend Position",
+                                        choices = list(
+                                            "Right" = "right",
+                                            "Left" = "left",
+                                            "Top" = "top",
+                                            "Bottom" = "bottom",
+                                            "None" = "none"
+                                        ),
+                                        selected = "right"
+                                    )
                                 )
                             ),
-                            column(
-                                6,
-                                numericInput("volcanoLog2FC", "log2FC Threshold",
-                                    value = 1, min = 0, max = 10, step = 0.1
-                                )
-                            )
-                        ),
-                        actionButton("generateVolcano", "Update Volcano Plot", class = "btn-primary")
+                            actionButton("generateVolcano", "Update Volcano Plot", class = "btn-primary")
+                        )
                     ),
                     br(), br(), hr(), br(),
 
@@ -506,32 +567,35 @@ server <- function(input, output, session) {
                         downloadButton("downloadHeatmap", "Download Plot"),
                         br(), br()
                     ),
-                    wellPanel(
-                        h5("Customize Plot Settings"),
-                        p("Adjust number of genes, scaling, and display options. Click 'Update Plot' to regenerate with new settings."),
-                        fluidRow(
-                            column(
-                                4,
-                                numericInput("heatmapGenes", "Number of Genes",
-                                    value = 50, min = 10, max = 500, step = 10
+                    tags$details(
+                        tags$summary(h5("Customize Heatmap Settings", style = "cursor: pointer; padding: 8px; border: 2px solid #337ab7; border-radius: 4px; background-color: #f5f5f5;")),
+                        wellPanel(
+                            style = "border: 2px solid #337ab7; margin-top: 10px;",
+                            p("Adjust number of genes, scaling, and display options. Click 'Update Plot' to regenerate with new settings."),
+                            fluidRow(
+                                column(
+                                    4,
+                                    numericInput("heatmapGenes", "Number of Genes",
+                                        value = 50, min = 10, max = 500, step = 10
+                                    )
+                                ),
+                                column(
+                                    4,
+                                    selectInput("heatmapScale", "Scaling Method",
+                                        choices = list(
+                                            "Row (z-score per gene)" = "row",
+                                            "Column (z-score per sample)" = "column",
+                                            "None" = "none"
+                                        ),
+                                        selected = "row"
+                                    )
+                                ),
+                                column(
+                                    4,
+                                    checkboxInput("heatmapShowRowNames", "Show Gene Names", value = FALSE),
+                                    br(),
+                                    actionButton("generateHeatmap", "Update Heatmap", class = "btn-primary")
                                 )
-                            ),
-                            column(
-                                4,
-                                selectInput("heatmapScale", "Scaling Method",
-                                    choices = list(
-                                        "Row (z-score per gene)" = "row",
-                                        "Column (z-score per sample)" = "column",
-                                        "None" = "none"
-                                    ),
-                                    selected = "row"
-                                )
-                            ),
-                            column(
-                                4,
-                                checkboxInput("heatmapShowRowNames", "Show Gene Names", value = FALSE),
-                                br(),
-                                actionButton("generateHeatmap", "Update Heatmap", class = "btn-primary")
                             )
                         )
                     ),
@@ -609,8 +673,16 @@ server <- function(input, output, session) {
             demo_data <- endoSignatureR::endo_load_demo()
 
             # Write counts (unlabeled)
-            readr::write_tsv(
+            # Convert counts matrix to data.frame with GeneID column
+            # This matches the format expected by esr_loadCountsFromFile
+            counts_df <- data.frame(
+                GeneID = rownames(demo_data$counts),
                 as.data.frame(demo_data$counts),
+                stringsAsFactors = FALSE,
+                check.names = FALSE
+            )
+            readr::write_tsv(
+                counts_df,
                 file.path(temp_dir, "gse201926_sample_unlabeled_counts.tsv")
             )
 
@@ -820,8 +892,16 @@ server <- function(input, output, session) {
             temp_dir <- tempdir()
             demo_data <- endoSignatureR::endo_load_demo()
 
-            readr::write_tsv(
+            # Convert counts matrix to data.frame with GeneID column
+            # This matches the format expected by esr_loadCountsFromFile
+            counts_df <- data.frame(
+                GeneID = rownames(demo_data$counts),
                 as.data.frame(demo_data$counts),
+                stringsAsFactors = FALSE,
+                check.names = FALSE
+            )
+            readr::write_tsv(
+                counts_df,
                 file.path(temp_dir, "gse201926_sample_counts.tsv")
             )
             readr::write_tsv(
@@ -947,17 +1027,32 @@ server <- function(input, output, session) {
                 values$deRun <- TRUE
 
                 # Generate all plots automatically with default settings
-                values$maPlotParams$fdr_threshold <- 0.05
-                values$maPlotParams$log2fc_threshold <- 1
+                # Replace entire lists to trigger reactivity
+                values$maPlotParams <- list(
+                    fdr_threshold = 0.05,
+                    log2fc_threshold = 1,
+                    point_size = 1.5,
+                    point_alpha = 0.6,
+                    legend_position = "right",
+                    theme = "bw"
+                )
                 values$maPlotGenerated <- TRUE
 
-                values$volcanoPlotParams$fdr_threshold <- 0.05
-                values$volcanoPlotParams$log2fc_threshold <- 1
+                values$volcanoPlotParams <- list(
+                    fdr_threshold = 0.05,
+                    log2fc_threshold = 1,
+                    point_size = 1.5,
+                    point_alpha = 0.6,
+                    legend_position = "right",
+                    theme = "bw"
+                )
                 values$volcanoPlotGenerated <- TRUE
 
-                values$heatmapPlotParams$n_genes <- 50
-                values$heatmapPlotParams$scale <- "row"
-                values$heatmapPlotParams$show_row_names <- FALSE
+                values$heatmapPlotParams <- list(
+                    n_genes = 50,
+                    scale = "row",
+                    show_row_names = FALSE
+                )
                 values$heatmapPlotGenerated <- TRUE
 
                 output$statusMessageMode3 <- renderText("Differential expression analysis completed!")
@@ -1063,9 +1158,15 @@ server <- function(input, output, session) {
         if (!values$deRun || is.null(values$de_table)) {
             return()
         }
-        values$maPlotParams$fdr_threshold <- input$maFDR
-        values$maPlotParams$log2fc_threshold <- input$maLog2FC
-        # Note: styling parameters can be added here if UI controls are added
+        # Replace entire list to trigger reactivity
+        values$maPlotParams <- list(
+            fdr_threshold = input$maFDR,
+            log2fc_threshold = input$maLog2FC,
+            point_size = input$maPointSize,
+            point_alpha = input$maPointAlpha,
+            legend_position = input$maLegendPos,
+            theme = input$maTheme
+        )
         values$maPlotGenerated <- TRUE
     })
 
@@ -1089,9 +1190,15 @@ server <- function(input, output, session) {
         if (!values$deRun || is.null(values$de_table)) {
             return()
         }
-        values$volcanoPlotParams$fdr_threshold <- input$volcanoFDR
-        values$volcanoPlotParams$log2fc_threshold <- input$volcanoLog2FC
-        # Note: styling parameters can be added here if UI controls are added
+        # Replace entire list to trigger reactivity
+        values$volcanoPlotParams <- list(
+            fdr_threshold = input$volcanoFDR,
+            log2fc_threshold = input$volcanoLog2FC,
+            point_size = input$volcanoPointSize,
+            point_alpha = input$volcanoPointAlpha,
+            legend_position = input$volcanoLegendPos,
+            theme = input$volcanoTheme
+        )
         values$volcanoPlotGenerated <- TRUE
     })
 
@@ -1121,9 +1228,12 @@ server <- function(input, output, session) {
             n = input$heatmapGenes,
             by = "de"
         )
-        values$heatmapPlotParams$n_genes <- input$heatmapGenes
-        values$heatmapPlotParams$scale <- input$heatmapScale
-        values$heatmapPlotParams$show_row_names <- input$heatmapShowRowNames
+        # Replace entire list to trigger reactivity
+        values$heatmapPlotParams <- list(
+            n_genes = input$heatmapGenes,
+            scale = input$heatmapScale,
+            show_row_names = input$heatmapShowRowNames
+        )
         values$heatmapPlotGenerated <- TRUE
     })
 
