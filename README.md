@@ -52,9 +52,7 @@ from GSE201926 and provides three complementary workflows:
   signature.
 - **Visualization & Analysis (Mode 3):** Perform standalone QC,
   exploratory analysis, and differential expression visualization on
-  endometrial data without requiring training or classification. Can be
-  used independently or after running Modes 1 or 2 to unlock additional
-  signature-specific and performance visualizations.
+  endometrial data without requiring training or classification.
 
 This package centralizes typical multi-step analyses (QC, DE screening,
 model training, calibration, performance visualization, and export of

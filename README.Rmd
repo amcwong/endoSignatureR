@@ -36,7 +36,7 @@ The package ships with a pre-trained PS vs PIS gene signature derived from GSE20
 
 - **Rapid Classification (Mode 1):** Apply the shipped signature to unlabeled RNA-seq samples to obtain PS vs PIS predictions with confidence.
 - **Signature Validation (Mode 2):** Train/validate a new signature on labeled cohorts using best practices (in-fold preprocessing, DE screening, nested cross-validation, LASSO with calibration, and optional stability selection), then compare to the pre-trained signature.
-- **Visualization & Analysis (Mode 3):** Perform standalone QC, exploratory analysis, and differential expression visualization on endometrial data without requiring training or classification. Can be used independently or after running Modes 1 or 2 to unlock additional signature-specific and performance visualizations.
+- **Visualization & Analysis (Mode 3):** Perform standalone QC, exploratory analysis, and differential expression visualization on endometrial data without requiring training or classification.
 
 This package centralizes typical multi-step analyses (QC, DE screening, model training, calibration, performance visualization, and export of artifacts) into a cohesive, reproducible workflow tailored for endometrial tissue.
 
