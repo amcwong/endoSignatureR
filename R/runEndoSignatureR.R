@@ -6,7 +6,9 @@
 #' @details
 #' \itemize{
 #' \item \strong{Mode 1: Rapid Classification} - Apply pre-trained signature to
-#' unlabeled samples for PS vs PIS predictions (coming soon)
+#' unlabeled samples for PS vs PIS predictions with confidence intervals. Results
+#' include predictions table and signature visualization plots (coefficient lollipop,
+#' stability bars).
 #' \item \strong{Mode 2: Signature Validation} - Train and validate a new
 #' signature on labeled cohorts using best practices (coming soon)
 #' \item \strong{Mode 3: Visualization & Analysis} - Perform QC, exploratory
@@ -22,10 +24,12 @@
 #' \item Running differential expression analysis
 #' \item Visualizing results (MA plots, volcano plots, heatmaps)
 #' \item Exporting analysis results and plots
+#' \item Applying pre-trained signature for classification (Mode 1)
+#' \item Viewing signature visualization plots after classification (Mode 1)
 #' }
 #'
-#' Mode 3 (Visualization & Analysis) is fully implemented. Modes 1 and 2 will
-#' be available in future releases.
+#' Mode 1 (Rapid Classification) and Mode 3 (Visualization & Analysis) are fully
+#' implemented. Mode 2 will be available in a future release.
 #'
 #' @return A Shiny app object. The app will open in the default web browser.
 #'
@@ -54,25 +58,24 @@
 #' @importFrom shiny shinyApp
 #' @export
 runEndoSignatureR <- function() {
-  app_file <- system.file("shiny-scripts", "app.r", package = "endoSignatureR")
-  
-  if (!file.exists(app_file)) {
-    stop("Shiny app file not found. Expected location: ", app_file)
-  }
-  
-  # Source the app file in a new environment to get ui and server
-  app_env <- new.env()
-  source(app_file, local = app_env)
-  
-  # Get ui and server from the environment
-  if (exists("ui", envir = app_env) && exists("server", envir = app_env)) {
-    ui <- get("ui", envir = app_env)
-    server <- get("server", envir = app_env)
-    return(shinyApp(ui = ui, server = server))
-  } else {
-    stop("Could not find ui and server objects in app.r file")
-  }
+    app_file <- system.file("shiny-scripts", "app.r", package = "endoSignatureR")
+
+    if (!file.exists(app_file)) {
+        stop("Shiny app file not found. Expected location: ", app_file)
+    }
+
+    # Source the app file in a new environment to get ui and server
+    app_env <- new.env()
+    source(app_file, local = app_env)
+
+    # Get ui and server from the environment
+    if (exists("ui", envir = app_env) && exists("server", envir = app_env)) {
+        ui <- get("ui", envir = app_env)
+        server <- get("server", envir = app_env)
+        return(shinyApp(ui = ui, server = server))
+    } else {
+        stop("Could not find ui and server objects in app.r file")
+    }
 }
 
 # [END]
-
