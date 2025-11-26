@@ -11,6 +11,66 @@ ui <- fluidPage(
     tabsetPanel(
         id = "modeTabs",
 
+        # Landing Page (Welcome/Getting Started)
+        tabPanel(
+            "Welcome",
+            value = "welcome",
+            div(
+                style = "max-width: 900px; margin: 0 auto; padding: 20px;",
+                h2("Welcome to EndoSignatureR", style = "text-align: center; color: #2c3e50; margin-bottom: 30px;"),
+                p("EndoSignatureR is an R package and Shiny application designed to make it easy for researchers to analyze and compare small endometrial bulk RNA-seq datasets using a standardized, reproducible workflow.", style = "font-size: 16px; line-height: 1.6; text-align: center; margin-bottom: 40px;"),
+                h3("What the App Does", style = "color: #34495e; margin-top: 40px;"),
+                p("EndoSignatureR provides three complementary workflows for endometrial RNA-seq analysis:"),
+                tags$ul(
+                    tags$li(strong("Rapid Classification (Mode 1):"), " Apply a pre-trained PS vs PIS signature to unlabeled endometrial samples to obtain predictions with confidence intervals."),
+                    tags$li(strong("Signature Validation (Mode 2):"), " Train and validate a new signature on labeled cohorts using best practices (nested cross-validation, LASSO, calibration) and compare to the pre-trained signature."),
+                    tags$li(strong("Visualization & Analysis (Mode 3):"), " Perform standalone quality control, exploratory analysis, and differential expression visualization on endometrial data without requiring training or classification.")
+                ),
+                br(),
+                h3("What It Can Do", style = "color: #34495e; margin-top: 40px;"),
+                p("The three-mode workflow allows you to:"),
+                tags$ul(
+                    tags$li("Classify unlabeled endometrial samples using a pre-trained signature"),
+                    tags$li("Train and validate signatures on your own labeled data"),
+                    tags$li("Explore and visualize endometrial RNA-seq data with comprehensive QC and DE analysis"),
+                    tags$li("Export results in multiple formats for further analysis or reporting"),
+                    tags$li("Compare signature performance and visualize results with publication-ready plots")
+                ),
+                br(),
+                h3("How to Use It", style = "color: #34495e; margin-top: 40px;"),
+                p("Getting started is straightforward:"),
+                tags$ul(
+                    tags$li(strong("Mode 1 and Mode 3"), " can be run with just your data - no prerequisites required. Simply upload your data and start analyzing."),
+                    tags$li(strong("Some functionality in Mode 1"), " requires Mode 2 completion. For example, using a user-trained signature (instead of the pre-trained signature) requires first training a signature in Mode 2."),
+                    tags$li(strong("Additional information"), " is available in dropdown menus next to export options, providing ideas about data exploration and detailed descriptions of what each export contains.")
+                ),
+                br(),
+                p(em("Tip: Each export option has an information dropdown (ℹ️) that explains what's in the export, what you can do with it, and format specifications.")),
+                br(),
+                h3("Get Started", style = "color: #34495e; margin-top: 40px; text-align: center;"),
+                div(
+                    style = "text-align: center; margin: 30px 0;",
+                    actionButton("navToMode1", "Go to Mode 1: Rapid Classification",
+                        class = "btn-primary btn-lg",
+                        style = "margin: 10px; padding: 15px 30px; font-size: 16px;"
+                    ),
+                    br(),
+                    actionButton("navToMode2", "Go to Mode 2: Signature Validation",
+                        class = "btn-primary btn-lg",
+                        style = "margin: 10px; padding: 15px 30px; font-size: 16px;"
+                    ),
+                    br(),
+                    actionButton("navToMode3", "Go to Mode 3: Visualization & Analysis",
+                        class = "btn-primary btn-lg",
+                        style = "margin: 10px; padding: 15px 30px; font-size: 16px;"
+                    )
+                ),
+                br(),
+                hr(),
+                p("For detailed information about our methodology, visit the ", strong("Methodology"), " tab.", style = "text-align: center; color: #7f8c8d;")
+            )
+        ),
+
         # Mode 1: Rapid Classification
         tabPanel(
             "Mode 1: Rapid Classification",
@@ -109,7 +169,37 @@ ui <- fluidPage(
                                 br(),
                                 h4("Predictions Table"),
                                 p("Download full results using the button below."),
-                                downloadButton("downloadPredictions", "Download Predictions (CSV)"),
+                                div(
+                                    style = "display: flex; align-items: center; gap: 10px; margin-bottom: 10px;",
+                                    downloadButton("downloadPredictions", "Download Predictions (CSV)"),
+                                    tags$details(
+                                        tags$summary(style = "cursor: pointer; color: #3498db; font-weight: bold;", "ℹ️ More Information"),
+                                        div(
+                                            style = "margin-top: 10px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #3498db;",
+                                            h5("What's in this export:"),
+                                            p("The CSV file contains classification results with the following columns:"),
+                                            tags$ul(
+                                                tags$li(strong("sample_id:"), " Unique identifier for each sample"),
+                                                tags$li(strong("predicted_class:"), " Predicted class (PS or PIS)"),
+                                                tags$li(strong("probability:"), " Predicted probability for the assigned class"),
+                                                tags$li(strong("confidence_lower:"), " Lower bound of confidence interval (if confidence intervals were requested)"),
+                                                tags$li(strong("confidence_upper:"), " Upper bound of confidence interval (if confidence intervals were requested)")
+                                            ),
+                                            br(),
+                                            h5("What you can do with this export:"),
+                                            tags$ul(
+                                                tags$li("Use predictions for downstream analysis in R or other tools"),
+                                                tags$li("Create custom visualizations or reports"),
+                                                tags$li("Share results with collaborators"),
+                                                tags$li("Integrate predictions into clinical or research workflows"),
+                                                tags$li("Compare predictions across different signatures or thresholds")
+                                            ),
+                                            br(),
+                                            h5("Format specifications:"),
+                                            p("CSV format (comma-separated values), UTF-8 encoding. Can be opened in Excel, R, Python, or any text editor.")
+                                        )
+                                    )
+                                ),
                                 br(), br(),
                                 tableOutput("predictionsTable"),
                                 br(), br(),
@@ -404,23 +494,213 @@ ui <- fluidPage(
                                 condition = "output.trainingRun == true",
                                 h4("Signature Artifacts"),
                                 p("Export signature in standard formats:"),
-                                downloadButton("downloadSignatureCSVMode2", "Download Signature (CSV)"),
-                                br(), br(),
-                                downloadButton("downloadSignatureJSONMode2", "Download Signature (JSON)"),
-                                br(), br(),
-                                downloadButton("downloadModelCardMode2", "Download Model Card (MD)"),
-                                br(), br(), hr(), br(),
+                                div(
+                                    style = "margin-bottom: 15px;",
+                                    div(
+                                        style = "display: flex; align-items: center; gap: 10px; margin-bottom: 5px;",
+                                        downloadButton("downloadSignatureCSVMode2", "Download Signature (CSV)"),
+                                        tags$details(
+                                            tags$summary(style = "cursor: pointer; color: #3498db; font-weight: bold;", "ℹ️ More Information"),
+                                            div(
+                                                style = "margin-top: 10px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #3498db;",
+                                                h5("What's in this export:"),
+                                                p("The CSV file contains the gene signature panel with:"),
+                                                tags$ul(
+                                                    tags$li(strong("gene_id:"), " Gene identifier"),
+                                                    tags$li(strong("coefficient:"), " LASSO coefficient (weight) for each gene"),
+                                                    tags$li(strong("intercept:"), " Model intercept (in separate row or metadata)"),
+                                                    tags$li(strong("metadata:"), " Training parameters and preprocessing information")
+                                                ),
+                                                br(),
+                                                h5("What you can do with this export:"),
+                                                tags$ul(
+                                                    tags$li("Use the signature in other tools or pipelines"),
+                                                    tags$li("Share signature with collaborators"),
+                                                    tags$li("Version control your trained signatures"),
+                                                    tags$li("Compare signatures across different training runs"),
+                                                    tags$li("Load signature in Mode 1 for classification")
+                                                ),
+                                                br(),
+                                                h5("Format specifications:"),
+                                                p("CSV format (comma-separated values), UTF-8 encoding. Contains gene panel with coefficients and metadata.")
+                                            )
+                                        )
+                                    )
+                                ),
+                                br(),
+                                div(
+                                    style = "margin-bottom: 15px;",
+                                    div(
+                                        style = "display: flex; align-items: center; gap: 10px; margin-bottom: 5px;",
+                                        downloadButton("downloadSignatureJSONMode2", "Download Signature (JSON)"),
+                                        tags$details(
+                                            tags$summary(style = "cursor: pointer; color: #3498db; font-weight: bold;", "ℹ️ More Information"),
+                                            div(
+                                                style = "margin-top: 10px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #3498db;",
+                                                h5("What's in this export:"),
+                                                p("The JSON file contains the complete signature recipe with:"),
+                                                tags$ul(
+                                                    tags$li(strong("signature:"), " Gene panel with coefficients"),
+                                                    tags$li(strong("recipe:"), " Complete preprocessing parameters (transform method, CPM thresholds, Top-K selection)"),
+                                                    tags$li(strong("metadata:"), " Training information (date, parameters, performance metrics)")
+                                                ),
+                                                br(),
+                                                h5("What you can do with this export:"),
+                                                tags$ul(
+                                                    tags$li("Reproduce exact preprocessing steps in other pipelines"),
+                                                    tags$li("Share complete signature recipe with collaborators"),
+                                                    tags$li("Version control signature with full metadata"),
+                                                    tags$li("Load signature in Mode 1 with complete preprocessing information")
+                                                ),
+                                                br(),
+                                                h5("Format specifications:"),
+                                                p("JSON format (JavaScript Object Notation), UTF-8 encoding. Contains structured data with signature and recipe information.")
+                                            )
+                                        )
+                                    )
+                                ),
+                                br(),
+                                div(
+                                    style = "margin-bottom: 15px;",
+                                    div(
+                                        style = "display: flex; align-items: center; gap: 10px; margin-bottom: 5px;",
+                                        downloadButton("downloadModelCardMode2", "Download Model Card (MD)"),
+                                        tags$details(
+                                            tags$summary(style = "cursor: pointer; color: #3498db; font-weight: bold;", "ℹ️ More Information"),
+                                            div(
+                                                style = "margin-top: 10px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #3498db;",
+                                                h5("What's in this export:"),
+                                                p("The Markdown file contains comprehensive model documentation with:"),
+                                                tags$ul(
+                                                    tags$li(strong("Model information:"), " Signature details, training date, data source"),
+                                                    tags$li(strong("Performance metrics:"), " AUC, accuracy, calibration metrics"),
+                                                    tags$li(strong("Training parameters:"), " All hyperparameters and settings used"),
+                                                    tags$li(strong("Statistical assumptions:"), " Assumptions and limitations"),
+                                                    tags$li(strong("Reproducibility information:"), " Seeds, fold specifications, session info")
+                                                ),
+                                                br(),
+                                                h5("What you can do with this export:"),
+                                                tags$ul(
+                                                    tags$li("Share model information with collaborators or reviewers"),
+                                                    tags$li("Document methodology for publications"),
+                                                    tags$li("Track model versions and training configurations"),
+                                                    tags$li("Ensure reproducibility and transparency")
+                                                ),
+                                                br(),
+                                                h5("Format specifications:"),
+                                                p("Markdown format (.md), UTF-8 encoding. Can be viewed in any text editor or rendered as HTML. Contains formatted documentation sections.")
+                                            )
+                                        )
+                                    )
+                                ),
+                                br(), hr(), br(),
                                 h4("Stability Data"),
                                 p("Export bootstrap stability frequencies (if available):"),
-                                downloadButton("downloadStabilityCSVMode2", "Download Stability CSV"),
-                                br(), br(), hr(), br(),
+                                div(
+                                    style = "margin-bottom: 15px;",
+                                    div(
+                                        style = "display: flex; align-items: center; gap: 10px; margin-bottom: 5px;",
+                                        downloadButton("downloadStabilityCSVMode2", "Download Stability CSV"),
+                                        tags$details(
+                                            tags$summary(style = "cursor: pointer; color: #3498db; font-weight: bold;", "ℹ️ More Information"),
+                                            div(
+                                                style = "margin-top: 10px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #3498db;",
+                                                h5("What's in this export:"),
+                                                p("The CSV file contains gene selection frequencies across resamples with:"),
+                                                tags$ul(
+                                                    tags$li(strong("gene_id:"), " Gene identifier"),
+                                                    tags$li(strong("selection_frequency:"), " Frequency (0-1) of gene selection across bootstrap resamples"),
+                                                    tags$li(strong("in_signature:"), " Whether gene is in final signature panel")
+                                                ),
+                                                br(),
+                                                h5("What you can do with this export:"),
+                                                tags$ul(
+                                                    tags$li("Analyze signature stability and identify core genes"),
+                                                    tags$li("Compare gene selection frequencies across different training runs"),
+                                                    tags$li("Identify highly stable genes for further investigation"),
+                                                    tags$li("Assess signature robustness and reproducibility")
+                                                ),
+                                                br(),
+                                                h5("Format specifications:"),
+                                                p("CSV format (comma-separated values), UTF-8 encoding. Contains gene stability metrics from bootstrap resampling.")
+                                            )
+                                        )
+                                    )
+                                ),
+                                br(), hr(), br(),
                                 h4("Predictions"),
                                 p("Export predictions from cross-validation:"),
-                                downloadButton("downloadPredictionsMode2", "Download Predictions (CSV)"),
-                                br(), br(), hr(), br(),
+                                div(
+                                    style = "margin-bottom: 15px;",
+                                    div(
+                                        style = "display: flex; align-items: center; gap: 10px; margin-bottom: 5px;",
+                                        downloadButton("downloadPredictionsMode2", "Download Predictions (CSV)"),
+                                        tags$details(
+                                            tags$summary(style = "cursor: pointer; color: #3498db; font-weight: bold;", "ℹ️ More Information"),
+                                            div(
+                                                style = "margin-top: 10px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #3498db;",
+                                                h5("What's in this export:"),
+                                                p("The CSV file contains cross-validation predictions with:"),
+                                                tags$ul(
+                                                    tags$li(strong("sample_id:"), " Sample identifier"),
+                                                    tags$li(strong("true_label:"), " True class label (PS or PIS)"),
+                                                    tags$li(strong("predicted_class:"), " Predicted class from outer CV fold"),
+                                                    tags$li(strong("probability:"), " Predicted probability"),
+                                                    tags$li(strong("fold:"), " Outer CV fold identifier")
+                                                ),
+                                                br(),
+                                                h5("What you can do with this export:"),
+                                                tags$ul(
+                                                    tags$li("Create custom performance visualizations"),
+                                                    tags$li("Analyze per-sample prediction confidence"),
+                                                    tags$li("Identify misclassified samples for further investigation"),
+                                                    tags$li("Compare predictions across different models or parameters")
+                                                ),
+                                                br(),
+                                                h5("Format specifications:"),
+                                                p("CSV format (comma-separated values), UTF-8 encoding. Contains out-of-fold predictions from nested cross-validation.")
+                                            )
+                                        )
+                                    )
+                                ),
+                                br(), hr(), br(),
                                 h4("Full Results"),
                                 p("Export complete training result (RDS format):"),
-                                downloadButton("downloadFullResultsMode2", "Download Full Results (RDS)")
+                                div(
+                                    style = "margin-bottom: 15px;",
+                                    div(
+                                        style = "display: flex; align-items: center; gap: 10px; margin-bottom: 5px;",
+                                        downloadButton("downloadFullResultsMode2", "Download Full Results (RDS)"),
+                                        tags$details(
+                                            tags$summary(style = "cursor: pointer; color: #3498db; font-weight: bold;", "ℹ️ More Information"),
+                                            div(
+                                                style = "margin-top: 10px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #3498db;",
+                                                h5("What's in this export:"),
+                                                p("The RDS file contains the complete R object with all training results:"),
+                                                tags$ul(
+                                                    tags$li(strong("signature:"), " Trained signature object"),
+                                                    tags$li(strong("performance:"), " Performance metrics and plots"),
+                                                    tags$li(strong("predictions:"), " Cross-validation predictions"),
+                                                    tags$li(strong("stability:"), " Stability selection results"),
+                                                    tags$li(strong("metadata:"), " Training parameters, seeds, fold specifications"),
+                                                    tags$li(strong("session_info:"), " R session information for reproducibility")
+                                                ),
+                                                br(),
+                                                h5("What you can do with this export:"),
+                                                tags$ul(
+                                                    tags$li("Load complete results in R for further analysis"),
+                                                    tags$li("Reproduce all plots and metrics"),
+                                                    tags$li("Extract specific components for custom analysis"),
+                                                    tags$li("Share complete analysis state with collaborators"),
+                                                    tags$li("Archive training results for reproducibility")
+                                                ),
+                                                br(),
+                                                h5("Format specifications:"),
+                                                p("RDS format (R Data Serialization), binary format. Can only be loaded in R using readRDS(). Contains complete R object with all training artifacts.")
+                                            )
+                                        )
+                                    )
+                                )
                             )
                         )
                     )
@@ -475,6 +755,158 @@ ui <- fluidPage(
                     uiOutput("mode3TabsUI")
                 )
             )
+        ),
+
+        # Methodology Information Page
+        tabPanel(
+            "Methodology",
+            div(
+                style = "max-width: 1000px; margin: 0 auto; padding: 20px;",
+                h2("Methodology: Small Sample Signature Extraction", style = "text-align: center; color: #2c3e50; margin-bottom: 30px;"),
+                h3("Introduction", style = "color: #34495e; margin-top: 40px;"),
+                p("EndoSignatureR uses a carefully designed approach for extracting gene signatures from small endometrial RNA-seq datasets. This methodology addresses the unique challenges of working with small sample sizes (small n) and high-dimensional data (large p, where p >> n)."),
+                br(),
+                h3("How We Approached Small Sample Signature Extraction", style = "color: #34495e; margin-top: 40px;"),
+                p("The challenge of small sample signature extraction involves:"),
+                tags$ul(
+                    tags$li("High-dimensional data: Thousands of genes (p) but few samples (n), where p >> n"),
+                    tags$li("Risk of overfitting: Standard methods can overfit to small training sets"),
+                    tags$li("Need for generalization: Signatures must work on new, unseen data"),
+                    tags$li("Biological relevance: Selected genes should be biologically meaningful")
+                ),
+                p("Our approach combines several best practices to address these challenges:"),
+                tags$ul(
+                    tags$li("Nested cross-validation to estimate true generalization performance"),
+                    tags$li("LASSO regularization to select sparse, interpretable gene sets"),
+                    tags$li("In-fold preprocessing to prevent data leakage"),
+                    tags$li("Differential expression screening to focus on biologically relevant genes"),
+                    tags$li("Stability selection to identify robust gene signatures"),
+                    tags$li("Probability calibration to improve prediction reliability")
+                ),
+                br(),
+                h3("Key Methodological Choices", style = "color: #34495e; margin-top: 40px;"),
+                h4("1. Nested Cross-Validation", style = "color: #7f8c8d; margin-top: 20px;"),
+                p("Nested cross-validation (CV) uses two levels of data splitting:"),
+                tags$ul(
+                    tags$li(strong("Outer CV:"), " Evaluates generalization performance. Each fold serves as a test set, with the remaining data used for training."),
+                    tags$li(strong("Inner CV:"), " Tunes hyperparameters (e.g., LASSO λ) using only training data from the outer fold."),
+                    tags$li(strong("Why it matters:"), " Provides unbiased estimates of model performance on new data, crucial for small datasets where a single train/test split would be unreliable.")
+                ),
+                br(),
+                h4("2. LASSO Regularization", style = "color: #7f8c8d; margin-top: 20px;"),
+                p("LASSO (Least Absolute Shrinkage and Selection Operator) logistic regression:"),
+                tags$ul(
+                    tags$li(strong("Sparsity:"), " L1 penalty drives most coefficients to zero, automatically selecting a small subset of genes."),
+                    tags$li(strong("Interpretability:"), " Sparse models are easier to interpret and validate biologically."),
+                    tags$li(strong("Regularization:"), " Prevents overfitting by penalizing large coefficients."),
+                    tags$li(strong("Why it matters:"), " In p >> n scenarios, LASSO helps identify the most important genes while avoiding overfitting.")
+                ),
+                br(),
+                h4("3. In-Fold Preprocessing", style = "color: #7f8c8d; margin-top: 20px;"),
+                p("All preprocessing operations occur inside cross-validation folds:"),
+                tags$ul(
+                    tags$li(strong("Transformation:"), " Normalization parameters (e.g., library size factors) computed from training data only."),
+                    tags$li(strong("Filtering:"), " CPM thresholds and gene filtering based on training data only."),
+                    tags$li(strong("Gene selection:"), " Top-K or DE-based selection performed separately in each fold."),
+                    tags$li(strong("Why it matters:"), " Prevents data leakage - test data never influences preprocessing decisions, ensuring valid performance estimates.")
+                ),
+                br(),
+                h4("4. Stability Selection", style = "color: #7f8c8d; margin-top: 20px;"),
+                p("Stability selection assesses how consistently genes are selected across resamples:"),
+                tags$ul(
+                    tags$li(strong("Bootstrap resampling:"), " Multiple resamples of the training data."),
+                    tags$li(strong("Selection frequency:"), " Frequency (0-1) that each gene is selected across resamples."),
+                    tags$li(strong("Robust genes:"), " Genes selected frequently are more stable and likely to generalize."),
+                    tags$li(strong("Why it matters:"), " Identifies core signature genes that are robust to data variation, important for small datasets where results can be sensitive to specific samples.")
+                ),
+                br(),
+                h4("5. Differential Expression Screening", style = "color: #7f8c8d; margin-top: 20px;"),
+                p("Top-K gene selection based on differential expression statistics:"),
+                tags$ul(
+                    tags$li(strong("DE statistics:"), " Genes ranked by fold change, p-values, or FDR."),
+                    tags$li(strong("Top-K selection:"), " Select top K genes (e.g., 300) before LASSO training."),
+                    tags$li(strong("Biological relevance:"), " Focuses on genes that show meaningful differences between classes."),
+                    tags$li(strong("Why it matters:"), " In p >> n scenarios, DE screening improves stability by focusing on biologically relevant features and reducing noise.")
+                ),
+                br(),
+                h3("Rationale for Small-n Considerations", style = "color: #34495e; margin-top: 40px;"),
+                h4("Leave-Pair-Out Cross-Validation", style = "color: #7f8c8d; margin-top: 20px;"),
+                p("For very small, balanced datasets, we use leave-pair-out (LPO) CV:"),
+                tags$ul(
+                    tags$li(strong("Method:"), " Each test set contains one sample from each class (1 PS + 1 PIS)."),
+                    tags$li(strong("Maximizes training data:"), " Leaves maximum samples for training while maintaining valid test sets."),
+                    tags$li(strong("Class balance:"), " Ensures test sets are balanced, important for small datasets."),
+                    tags$li(strong("When used:"), " For tiny balanced cohorts where standard k-fold CV would leave too few training samples.")
+                ),
+                br(),
+                h4("Anti-Leakage Guards", style = "color: #7f8c8d; margin-top: 20px;"),
+                p("Strict separation between training and test data:"),
+                tags$ul(
+                    tags$li(strong("No test data in preprocessing:"), " All transformations, filters, and selections use only training data."),
+                    tags$li(strong("Fold-specific preprocessing:"), " Each CV fold has its own preprocessing parameters."),
+                    tags$li(strong("Validation:"), " Test data is only used for final evaluation, never for model development."),
+                    tags$li(strong("Why it matters:"), " Prevents optimistic bias in performance estimates, critical for small datasets where even small leaks can dramatically inflate performance.")
+                ),
+                br(),
+                h4("Probability Calibration", style = "color: #7f8c8d; margin-top: 20px;"),
+                p("Calibration ensures predicted probabilities reflect true class frequencies:"),
+                tags$ul(
+                    tags$li(strong("Platt scaling or isotonic regression:"), " Adjusts raw model probabilities."),
+                    tags$li(strong("Reliability:"), " Calibrated probabilities are more reliable for decision-making."),
+                    tags$li(strong("Why it matters:"), " Small datasets can produce poorly calibrated probabilities; calibration improves reliability for clinical or research applications.")
+                ),
+                br(),
+                h3("Statistical Assumptions and Limitations", style = "color: #34495e; margin-top: 40px;"),
+                h4("Data Type Assumptions", style = "color: #7f8c8d; margin-top: 20px;"),
+                tags$ul(
+                    tags$li("Bulk RNA-seq gene counts from endometrial tissue (not single-cell, not microarray, not other tissues)"),
+                    tags$li("The pre-trained signature is specific to endometrial tissue and is not portable across tissues or divergent processing pipelines")
+                ),
+                br(),
+                h4("Design Assumptions", style = "color: #7f8c8d; margin-top: 20px;"),
+                tags$ul(
+                    tags$li("Binary labels (PS vs PIS) with independent biological replicates"),
+                    tags$li("The package supports only binary classification; multiclass or continuous outcomes are out of scope for v1")
+                ),
+                br(),
+                h4("Modeling Assumptions", style = "color: #7f8c8d; margin-top: 20px;"),
+                tags$ul(
+                    tags$li("Linear log-odds relationship (logistic regression) with L1 penalty (LASSO)"),
+                    tags$li("The L1 penalty drives most coefficients to zero, yielding an interpretable gene signature")
+                ),
+                br(),
+                h4("Resampling Assumptions", style = "color: #7f8c8d; margin-top: 20px;"),
+                tags$ul(
+                    tags$li("Nested cross-validation is used as a proxy for generalization in small-n datasets"),
+                    tags$li("Leave-pair-out (LPO) cross-validation is used when n is tiny and class-balanced to maximize training data while maintaining valid test sets")
+                ),
+                br(),
+                h4("Limitations", style = "color: #7f8c8d; margin-top: 20px;"),
+                tags$ul(
+                    tags$li(strong("Tissue specificity:"), " Trained signatures are not portable across tissues or divergent processing pipelines"),
+                    tags$li(strong("Small-n uncertainty:"), " Results should be interpreted with caution; report confidence intervals, permutation p-values, and stability metrics"),
+                    tags$li(strong("Binary only:"), " Multiclass or continuous outcomes are out of scope for v1"),
+                    tags$li(strong("Batch effects:"), " Users should provide batch fields and use appropriate designs (~ batch + group) or pre-correct for batch effects")
+                ),
+                br(),
+                h3("References and Further Reading", style = "color: #34495e; margin-top: 40px;"),
+                p("For more detailed information, please refer to:"),
+                tags$ul(
+                    tags$li("Package vignettes: ", code("browseVignettes('endoSignatureR')"), " for workflow-specific tutorials"),
+                    tags$li("README: ", code("?endoSignatureR"), " for package overview and installation"),
+                    tags$li("Function documentation: Individual function help pages (e.g., ", code("?esr_trainEndometrialSignature"), ") for detailed parameter descriptions")
+                ),
+                p("Key methodological references:"),
+                tags$ul(
+                    tags$li("LASSO: Friedman, Hastie & Tibshirani (2010). Regularization paths for generalized linear models via coordinate descent."),
+                    tags$li("Nested CV: Varma & Simon (2006). Bias in error estimation when using cross-validation for model selection."),
+                    tags$li("Stability Selection: Meinshausen & Bühlmann (2010). Stability selection."),
+                    tags$li("Differential Expression: Ritchie et al. (2015). limma powers differential expression analyses.")
+                ),
+                br(),
+                hr(),
+                p(em("This methodology is designed specifically for small endometrial RNA-seq datasets. Results should be interpreted in the context of the statistical assumptions and limitations outlined above."), style = "text-align: center; color: #7f8c8d; margin-top: 30px;")
+            )
         )
     )
 )
@@ -483,6 +915,19 @@ ui <- fluidPage(
 server <- function(input, output, session) {
     # Increase maximum upload size to 500MB (default is 5MB)
     options(shiny.maxRequestSize = 500 * 1024^2)
+
+    # Navigation observers for landing page buttons
+    observeEvent(input$navToMode1, {
+        updateTabsetPanel(session, "modeTabs", selected = "Mode 1: Rapid Classification")
+    })
+
+    observeEvent(input$navToMode2, {
+        updateTabsetPanel(session, "modeTabs", selected = "Mode 2: Signature Validation")
+    })
+
+    observeEvent(input$navToMode3, {
+        updateTabsetPanel(session, "modeTabs", selected = "Mode 3: Visualization & Analysis")
+    })
 
     # Reactive values to store data
     values <- reactiveValues(
@@ -1260,16 +1705,177 @@ server <- function(input, output, session) {
                 br(),
                 h4("Analysis Bundle"),
                 p("Complete analysis bundle (RDS format):"),
-                downloadButton("downloadBundle", "Download Analysis Bundle"),
+                div(
+                    style = "margin-bottom: 15px;",
+                    div(
+                        style = "display: flex; align-items: center; gap: 10px; margin-bottom: 5px;",
+                        downloadButton("downloadBundle", "Download Analysis Bundle"),
+                        tags$details(
+                            tags$summary(style = "cursor: pointer; color: #3498db; font-weight: bold;", "ℹ️ More Information"),
+                            div(
+                                style = "margin-top: 10px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #3498db;",
+                                h5("What's in this export:"),
+                                p("The RDS file contains a complete analysis bundle with:"),
+                                tags$ul(
+                                    tags$li(strong("counts_t:"), " Transformed/normalized expression matrix"),
+                                    tags$li(strong("de_table:"), " Differential expression statistics table"),
+                                    tags$li(strong("selected_genes:"), " List of selected genes (top-K or DE-based)"),
+                                    tags$li(strong("qc_metrics:"), " Quality control metrics (library sizes, zero percentages, etc.)")
+                                ),
+                                br(),
+                                h5("What you can do with this export:"),
+                                tags$ul(
+                                    tags$li("Load complete analysis state in R for further analysis"),
+                                    tags$li("Share complete analysis with collaborators"),
+                                    tags$li("Reproduce all plots and visualizations"),
+                                    tags$li("Extract individual components for custom analysis"),
+                                    tags$li("Archive analysis results for reproducibility")
+                                ),
+                                br(),
+                                h5("Format specifications:"),
+                                p("RDS format (R Data Serialization), binary format. Can only be loaded in R using readRDS(). Contains complete analysis bundle object.")
+                            )
+                        )
+                    )
+                ),
                 br(), br(),
                 h4("Individual Components"),
-                downloadButton("downloadCountsT", "Download Transformed Counts (TSV)"),
-                br(), br(),
-                downloadButton("downloadDETable", "Download DE Table (TSV)"),
-                br(), br(),
-                downloadButton("downloadQCMetrics", "Download QC Metrics (TSV)"),
-                br(), br(),
-                downloadButton("downloadSelectedGenes", "Download Selected Genes (TSV)")
+                div(
+                    style = "margin-bottom: 15px;",
+                    div(
+                        style = "display: flex; align-items: center; gap: 10px; margin-bottom: 5px;",
+                        downloadButton("downloadCountsT", "Download Transformed Counts (TSV)"),
+                        tags$details(
+                            tags$summary(style = "cursor: pointer; color: #3498db; font-weight: bold;", "ℹ️ More Information"),
+                            div(
+                                style = "margin-top: 10px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #3498db;",
+                                h5("What's in this export:"),
+                                p("The TSV file contains the normalized/transformed expression matrix with:"),
+                                tags$ul(
+                                    tags$li(strong("Rows:"), " Genes (gene identifiers in first column)"),
+                                    tags$li(strong("Columns:"), " Samples (sample identifiers as column headers)"),
+                                    tags$li(strong("Values:"), " Transformed expression values (log1p-CPM or VST)"),
+                                    tags$li(strong("Transformation method:"), " Specified in preprocessing (log1p-CPM or VST)")
+                                ),
+                                br(),
+                                h5("What you can do with this export:"),
+                                tags$ul(
+                                    tags$li("Use transformed counts in other analysis tools (R, Python, etc.)"),
+                                    tags$li("Create custom visualizations or heatmaps"),
+                                    tags$li("Perform additional statistical analyses"),
+                                    tags$li("Share normalized data with collaborators"),
+                                    tags$li("Use as input for other machine learning pipelines")
+                                ),
+                                br(),
+                                h5("Format specifications:"),
+                                p("TSV format (tab-separated values), UTF-8 encoding. Genes as rows, samples as columns. Can be opened in Excel, R, Python, or any text editor.")
+                            )
+                        )
+                    )
+                ),
+                br(),
+                div(
+                    style = "margin-bottom: 15px;",
+                    div(
+                        style = "display: flex; align-items: center; gap: 10px; margin-bottom: 5px;",
+                        downloadButton("downloadDETable", "Download DE Table (TSV)"),
+                        tags$details(
+                            tags$summary(style = "cursor: pointer; color: #3498db; font-weight: bold;", "ℹ️ More Information"),
+                            div(
+                                style = "margin-top: 10px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #3498db;",
+                                h5("What's in this export:"),
+                                p("The TSV file contains differential expression statistics with:"),
+                                tags$ul(
+                                    tags$li(strong("gene_id:"), " Gene identifier"),
+                                    tags$li(strong("log2FC:"), " Log2 fold change between groups"),
+                                    tags$li(strong("pvalue:"), " P-value from differential expression test"),
+                                    tags$li(strong("FDR:"), " False discovery rate (adjusted p-value)"),
+                                    tags$li(strong("AveExpr:"), " Average expression across all samples")
+                                ),
+                                br(),
+                                h5("What you can do with this export:"),
+                                tags$ul(
+                                    tags$li("Identify significantly differentially expressed genes"),
+                                    tags$li("Create custom volcano plots or MA plots"),
+                                    tags$li("Perform gene set enrichment analysis (GSEA)"),
+                                    tags$li("Filter genes by fold change or significance thresholds"),
+                                    tags$li("Compare DE results across different analyses")
+                                ),
+                                br(),
+                                h5("Format specifications:"),
+                                p("TSV format (tab-separated values), UTF-8 encoding. One row per gene with DE statistics. Can be opened in Excel, R, Python, or any text editor.")
+                            )
+                        )
+                    )
+                ),
+                br(),
+                div(
+                    style = "margin-bottom: 15px;",
+                    div(
+                        style = "display: flex; align-items: center; gap: 10px; margin-bottom: 5px;",
+                        downloadButton("downloadQCMetrics", "Download QC Metrics (TSV)"),
+                        tags$details(
+                            tags$summary(style = "cursor: pointer; color: #3498db; font-weight: bold;", "ℹ️ More Information"),
+                            div(
+                                style = "margin-top: 10px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #3498db;",
+                                h5("What's in this export:"),
+                                p("The TSV file contains quality control metrics for each sample with:"),
+                                tags$ul(
+                                    tags$li(strong("sample_id:"), " Sample identifier"),
+                                    tags$li(strong("library_size:"), " Total read count (library size)"),
+                                    tags$li(strong("zero_percentage:"), " Percentage of genes with zero counts"),
+                                    tags$li(strong("median_count:"), " Median count across all genes"),
+                                    tags$li(strong("other_metrics:"), " Additional QC metrics as computed")
+                                ),
+                                br(),
+                                h5("What you can do with this export:"),
+                                tags$ul(
+                                    tags$li("Assess data quality and identify problematic samples"),
+                                    tags$li("Compare QC metrics across samples or batches"),
+                                    tags$li("Create custom QC visualizations"),
+                                    tags$li("Filter samples based on QC thresholds"),
+                                    tags$li("Document data quality for publications")
+                                ),
+                                br(),
+                                h5("Format specifications:"),
+                                p("TSV format (tab-separated values), UTF-8 encoding. One row per sample with QC metrics. Can be opened in Excel, R, Python, or any text editor.")
+                            )
+                        )
+                    )
+                ),
+                br(),
+                div(
+                    style = "margin-bottom: 15px;",
+                    div(
+                        style = "display: flex; align-items: center; gap: 10px; margin-bottom: 5px;",
+                        downloadButton("downloadSelectedGenes", "Download Selected Genes (TSV)"),
+                        tags$details(
+                            tags$summary(style = "cursor: pointer; color: #3498db; font-weight: bold;", "ℹ️ More Information"),
+                            div(
+                                style = "margin-top: 10px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #3498db;",
+                                h5("What's in this export:"),
+                                p("The TSV file contains the list of selected genes with:"),
+                                tags$ul(
+                                    tags$li(strong("gene_id:"), " Gene identifier"),
+                                    tags$li(strong("selection_criteria:"), " How gene was selected (top-K, DE-based, variance-based, etc.)"),
+                                    tags$li(strong("rank:"), " Rank or score used for selection (if applicable)")
+                                ),
+                                br(),
+                                h5("What you can do with this export:"),
+                                tags$ul(
+                                    tags$li("Use selected genes for downstream analysis"),
+                                    tags$li("Create gene lists for pathway analysis"),
+                                    tags$li("Compare selected genes across different analyses"),
+                                    tags$li("Use as input for signature training or other methods"),
+                                    tags$li("Share gene lists with collaborators")
+                                ),
+                                br(),
+                                h5("Format specifications:"),
+                                p("TSV format (tab-separated values), UTF-8 encoding. One row per selected gene. Can be opened in Excel, R, Python, or any text editor.")
+                            )
+                        )
+                    )
+                )
             )
         ))
 
