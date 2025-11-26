@@ -212,14 +212,14 @@ code was used verbatim without review.
   Nucleic Acids Research, 30(1), 207–210.
   <https://doi.org/10.1093/nar/30.1.207>.
 
-- Friedman, J., Hastie, T., & Tibshirani, R. (2010). Regularization
-  paths for generalized linear models via coordinate descent. Journal of
-  Statistical Software, 33(1), 1–22. <doi:10.18637/jss.v033.i01>
-  <https://doi.org/10.18637/jss.v033.i01>.
-
 - GitHub & OpenAI. (2025). GitHub Copilot: AI-powered code completion
   assistant. GitHub, Inc., San Francisco, USA.
   <https://github.com/features/copilot>.
+
+- Ismail, E. A. R. (2015). Behavior of Lasso Quantile Regression with
+  Small Sample Sizes. Journal of Multidisciplinary Engineering Science
+  and Technology (JMEST), 2(3), March 2015. ISSN: 3159-0040.
+  <https://www.jmest.org/wp-content/uploads/JMESTN42350527.pdf>.
 
 - Gu, Z., Eils, R., & Schlesner, M. (2016). Complex heatmaps reveal
   patterns and correlations in multidimensional genomic data.
