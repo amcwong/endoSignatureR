@@ -46,14 +46,37 @@ ui <- fluidPage(
                     verbatimTextOutput("dataStatusMode1"),
                     br(),
 
+                    # Signature selection
+                    h4("Signature Selection"),
+                    p("Select which signature to use for classification:"),
+                    uiOutput("signatureSelectionUI"),
+                    br(),
+
+                    # Upload signature files (for user-provided signatures)
+                    h4("Upload Signature Files (Optional)"),
+                    p("If you downloaded signature files from Mode 2, you can upload them here:"),
+                    fileInput("signatureCSVFile", "Signature CSV File",
+                        accept = c(".csv", ".tsv"),
+                        placeholder = "endometrial_signature.csv"
+                    ),
+                    fileInput("signatureJSONFile", "Signature JSON File",
+                        accept = c(".json"),
+                        placeholder = "endometrial_recipe.json"
+                    ),
+                    fileInput("signatureStabilityFile", "Stability CSV File (Optional)",
+                        accept = c(".csv", ".tsv"),
+                        placeholder = "endometrial_stability.csv"
+                    ),
+                    br(),
+
                     # Signature information
-                    h4("Pre-trained Signature"),
+                    h4("Signature Information"),
                     verbatimTextOutput("signatureInfo"),
                     br(),
 
                     # Classification controls
                     h4("Classification"),
-                    p("Apply pre-trained signature to classify samples:"),
+                    p("Apply selected signature to classify samples:"),
                     numericInput("thresholdMode1", "Classification Threshold",
                         value = 0.5, min = 0, max = 1, step = 0.05
                     ),
@@ -73,6 +96,7 @@ ui <- fluidPage(
                         tabPanel(
                             "Results",
                             h3("Classification Results"),
+                            verbatimTextOutput("signatureSourceInfo"),
                             br(),
                             conditionalPanel(
                                 condition = "output.classificationRun == false",
@@ -91,7 +115,7 @@ ui <- fluidPage(
                                 br(), br(),
                                 hr(),
                                 h4("Signature Visualization"),
-                                p("Visualization of the pre-trained signature used for classification."),
+                                verbatimTextOutput("signatureVisualizationInfo"),
                                 br(),
                                 h5("Coefficient Lollipop Plot"),
                                 p("Shows the coefficients (weights) for each gene in the signature panel."),
@@ -224,6 +248,10 @@ ui <- fluidPage(
                     checkboxInput("stabilityMode2", "Stability Selection (auto-enabled for n >= 20)", value = FALSE),
                     numericInput("stabilityResamplesMode2", "Stability Resamples",
                         value = 100, min = 50, max = 500, step = 50
+                    ),
+                    p(
+                        style = "font-size: 12px; color: #666; font-style: italic;",
+                        "Note: Stability Selection is required to generate the stability bars plot."
                     ),
 
                     # Seed
@@ -382,6 +410,10 @@ ui <- fluidPage(
                                 br(), br(),
                                 downloadButton("downloadModelCardMode2", "Download Model Card (MD)"),
                                 br(), br(), hr(), br(),
+                                h4("Stability Data"),
+                                p("Export bootstrap stability frequencies (if available):"),
+                                downloadButton("downloadStabilityCSVMode2", "Download Stability CSV"),
+                                br(), br(), hr(), br(),
                                 h4("Predictions"),
                                 p("Export predictions from cross-validation:"),
                                 downloadButton("downloadPredictionsMode2", "Download Predictions (CSV)"),
@@ -459,6 +491,7 @@ server <- function(input, output, session) {
         annot_mode1 = NULL,
         predictions = NULL,
         signature = NULL,
+        selectedSignature = NULL, # Currently selected signature (pre-trained or user-trained)
         mode1_completed = FALSE,
         classificationRun = FALSE,
 
@@ -500,6 +533,10 @@ server <- function(input, output, session) {
         tryCatch(
             {
                 values$signature <- endoSignatureR::esr_loadPretrainedSignature()
+                # Initialize selected signature to pre-trained (will be overridden if user-trained available)
+                if (is.null(values$selectedSignature)) {
+                    values$selectedSignature <- values$signature
+                }
             },
             error = function(e) {
                 # Signature loading will fail gracefully if files not found
@@ -508,17 +545,269 @@ server <- function(input, output, session) {
         )
     })
 
-    # Display signature information (for Mode 1)
-    output$signatureInfo <- renderText({
-        if (is.null(values$signature)) {
-            return("Pre-trained signature not available. Please ensure package is properly installed.")
+    # Load signature from uploaded files
+    observeEvent(
+        {
+            input$signatureCSVFile
+            input$signatureJSONFile
+            input$signatureStabilityFile
+        },
+        {
+            # Require CSV and JSON files
+            if (is.null(input$signatureCSVFile) || is.null(input$signatureJSONFile)) {
+                return()
+            }
+
+            tryCatch(
+                {
+                    # Load CSV signature (similar to esr_loadPretrainedSignature logic)
+                    csv_data <- readr::read_csv(
+                        input$signatureCSVFile$datapath,
+                        col_types = readr::cols(
+                            gene_id = readr::col_character(),
+                            coefficient = readr::col_double(),
+                            selection_frequency = readr::col_integer(),
+                            bootstrap_frequency = readr::col_double()
+                        ),
+                        show_col_types = FALSE
+                    )
+
+                    # Separate intercept from panel genes
+                    intercept_row <- csv_data[csv_data$gene_id == "(Intercept)", , drop = FALSE]
+                    panel_rows <- csv_data[csv_data$gene_id != "(Intercept)", , drop = FALSE]
+
+                    # Extract intercept value
+                    intercept_value <- if (nrow(intercept_row) > 0) {
+                        as.numeric(intercept_row$coefficient[1])
+                    } else {
+                        stop("Intercept not found in signature CSV")
+                    }
+
+                    # Extract panel genes and coefficients
+                    panel <- panel_rows$gene_id
+                    coefficients <- panel_rows$coefficient
+                    names(coefficients) <- panel
+
+                    # Extract selection frequencies
+                    selection_frequency <- panel_rows$selection_frequency
+                    names(selection_frequency) <- panel
+
+                    # Load JSON recipe
+                    recipe_data <- jsonlite::read_json(input$signatureJSONFile$datapath, simplifyVector = TRUE)
+
+                    # Validate recipe structure
+                    required_sections <- c("preprocessing", "training", "signature", "reproducibility")
+                    missing_sections <- setdiff(required_sections, names(recipe_data))
+                    if (length(missing_sections) > 0) {
+                        stop(
+                            "JSON recipe missing required sections: ",
+                            paste(missing_sections, collapse = ", ")
+                        )
+                    }
+
+                    # Load optional stability CSV
+                    stability <- NULL
+                    if (!is.null(input$signatureStabilityFile)) {
+                        stability_data <- readr::read_csv(
+                            input$signatureStabilityFile$datapath,
+                            col_types = readr::cols(
+                                gene_id = readr::col_character(),
+                                bootstrap_frequency = readr::col_double()
+                            ),
+                            show_col_types = FALSE
+                        )
+
+                        # Extract bootstrap frequencies
+                        bootstrap_frequency <- stability_data$bootstrap_frequency
+                        names(bootstrap_frequency) <- stability_data$gene_id
+
+                        # Match bootstrap frequencies to panel
+                        bootstrap_freq_matched <- bootstrap_frequency[panel]
+                        names(bootstrap_freq_matched) <- panel
+                        bootstrap_freq_matched <- bootstrap_freq_matched[!is.na(bootstrap_freq_matched)]
+
+                        if (length(bootstrap_freq_matched) > 0) {
+                            stability <- list(bootstrap_frequency = bootstrap_freq_matched)
+                        }
+                    } else {
+                        # Check if bootstrap frequencies are in CSV
+                        if ("bootstrap_frequency" %in% names(panel_rows)) {
+                            bootstrap_freq_vec <- panel_rows$bootstrap_frequency
+                            names(bootstrap_freq_vec) <- panel
+                            bootstrap_freq_vec <- bootstrap_freq_vec[!is.na(bootstrap_freq_vec)]
+                            if (length(bootstrap_freq_vec) > 0) {
+                                stability <- list(bootstrap_frequency = bootstrap_freq_vec)
+                            }
+                        }
+                    }
+
+                    # Validate signature structure
+                    if (length(panel) == 0) {
+                        stop("Signature panel is empty")
+                    }
+
+                    if (length(coefficients) != length(panel)) {
+                        stop("Coefficient length does not match panel length")
+                    }
+
+                    if (is.na(intercept_value)) {
+                        stop("Intercept value is NA")
+                    }
+
+                    # Construct signature list
+                    values$uploadedSignature <- list(
+                        panel = panel,
+                        coefficients = coefficients,
+                        intercept = intercept_value,
+                        selection_frequency = selection_frequency,
+                        recipe = recipe_data,
+                        stability = stability
+                    )
+
+                    # Update selected signature if "uploaded" is selected
+                    if (!is.null(input$signatureSelection) && input$signatureSelection == "uploaded") {
+                        values$selectedSignature <- values$uploadedSignature
+                    } else if (is.null(values$selectedSignature)) {
+                        # If no selection yet, default to uploaded if it's the only option
+                        values$selectedSignature <- values$uploadedSignature
+                    }
+
+                    output$statusMessageMode1 <- renderText("Signature files loaded successfully!")
+                },
+                error = function(e) {
+                    output$statusMessageMode1 <- renderText(paste("Error loading signature files:", e$message))
+                }
+            )
         }
-        paste(
-            "Pre-trained signature loaded successfully!\n",
-            "Panel size:", length(values$signature$panel), "genes\n",
-            "Preprocessing:", values$signature$recipe$preprocessing$transform %||% "log1p-cpm\n",
-            "Trained on: GSE201926 dataset"
+    )
+
+    # Update selected signature when user changes selection
+    observeEvent(input$signatureSelection, {
+        if (input$signatureSelection == "pretrained") {
+            values$selectedSignature <- values$signature
+            # Clear predictions if signature changes after classification
+            if (values$classificationRun) {
+                values$predictions <- NULL
+                values$classificationRun <- FALSE
+            }
+        } else if (input$signatureSelection == "user-trained") {
+            if (!is.null(values$trainingResult) && !is.null(values$trainingResult$signature)) {
+                values$selectedSignature <- values$trainingResult$signature
+                # Clear predictions if signature changes after classification
+                if (values$classificationRun) {
+                    values$predictions <- NULL
+                    values$classificationRun <- FALSE
+                }
+            } else {
+                # User-trained signature not available, revert to pre-trained
+                updateRadioButtons(session, "signatureSelection", selected = "pretrained")
+                values$selectedSignature <- values$signature
+            }
+        } else if (input$signatureSelection == "uploaded") {
+            if (!is.null(values$uploadedSignature)) {
+                values$selectedSignature <- values$uploadedSignature
+                # Clear predictions if signature changes after classification
+                if (values$classificationRun) {
+                    values$predictions <- NULL
+                    values$classificationRun <- FALSE
+                }
+            } else {
+                # Uploaded signature not available, revert to pre-trained
+                updateRadioButtons(session, "signatureSelection", selected = "pretrained")
+                values$selectedSignature <- values$signature
+            }
+        }
+    })
+
+    # Also update selected signature when Mode 2 training completes
+    observeEvent(values$mode2_completed, {
+        if (values$mode2_completed && !is.null(values$trainingResult)) {
+            # Default to user-trained signature if it just became available
+            if (is.null(input$signatureSelection) || input$signatureSelection == "pretrained") {
+                # Auto-select user-trained as default
+                values$selectedSignature <- values$trainingResult$signature
+            } else if (input$signatureSelection == "user-trained") {
+                # Update if user has already selected user-trained
+                values$selectedSignature <- values$trainingResult$signature
+            }
+        }
+    })
+
+    # Display signature information (for Mode 1) - shows selected signature
+    output$signatureInfo <- renderText({
+        if (is.null(values$selectedSignature)) {
+            return("Signature not available. Please ensure package is properly installed, train a signature in Mode 2, or upload signature files.")
+        }
+
+        # Check if signatureSelection input exists and has a valid value
+        sig_selection <- if (is.null(input$signatureSelection) || length(input$signatureSelection) == 0) {
+            "unknown"
+        } else {
+            input$signatureSelection
+        }
+
+        sig <- values$selectedSignature
+        sig_type <- if (sig_selection == "pretrained") {
+            "Pre-trained"
+        } else if (sig_selection == "user-trained") {
+            "User-trained"
+        } else if (sig_selection == "uploaded") {
+            "Uploaded"
+        } else {
+            "Selected"
+        }
+
+        info_text <- paste(
+            sig_type, "signature loaded successfully!\n",
+            "Panel size:", length(sig$panel), "genes\n",
+            "Preprocessing:", sig$recipe$preprocessing$transform %||% "log1p-cpm"
         )
+
+        if (sig_selection == "pretrained") {
+            info_text <- paste(info_text, "\nTrained on: GSE201926 dataset")
+        } else if (sig_selection == "user-trained") {
+            info_text <- paste(info_text, "\nTrained on: Your data (Mode 2)")
+        } else if (sig_selection == "uploaded") {
+            info_text <- paste(info_text, "\nSource: Uploaded signature files")
+        }
+
+        return(info_text)
+    })
+
+    # Display signature source information in Results tab
+    output$signatureSourceInfo <- renderText({
+        if (!values$classificationRun || is.null(values$selectedSignature)) {
+            return("")
+        }
+
+        sig_type <- if (input$signatureSelection == "pretrained") {
+            "Pre-trained"
+        } else if (input$signatureSelection == "user-trained") {
+            "User-trained"
+        } else if (input$signatureSelection == "uploaded") {
+            "Uploaded"
+        } else {
+            "Selected"
+        }
+        paste("Using", sig_type, "signature for classification")
+    })
+
+    # Display signature visualization info
+    output$signatureVisualizationInfo <- renderText({
+        if (!values$classificationRun || is.null(values$selectedSignature)) {
+            return("")
+        }
+
+        sig_type <- if (input$signatureSelection == "pretrained") {
+            "pre-trained"
+        } else if (input$signatureSelection == "user-trained") {
+            "user-trained"
+        } else if (input$signatureSelection == "uploaded") {
+            "uploaded"
+        } else {
+            "selected"
+        }
+        paste("Visualization of the", sig_type, "signature used for classification.")
     })
 
     # Display signature information (for Signature Plots tab)
@@ -592,6 +881,59 @@ server <- function(input, output, session) {
             !is.null(values$trainingResult$stability)
     })
     outputOptions(output, "stabilityAvailableMode2", suspendWhenHidden = FALSE)
+
+    # Mode 2 completion flag for conditional UI
+    output$mode2Completed <- reactive({
+        values$mode2_completed
+    })
+    outputOptions(output, "mode2Completed", suspendWhenHidden = FALSE)
+
+    # Render signature selection UI (conditional on Mode 2 completion and uploaded signature)
+    output$signatureSelectionUI <- renderUI({
+        choices_list <- list("Pre-trained Signature" = "pretrained")
+
+        # Add user-trained option if Mode 2 training is completed
+        if (values$mode2_completed && !is.null(values$trainingResult)) {
+            choices_list[["User-Trained Signature (from Mode 2)"]] <- "user-trained"
+        }
+
+        # Add uploaded signature option if signature files have been uploaded
+        if (!is.null(values$uploadedSignature)) {
+            choices_list[["Uploaded Signature"]] <- "uploaded"
+        }
+
+        # Determine default selection: prefer user-trained if available, otherwise pre-trained
+        default_selection <- if (values$mode2_completed && !is.null(values$trainingResult)) {
+            "user-trained" # Default to user-trained if available
+        } else if (!is.null(values$uploadedSignature)) {
+            "uploaded" # Default to uploaded if available
+        } else {
+            "pretrained" # Fall back to pre-trained
+        }
+
+        # Preserve current selection if valid, otherwise use default
+        current_selection <- if (exists("input$signatureSelection") && !is.null(input$signatureSelection)) {
+            if (input$signatureSelection %in% unlist(choices_list)) {
+                input$signatureSelection
+            } else {
+                default_selection
+            }
+        } else {
+            default_selection
+        }
+
+        tagList(
+            radioButtons("signatureSelection", "Signature to Use",
+                choices = choices_list,
+                selected = current_selection
+            ),
+            if (!values$mode2_completed && is.null(values$trainingResult) && is.null(values$uploadedSignature)) {
+                p(strong("Note:"), " User-trained signature option will appear after training a signature in Mode 2, or upload signature files above.",
+                    style = "color: #666; font-size: 0.9em;"
+                )
+            }
+        )
+    })
 
     # Render Mode 3 tabs (QC/EDA, DE, Export)
     output$mode3TabsUI <- renderUI({
@@ -1061,8 +1403,17 @@ server <- function(input, output, session) {
             return()
         }
 
-        if (is.null(values$signature)) {
-            output$statusMessageMode1 <- renderText("Pre-trained signature not available. Please ensure package is properly installed.")
+        if (is.null(values$selectedSignature)) {
+            sig_type <- if (input$signatureSelection == "pretrained") {
+                "Pre-trained"
+            } else if (input$signatureSelection == "user-trained") {
+                "User-trained"
+            } else if (input$signatureSelection == "uploaded") {
+                "Uploaded"
+            } else {
+                "Selected"
+            }
+            output$statusMessageMode1 <- renderText(paste(sig_type, "signature not available. Please ensure package is properly installed, train a signature in Mode 2, or upload signature files."))
             return()
         }
 
@@ -1070,10 +1421,10 @@ server <- function(input, output, session) {
             {
                 output$statusMessageMode1 <- renderText("Running classification...")
 
-                # Run classification
+                # Run classification with selected signature
                 values$predictions <- endoSignatureR::esr_classifyEndometrial(
                     X_new = values$counts_mode1,
-                    signature = values$signature,
+                    signature = values$selectedSignature,
                     threshold = input$thresholdMode1,
                     confidence = input$confidenceMode1
                 )
@@ -1082,7 +1433,16 @@ server <- function(input, output, session) {
                 values$classificationRun <- TRUE
                 values$mode1_completed <- TRUE
 
-                output$statusMessageMode1 <- renderText("Classification completed successfully!")
+                sig_type <- if (input$signatureSelection == "pretrained") {
+                    "Pre-trained"
+                } else if (input$signatureSelection == "user-trained") {
+                    "User-trained"
+                } else if (input$signatureSelection == "uploaded") {
+                    "Uploaded"
+                } else {
+                    "Selected"
+                }
+                output$statusMessageMode1 <- renderText(paste("Classification completed successfully using", sig_type, "signature!"))
 
                 # Automatically navigate to Results tab
                 updateTabsetPanel(session, "mode1Tabs", selected = "Results")
@@ -1317,22 +1677,25 @@ server <- function(input, output, session) {
                     {
                         setProgress(0.1, detail = "Starting nested cross-validation...")
 
-                        result <- endoSignatureR::esr_trainEndometrialSignature(
-                            X = values$counts_mode2,
-                            pheno = values$pheno_mode2,
-                            transform = input$transformMode2,
-                            cpm_min = input$cpmMinMode2,
-                            cpm_min_samples = input$cpmMinSamplesMode2,
-                            top_k = input$topKMode2,
-                            outer = input$outerMode2,
-                            outer_folds = outer_folds,
-                            inner_folds = input$innerFoldsMode2,
-                            inner_repeats = input$innerRepeatsMode2,
-                            lambda_rule = input$lambdaRuleMode2,
-                            calibration_method = input$calibrationMode2,
-                            stability_selection = stability_selection,
-                            stability_resamples = input$stabilityResamplesMode2,
-                            seed = input$seedMode2
+                        # Suppress expected warnings about consensus genes and sample sizes
+                        result <- suppressWarnings(
+                            endoSignatureR::esr_trainEndometrialSignature(
+                                X = values$counts_mode2,
+                                pheno = values$pheno_mode2,
+                                transform = input$transformMode2,
+                                cpm_min = input$cpmMinMode2,
+                                cpm_min_samples = input$cpmMinSamplesMode2,
+                                top_k = input$topKMode2,
+                                outer = input$outerMode2,
+                                outer_folds = outer_folds,
+                                inner_folds = input$innerFoldsMode2,
+                                inner_repeats = input$innerRepeatsMode2,
+                                lambda_rule = input$lambdaRuleMode2,
+                                calibration_method = input$calibrationMode2,
+                                stability_selection = stability_selection,
+                                stability_resamples = input$stabilityResamplesMode2,
+                                seed = input$seedMode2
+                            )
                         )
 
                         setProgress(1.0, detail = "Training complete!")
@@ -1343,7 +1706,22 @@ server <- function(input, output, session) {
                 values$trainingRun <- TRUE
                 values$mode2_completed <- TRUE
 
-                output$statusMessageMode2 <- renderText("Training completed successfully!")
+                # Check for small dataset warnings and provide informative message
+                n_genes <- length(result$signature$panel)
+                n_samples <- ncol(values$counts_mode2)
+
+                status_msg <- "Training completed successfully!"
+                if (n_genes <= 1 || n_samples < 10) {
+                    status_msg <- paste0(
+                        status_msg,
+                        "\n\nNote: With small sample sizes (< 10 samples) or small gene sets, ",
+                        "you may see: (1) No consensus genes found across folds (genes from a single fold will be used), ",
+                        "and (2) Bootstrap stability frequencies will not be computed. ",
+                        "These are expected outcomes with limited data."
+                    )
+                }
+
+                output$statusMessageMode2 <- renderText(status_msg)
 
                 # Automatically navigate to Overview tab
                 updateTabsetPanel(session, "mode2Tabs", selected = "Overview")
@@ -1544,11 +1922,14 @@ server <- function(input, output, session) {
         # Try to create the plot with error handling
         tryCatch(
             {
-                endoSignatureR::plotEndometrialStabilityBars(
-                    signature = sig_for_plot,
-                    annot = values$annot_mode2,
-                    frequency_type = freq_type
-                )
+                # Suppress warnings about bootstrap_frequency not available
+                suppressWarnings({
+                    endoSignatureR::plotEndometrialStabilityBars(
+                        signature = sig_for_plot,
+                        annot = values$annot_mode2,
+                        frequency_type = freq_type
+                    )
+                })
             },
             error = function(e) {
                 # If no valid frequencies found, show a message plot instead
@@ -1558,6 +1939,16 @@ server <- function(input, output, session) {
                             x = 0.5, y = 0.5,
                             label = "Stability frequency data not available.\nAll frequency values are missing or invalid.",
                             size = 5, hjust = 0.5, vjust = 0.5
+                        ) +
+                        ggplot2::theme_void() +
+                        ggplot2::labs(title = "Stability Bars Plot")
+                } else if (grepl("bootstrap_frequency not available", e$message, fixed = TRUE)) {
+                    # Handle case where bootstrap frequency is requested but not available
+                    ggplot2::ggplot() +
+                        ggplot2::annotate("text",
+                            x = 0.5, y = 0.5,
+                            label = "Bootstrap frequency data not available.\nUsing selection frequency instead.\nNote: Small sample sizes (< 10 samples) prevent bootstrap resampling.",
+                            size = 4, hjust = 0.5, vjust = 0.5
                         ) +
                         ggplot2::theme_void() +
                         ggplot2::labs(title = "Stability Bars Plot")
@@ -1684,11 +2075,14 @@ server <- function(input, output, session) {
             # Try to create the plot with error handling
             p <- tryCatch(
                 {
-                    endoSignatureR::plotEndometrialStabilityBars(
-                        signature = sig_for_plot,
-                        annot = values$annot_mode2,
-                        frequency_type = freq_type
-                    )
+                    # Suppress warnings about bootstrap_frequency not available
+                    suppressWarnings({
+                        endoSignatureR::plotEndometrialStabilityBars(
+                            signature = sig_for_plot,
+                            annot = values$annot_mode2,
+                            frequency_type = freq_type
+                        )
+                    })
                 },
                 error = function(e) {
                     # If no valid frequencies found, show a message plot instead
@@ -1696,8 +2090,18 @@ server <- function(input, output, session) {
                         ggplot2::ggplot() +
                             ggplot2::annotate("text",
                                 x = 0.5, y = 0.5,
-                                label = "Stability frequency data not available.\nAll frequency values are missing or invalid.",
+                                label = "Stability frequency data not available.\nAll frequency values are missing or invalid. Note: Stability Selection is required to generate the stability bars plot.",
                                 size = 5, hjust = 0.5, vjust = 0.5
+                            ) +
+                            ggplot2::theme_void() +
+                            ggplot2::labs(title = "Stability Bars Plot")
+                    } else if (grepl("bootstrap_frequency not available", e$message, fixed = TRUE)) {
+                        # Handle case where bootstrap frequency is requested but not available
+                        ggplot2::ggplot() +
+                            ggplot2::annotate("text",
+                                x = 0.5, y = 0.5,
+                                label = "Bootstrap frequency data not available.\nUsing selection frequency instead.\nNote: Small sample sizes (< 10 samples) prevent bootstrap resampling.",
+                                size = 4, hjust = 0.5, vjust = 0.5
                             ) +
                             ggplot2::theme_void() +
                             ggplot2::labs(title = "Stability Bars Plot")
@@ -1724,34 +2128,46 @@ server <- function(input, output, session) {
         filename = "endometrial_signature.csv",
         content = function(file) {
             if (!is.null(values$trainingResult)) {
+                # Export only CSV format
                 endoSignatureR::esr_exportSignature(
                     signature = values$trainingResult$signature,
                     dir = tempdir(),
-                    result = values$trainingResult
+                    result = values$trainingResult,
+                    formats = "csv"
                 )
                 # Copy the generated file
-                sig_file <- file.path(tempdir(), "endometrial_signature.csv")
-                if (file.exists(sig_file)) {
-                    file.copy(sig_file, file, overwrite = TRUE)
+                csv_file <- file.path(tempdir(), "endometrial_signature.csv")
+                if (file.exists(csv_file)) {
+                    file.copy(csv_file, file, overwrite = TRUE)
+                } else {
+                    stop("CSV file was not created. Please try again.")
                 }
+            } else {
+                stop("No training result available. Please train a signature first.")
             }
         }
     )
 
     output$downloadSignatureJSONMode2 <- downloadHandler(
-        filename = "endometrial_signature.json",
+        filename = "endometrial_recipe.json",
         content = function(file) {
             if (!is.null(values$trainingResult)) {
+                # Export only JSON format
                 endoSignatureR::esr_exportSignature(
                     signature = values$trainingResult$signature,
                     dir = tempdir(),
-                    result = values$trainingResult
+                    result = values$trainingResult,
+                    formats = "json"
                 )
-                # Copy the generated file
-                sig_file <- file.path(tempdir(), "endometrial_signature.json")
-                if (file.exists(sig_file)) {
-                    file.copy(sig_file, file, overwrite = TRUE)
+                # Copy the generated file (export function creates endometrial_recipe.json)
+                json_file <- file.path(tempdir(), "endometrial_recipe.json")
+                if (file.exists(json_file)) {
+                    file.copy(json_file, file, overwrite = TRUE)
+                } else {
+                    stop("JSON file was not created. Please try again.")
                 }
+            } else {
+                stop("No training result available. Please train a signature first.")
             }
         }
     )
@@ -1760,17 +2176,69 @@ server <- function(input, output, session) {
         filename = "endometrial_model_card.md",
         content = function(file) {
             if (!is.null(values$trainingResult)) {
+                # Export only Markdown format
                 endoSignatureR::esr_exportSignature(
                     signature = values$trainingResult$signature,
                     dir = tempdir(),
-                    result = values$trainingResult
+                    result = values$trainingResult,
+                    formats = "md"
                 )
                 # Copy the generated file
-                sig_file <- file.path(tempdir(), "endometrial_model_card.md")
-                if (file.exists(sig_file)) {
-                    file.copy(sig_file, file, overwrite = TRUE)
+                md_file <- file.path(tempdir(), "endometrial_model_card.md")
+                if (file.exists(md_file)) {
+                    file.copy(md_file, file, overwrite = TRUE)
+                } else {
+                    stop("Model card file was not created. Please try again.")
                 }
+            } else {
+                stop("No training result available. Please train a signature first.")
             }
+        }
+    )
+
+    output$downloadStabilityCSVMode2 <- downloadHandler(
+        filename = "endometrial_stability.csv",
+        content = function(file) {
+            if (is.null(values$trainingResult)) {
+                # Write a CSV with error message instead of stopping
+                error_df <- data.frame(
+                    note = "No training result available. Please train a signature first.",
+                    stringsAsFactors = FALSE
+                )
+                readr::write_csv(error_df, file)
+                return()
+            }
+
+            # Check if bootstrap frequency exists
+            has_bootstrap <- !is.null(values$trainingResult$stability) &&
+                !is.null(values$trainingResult$stability$bootstrap_frequency) &&
+                length(values$trainingResult$stability$bootstrap_frequency) > 0
+
+            if (!has_bootstrap) {
+                # Write a CSV with message explaining why data is not available
+                message_df <- data.frame(
+                    note = "Stability frequency data is not available. Bootstrap resampling requires at least 10 samples. The stability CSV will only be generated when bootstrap frequencies are computed during training.",
+                    stringsAsFactors = FALSE
+                )
+                readr::write_csv(message_df, file)
+                return()
+            }
+
+            # Extract bootstrap frequencies
+            bootstrap_freq <- values$trainingResult$stability$bootstrap_frequency
+
+            # Create data frame
+            stability_df <- data.frame(
+                gene_id = names(bootstrap_freq),
+                bootstrap_frequency = as.numeric(bootstrap_freq),
+                stringsAsFactors = FALSE
+            )
+
+            # Sort by frequency (descending)
+            stability_df <- stability_df[order(stability_df$bootstrap_frequency, decreasing = TRUE), ]
+
+            # Write CSV
+            readr::write_csv(stability_df, file)
         }
     )
 
@@ -1949,9 +2417,12 @@ server <- function(input, output, session) {
             {
                 output$deStatusMessage <- renderText("Running differential expression analysis...")
 
-                values$de_table <- endoSignatureR::esr_analyzeDifferentialExpression(
-                    mat_t = values$counts_t,
-                    pheno = values$pheno
+                # Suppress expected warnings about small sample sizes in groups
+                values$de_table <- suppressWarnings(
+                    endoSignatureR::esr_analyzeDifferentialExpression(
+                        mat_t = values$counts_t,
+                        pheno = values$pheno
+                    )
                 )
 
                 # Select top genes (default 50 for initial selection)
@@ -2210,38 +2681,100 @@ server <- function(input, output, session) {
 
     # Signature Plots (shown in Mode 1 Results tab after classification)
     output$coefLollipopPlot <- renderPlot({
-        if (is.null(values$signature) || !values$classificationRun) {
+        if (is.null(values$selectedSignature) || !values$classificationRun) {
             return(NULL)
         }
+        # Use appropriate annotation based on signature type
+        annot_to_use <- if (input$signatureSelection == "pretrained") {
+            values$annot_mode1
+        } else if (input$signatureSelection == "user-trained") {
+            values$annot_mode2
+        } else {
+            # For uploaded signature, try annot_mode1 first, then annot_mode2, then NULL
+            if (!is.null(values$annot_mode1)) {
+                values$annot_mode1
+            } else if (!is.null(values$annot_mode2)) {
+                values$annot_mode2
+            } else {
+                NULL
+            }
+        }
         endoSignatureR::plotEndometrialCoefLollipop(
-            signature = values$signature,
-            annot = values$annot_mode1
+            signature = values$selectedSignature,
+            annot = annot_to_use
         )
     })
 
     output$stabilityBarsPlot <- renderPlot({
-        if (is.null(values$signature) || !values$classificationRun) {
+        if (is.null(values$selectedSignature) || !values$classificationRun) {
             return(NULL)
         }
-        if (is.null(values$signature$stability) && is.null(values$signature$selection_frequency)) {
-            return(NULL)
+
+        # For user-trained signature, check trainingResult$stability structure
+        if (input$signatureSelection == "user-trained" && !is.null(values$trainingResult)) {
+            # User-trained signature: check both signature$selection_frequency and trainingResult$stability
+            has_stability <- !is.null(values$trainingResult$stability)
+            has_selection_freq <- !is.null(values$selectedSignature$selection_frequency)
+            if (!has_stability && !has_selection_freq) {
+                return(NULL)
+            }
+        } else {
+            # Pre-trained signature: check signature$stability and signature$selection_frequency
+            if (is.null(values$selectedSignature$stability) &&
+                is.null(values$selectedSignature$selection_frequency)) {
+                return(NULL)
+            }
         }
+
+        # Use appropriate annotation based on signature type
+        annot_to_use <- if (input$signatureSelection == "pretrained") {
+            values$annot_mode1
+        } else if (input$signatureSelection == "user-trained") {
+            values$annot_mode2
+        } else {
+            # For uploaded signature, try annot_mode1 first, then annot_mode2, then NULL
+            if (!is.null(values$annot_mode1)) {
+                values$annot_mode1
+            } else if (!is.null(values$annot_mode2)) {
+                values$annot_mode2
+            } else {
+                NULL
+            }
+        }
+
+        # Prepare signature object for plotting
+        sig_for_plot <- values$selectedSignature
+
+        # For user-trained signature, add stability info if available
+        if (input$signatureSelection == "user-trained" && !is.null(values$trainingResult$stability)) {
+            if (!is.null(values$trainingResult$stability$bootstrap_frequency)) {
+                sig_for_plot$stability <- list(
+                    bootstrap_frequency = values$trainingResult$stability$bootstrap_frequency
+                )
+            }
+        }
+        # For uploaded signature, stability info is already in the signature object
+
         # Check which frequency type is available
-        has_bootstrap <- !is.null(values$signature$stability) &&
-            !is.null(values$signature$stability$bootstrap_frequency)
-        has_selection <- !is.null(values$signature$selection_frequency)
+        has_bootstrap <- !is.null(sig_for_plot$stability) &&
+            !is.null(sig_for_plot$stability$bootstrap_frequency)
+        has_selection <- !is.null(sig_for_plot$selection_frequency)
 
         # Use selection frequency if bootstrap not available
-        freq_type <- if (has_bootstrap) "bootstrap" else "selection"
+        # Default to selection if bootstrap not available (has_selection should be TRUE if we got here)
+        freq_type <- if (has_bootstrap) "bootstrap" else if (has_selection) "selection" else "selection"
 
         # Try to create the plot with error handling
         tryCatch(
             {
-                endoSignatureR::plotEndometrialStabilityBars(
-                    signature = values$signature,
-                    annot = values$annot_mode1,
-                    frequency_type = freq_type
-                )
+                # Suppress warnings about bootstrap_frequency not available
+                suppressWarnings({
+                    endoSignatureR::plotEndometrialStabilityBars(
+                        signature = sig_for_plot,
+                        annot = annot_to_use,
+                        frequency_type = freq_type
+                    )
+                })
             },
             error = function(e) {
                 # If no valid frequencies found, show a message plot instead
@@ -2251,6 +2784,16 @@ server <- function(input, output, session) {
                             x = 0.5, y = 0.5,
                             label = "Stability frequency data not available.\nAll frequency values are missing or invalid.",
                             size = 5, hjust = 0.5, vjust = 0.5
+                        ) +
+                        ggplot2::theme_void() +
+                        ggplot2::labs(title = "Stability Bars Plot")
+                } else if (grepl("bootstrap_frequency not available", e$message, fixed = TRUE)) {
+                    # Handle case where bootstrap frequency is requested but not available
+                    ggplot2::ggplot() +
+                        ggplot2::annotate("text",
+                            x = 0.5, y = 0.5,
+                            label = "Bootstrap frequency data not available.\nUsing selection frequency instead.\nNote: Small sample sizes (< 10 samples) prevent bootstrap resampling.",
+                            size = 4, hjust = 0.5, vjust = 0.5
                         ) +
                         ggplot2::theme_void() +
                         ggplot2::labs(title = "Stability Bars Plot")
@@ -2381,10 +2924,25 @@ server <- function(input, output, session) {
     output$downloadCoefLollipop <- downloadHandler(
         filename = "coef_lollipop_plot.png",
         content = function(file) {
+            # Use appropriate annotation based on signature type
+            annot_to_use <- if (input$signatureSelection == "pretrained") {
+                values$annot_mode1
+            } else if (input$signatureSelection == "user-trained") {
+                values$annot_mode2
+            } else {
+                # For uploaded signature, try annot_mode1 first, then annot_mode2, then NULL
+                if (!is.null(values$annot_mode1)) {
+                    values$annot_mode1
+                } else if (!is.null(values$annot_mode2)) {
+                    values$annot_mode2
+                } else {
+                    NULL
+                }
+            }
             ggplot2::ggsave(file,
                 plot = endoSignatureR::plotEndometrialCoefLollipop(
-                    signature = values$signature,
-                    annot = values$annot_mode1
+                    signature = values$selectedSignature,
+                    annot = annot_to_use
                 ),
                 width = 10, height = 8, dpi = 300
             )
@@ -2394,22 +2952,55 @@ server <- function(input, output, session) {
     output$downloadStabilityBars <- downloadHandler(
         filename = "stability_bars_plot.png",
         content = function(file) {
+            # Use appropriate annotation based on signature type
+            annot_to_use <- if (input$signatureSelection == "pretrained") {
+                values$annot_mode1
+            } else if (input$signatureSelection == "user-trained") {
+                values$annot_mode2
+            } else {
+                # For uploaded signature, try annot_mode1 first, then annot_mode2, then NULL
+                if (!is.null(values$annot_mode1)) {
+                    values$annot_mode1
+                } else if (!is.null(values$annot_mode2)) {
+                    values$annot_mode2
+                } else {
+                    NULL
+                }
+            }
+
+            # Prepare signature object for plotting
+            sig_for_plot <- values$selectedSignature
+
+            # For user-trained signature, add stability info if available
+            if (input$signatureSelection == "user-trained" && !is.null(values$trainingResult$stability)) {
+                if (!is.null(values$trainingResult$stability$bootstrap_frequency)) {
+                    sig_for_plot$stability <- list(
+                        bootstrap_frequency = values$trainingResult$stability$bootstrap_frequency
+                    )
+                }
+            }
+            # For uploaded signature, stability info is already in the signature object
+
             # Check which frequency type is available
-            has_bootstrap <- !is.null(values$signature$stability) &&
-                !is.null(values$signature$stability$bootstrap_frequency)
-            has_selection <- !is.null(values$signature$selection_frequency)
+            has_bootstrap <- !is.null(sig_for_plot$stability) &&
+                !is.null(sig_for_plot$stability$bootstrap_frequency)
+            has_selection <- !is.null(sig_for_plot$selection_frequency)
 
             # Use selection frequency if bootstrap not available
-            freq_type <- if (has_bootstrap) "bootstrap" else "selection"
+            # Default to selection if bootstrap not available (has_selection should be TRUE if we got here)
+            freq_type <- if (has_bootstrap) "bootstrap" else if (has_selection) "selection" else "selection"
 
             # Try to create the plot with error handling
             p <- tryCatch(
                 {
-                    endoSignatureR::plotEndometrialStabilityBars(
-                        signature = values$signature,
-                        annot = values$annot_mode1,
-                        frequency_type = freq_type
-                    )
+                    # Suppress warnings about bootstrap_frequency not available
+                    suppressWarnings({
+                        endoSignatureR::plotEndometrialStabilityBars(
+                            signature = sig_for_plot,
+                            annot = annot_to_use,
+                            frequency_type = freq_type
+                        )
+                    })
                 },
                 error = function(e) {
                     # If no valid frequencies found, show a message plot instead
@@ -2419,6 +3010,16 @@ server <- function(input, output, session) {
                                 x = 0.5, y = 0.5,
                                 label = "Stability frequency data not available.\nAll frequency values are missing or invalid.",
                                 size = 5, hjust = 0.5, vjust = 0.5
+                            ) +
+                            ggplot2::theme_void() +
+                            ggplot2::labs(title = "Stability Bars Plot")
+                    } else if (grepl("bootstrap_frequency not available", e$message, fixed = TRUE)) {
+                        # Handle case where bootstrap frequency is requested but not available
+                        ggplot2::ggplot() +
+                            ggplot2::annotate("text",
+                                x = 0.5, y = 0.5,
+                                label = "Bootstrap frequency data not available.\nUsing selection frequency instead.\nNote: Small sample sizes (< 10 samples) prevent bootstrap resampling.",
+                                size = 4, hjust = 0.5, vjust = 0.5
                             ) +
                             ggplot2::theme_void() +
                             ggplot2::labs(title = "Stability Bars Plot")
