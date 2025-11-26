@@ -764,7 +764,7 @@ ui <- fluidPage(
                 style = "max-width: 1000px; margin: 0 auto; padding: 20px;",
                 h2("Methodology: Small Sample Signature Extraction", style = "text-align: center; color: #2c3e50; margin-bottom: 30px;"),
                 h3("Introduction", style = "color: #34495e; margin-top: 40px;"),
-                p("EndoSignatureR uses a carefully designed approach for extracting gene signatures from small endometrial RNA-seq datasets. This methodology addresses the unique challenges of working with small sample sizes (small n) and high-dimensional data (large p, where p >> n)."),
+                p("EndoSignatureR extracts gene signatures from small endometrial RNA-seq datasets. This methodology addresses the challenges of working with small sample sizes (small n) and high-dimensional data (large p, where p >> n)."),
                 br(),
                 h3("How We Approached Small Sample Signature Extraction", style = "color: #34495e; margin-top: 40px;"),
                 p("The challenge of small sample signature extraction involves:"),
@@ -780,7 +780,7 @@ ui <- fluidPage(
                     tags$li("LASSO regularization to select sparse, interpretable gene sets"),
                     tags$li("In-fold preprocessing to prevent data leakage"),
                     tags$li("Differential expression screening to focus on biologically relevant genes"),
-                    tags$li("Stability selection to identify robust gene signatures"),
+                    tags$li("Stability selection to identify notable gene signatures"),
                     tags$li("Probability calibration to improve prediction reliability")
                 ),
                 br(),
@@ -816,8 +816,8 @@ ui <- fluidPage(
                 tags$ul(
                     tags$li(strong("Bootstrap resampling:"), " Multiple resamples of the training data."),
                     tags$li(strong("Selection frequency:"), " Frequency (0-1) that each gene is selected across resamples."),
-                    tags$li(strong("Robust genes:"), " Genes selected frequently are more stable and likely to generalize."),
-                    tags$li(strong("Why it matters:"), " Identifies core signature genes that are robust to data variation, important for small datasets where results can be sensitive to specific samples.")
+                    tags$li(strong("notable genes:"), " Genes selected frequently are more stable and likely to generalize."),
+                    tags$li(strong("Why it matters:"), " Identifies core signature genes that are good for data variation, important for small datasets where results can be sensitive to specific samples.")
                 ),
                 br(),
                 h4("5. Differential Expression Screening", style = "color: #7f8c8d; margin-top: 20px;"),
@@ -896,13 +896,15 @@ ui <- fluidPage(
                     tags$li("README: ", code("?endoSignatureR"), " for package overview and installation"),
                     tags$li("Function documentation: Individual function help pages (e.g., ", code("?esr_trainEndometrialSignature"), ") for detailed parameter descriptions")
                 ),
-                p("Key methodological references:"),
+                p("Key methodological references (see README for full citations):"),
                 tags$ul(
-                    tags$li("LASSO: Friedman, Hastie & Tibshirani (2010). Regularization paths for generalized linear models via coordinate descent."),
-                    tags$li("Nested CV: Varma & Simon (2006). Bias in error estimation when using cross-validation for model selection."),
-                    tags$li("Stability Selection: Meinshausen & Bühlmann (2010). Stability selection."),
-                    tags$li("Differential Expression: Ritchie et al. (2015). limma powers differential expression analyses.")
+                    tags$li("LASSO with small sample sizes: Ismail (2015). Behavior of Lasso Quantile Regression with Small Sample Sizes."),
+                    tags$li("Differential Expression: Ritchie et al. (2015). limma powers differential expression analyses for RNA-sequencing and microarray studies.")
                 ),
+                p("For complete references and additional citations, see the References section in the package README."),
+                br(),
+                h4("Acknowledgments", style = "color: #7f8c8d; margin-top: 30px;"),
+                p("Special acknowledgment to ChatGPT for helping clarify understanding of statistical methods learned during undergraduate coursework at the University of Toronto and for assisting in the interpretation and clarification of LASSO papers examined during the development of this methodology."),
                 br(),
                 hr(),
                 p(em("This methodology is designed specifically for small endometrial RNA-seq datasets. Results should be interpreted in the context of the statistical assumptions and limitations outlined above."), style = "text-align: center; color: #7f8c8d; margin-top: 30px;")
