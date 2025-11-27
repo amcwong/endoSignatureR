@@ -66,7 +66,7 @@ devtools::install_github("amcwong/endoSignatureR", build_vignettes = TRUE)
 library("endoSignatureR")
 ```
 
-**Alternative**: You can also use `BiocManager::install()` which handles both CRAN and Bioconductor dependencies automatically:
+**Alternative**: You can also try `BiocManager::install()` which handles both CRAN and Bioconductor dependencies automatically:
 
 ```r
 if (!requireNamespace("BiocManager", quietly = TRUE)) {
@@ -81,63 +81,191 @@ To run the shinyApp:
 runEndoSignatureR()
 ```
 
-## Overview
+## Usage
+
+Here are basic examples of how to use `EndoSignatureR`:
+
+**Mode 1: Rapid Classification** - Apply pre-trained signature to new samples:
 
 ```r
-ls("package:endoSignatureR")
-data(package = "endoSignatureR") # optional
+# Load pre-trained signature
+signature <- esr_loadPretrainedSignature()
+
+# Load your data
+data(gse201926_sample)
+X_new <- gse201926_sample$counts
+
+# Classify samples
+predictions <- esr_classifyEndometrial(X_new, signature = signature)
+head(predictions)
+```
+
+**Mode 2: Signature Validation** - Train and validate a new signature:
+
+```r
+# Load training data
+data(gse201926_trainmini)
+
+# Train signature with nested cross-validation
+result <- esr_trainEndometrialSignature(
+  X = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno,
+  annot = gse201926_trainmini$annot
+)
+
+# View performance metrics
+result$metrics
+```
+
+**Mode 3: Visualization & Analysis** - Perform QC and exploratory analysis:
+
+```r
+# Load data
+data(gse201926_sample)
+
+# Transform counts
+mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
+
+# Perform differential expression analysis
+de_table <- esr_analyzeDifferentialExpression(
+  mat_t,
+  gse201926_sample$pheno
+)
+
+# Create visualizations
+plotEndometrialPCA(mat_t, pheno = gse201926_sample$pheno)
+plotEndometrialVolcano(de_table)
+plotEndometrialMA(de_table)
+```
+
+For more detailed examples, see the package vignettes:
+
+```r
 browseVignettes("endoSignatureR")
 ```
 
-`EndoSignatureR` provides core functions aligned with the following plan:
+## Functions
 
-1.  `esr_validateEndometrial(X, pheno, annot = NULL, label_col = "group")`: endometrial-specific schema/ID checks; returns cleaned objects and issues table.
-2.  `esr_loadPretrainedSignature()`: load the shipped PS vs PIS signature from GSE201926.
-3.  `esr_classifyEndometrial(X_new, signature = NULL, threshold = 0.5, confidence = TRUE)`: apply pre-trained signature to new samples; predictions + confidence.
-4.  `esr_trainEndometrialSignature(...)`: train a new signature using in-fold transforms, DE screening, nested CV, LASSO, calibration, and optional stability selection.
-5.  `esr_compareSignatures(pretrained_result, new_result)`: compare pre-trained vs new signature performance.
-6.  Export helpers: `esr_exportSignature(...)`.
+`EndoSignatureR` provides the following main functions:
 
-Plotting helpers (examples):
+### Core Analysis Functions
 
-- QC/EDA: `plotEndometrialPCA`, `plotEndometrialLibsize`, `plotEndometrialZeros`
-- DE/Signature: `plotEndometrialMA`, `plotEndometrialVolcano`, `plotEndometrialHeatmap`, `plotEndometrialCoefLollipop`, `plotEndometrialStabilityBars`
-- Performance: `plotEndometrialROC`, `plotEndometrialPR`, `plotEndometrialCalibration`, `plotEndometrialComparison`
+- **`esr_validateEndometrial(X, pheno, annot = NULL, label_col = "group")`**: Performs endometrial-specific schema/ID checks; returns cleaned objects and issues table.
 
-<!-- An overview of the package is illustrated below.
+- **`esr_loadPretrainedSignature()`**: Loads the shipped PS vs PIS signature from GSE201926.
 
-![](./inst/extdata/Workflow.png) -->
+- **`esr_classifyEndometrial(X_new, signature = NULL, threshold = 0.5, confidence = TRUE)`**: Applies pre-trained signature to new samples; returns predictions with confidence intervals.
 
-### Three-Mode Workflow
+- **`esr_trainEndometrialSignature(...)`**: Trains a new signature using in-fold transforms, DE screening, nested CV, LASSO, calibration, and optional stability selection.
 
-The package provides three workflows:
+- **`esr_compareSignatures(pretrained_result, new_result)`**: Compares pre-trained vs new signature performance.
 
-**Mode 1: Rapid Classification** - Apply the pre-trained signature to unlabeled samples for PS vs PIS predictions.
+- **`esr_analyzeDifferentialExpression(mat_t, pheno, label_col = "group")`**: Performs differential expression analysis using limma.
 
-![](./inst/extdata/mode_1.png)
+- **`esr_selectTopGenes(...)`**: Selects top genes by variance or differential expression statistics.
 
-**Mode 2: Signature Validation** - Train and validate a new signature on labeled cohorts using best practices.
+- **`esr_selectDEInFold(...)`**: Selects differentially expressed genes within cross-validation folds (anti-leakage).
 
-![](./inst/extdata/mode_2.png)
+- **`esr_transformInFold(...)`**: Transforms counts within cross-validation folds (anti-leakage).
 
-**Mode 3: Visualization & Analysis** - Perform standalone QC, exploratory analysis, and differential expression visualization.
+- **`esr_transform_log1p_cpm(counts)`**: Transforms raw counts to log1p-CPM.
 
-![](./inst/extdata/mode_3.png)
+- **`esr_computeQCMetrics(counts, pheno)`**: Computes quality control metrics.
 
-## Contributions
+- **`esr_computeConfusionMatrix(predictions, truth, threshold = 0.5)`**: Computes confusion matrix from predictions.
 
-The author of the package is Andrew Wong. The author designed and implemented the endometrial-specific workflows and functions listed above, integrating established methods (DE screening, LASSO via glmnet, nested cross-validation) into a cohesive package for PS vs PIS classification and validation.
+- **`esr_compareThresholds(predictions, truth, thresholds = seq(0.1, 0.9, 0.1))`**: Compares classification performance across different thresholds.
 
-Contributions from other packages/sources for each function: The core analysis functions (`esr_trainEndometrialSignature`, `esr_validateEndometrial`, `esr_analyzeDifferentialExpression`) build upon `glmnet` (Friedman et al., 2010) for LASSO regularization, `limma` (Ritchie et al., 2015) for differential expression analysis, and `rsample` (Frick et al., 2025) for cross-validation resampling. The plotting functions (`plotEndometrial*`) use `ggplot2` (Wickham, 2016) for base graphics, `ComplexHeatmap` (Gu et al., 2016) for heatmap visualization, and `circlize` (Gu et al., 2014) for circular visualizations. The data loading functions (`endo_load_*`, `esr_load*`) use `readr` (Wickham et al., 2024) for file I/O and `jsonlite` (Ooms, 2014) for JSON parsing. The calibration functions (`calibrate_*`, `compute_*`) implement established methods (Platt scaling, isotonic regression) using base R `stats` functions. The export functions (`esr_export*`, `export_*`) use `jsonlite` for JSON export and base R for CSV export.
+- **`esr_createAnalysisBundle(...)`**: Creates a bundle of analysis results for export.
 
-Contributions from generative AI tool(s) for each function: GitHub Copilot was used extensively throughout the test suite (`tests/testthat/test-*.R`) for generating test cases, assertions, and test fixtures. It was also used for code completions in R source files, particularly for repetitive patterns in plotting functions and data validation logic. ChatGPT was used for commenting and proofreading documentation (roxygen comments), README sections, and vignettes. It was also used for brainstorming function signatures and workflow design in early development stages. All outputs from AI tools were reviewed, validated, and modified by the author before inclusion. No AI-generated code was used verbatim without review.
+### Data Loading Functions
+
+- **`endo_load_gse201926()`**: Loads GSE201926 dataset from extdata files.
+
+- **`endo_load_demo()`**: Loads demo dataset for quick testing.
+
+- **`endo_load_tpm(file_path)`**: Loads TPM counts from file.
+
+- **`endo_load_annotation(file_path)`**: Loads gene annotation from file.
+
+- **`endo_parse_metadata(series_matrix_file)`**: Parses GEO series matrix metadata.
+
+- **`esr_loadFromFiles(counts_file, pheno_file, annot_file = NULL)`**: Loads data from multiple files.
+
+- **`esr_loadCountsFromFile(file_path)`**: Loads counts matrix from file.
+
+- **`esr_loadPhenoFromFile(file_path)`**: Loads phenotype data from file.
+
+- **`esr_loadAnnotFromFile(file_path)`**: Loads annotation data from file.
+
+### Plotting Functions
+
+**QC/EDA:**
+
+- **`plotEndometrialPCA(mat_t, pheno = NULL, ...)`**: Principal component analysis plot.
+- **`plotEndometrialLibsize(counts, pheno = NULL, ...)`**: Library size distribution plot.
+- **`plotEndometrialZeros(counts, by = "gene", ...)`**: Zero count percentage visualization.
+
+**Differential Expression/Signature:**
+
+- **`plotEndometrialMA(de_table, ...)`**: MA plot for differential expression results.
+- **`plotEndometrialVolcano(de_table, ...)`**: Volcano plot for differential expression results.
+- **`plotEndometrialHeatmap(mat_t, genes, pheno = NULL, ...)`**: Heatmap visualization.
+- **`plotEndometrialCoefLollipop(signature, annot = NULL, ...)`**: Coefficient lollipop plot for signature genes.
+- **`plotEndometrialStabilityBars(signature, ...)`**: Stability selection frequency bars.
+
+**Performance:**
+
+- **`plotEndometrialROC(predictions, use_calibrated = FALSE, ...)`**: ROC curve visualization.
+- **`plotEndometrialPR(predictions, use_calibrated = FALSE, ...)`**: Precision-Recall curve visualization.
+- **`plotEndometrialCalibration(predictions, use_calibrated = FALSE, ...)`**: Calibration curve visualization.
+- **`plotEndometrialComparison(pretrained_result, new_result, ...)`**: Comparison plots between signatures.
+
+### Export Functions
+
+- **`esr_exportSignature(signature, result = NULL, dir = ".", formats = c("csv", "json"))`**: Exports signature to CSV/JSON formats.
+
+- **`esr_exportPredictions(predictions, dir = ".", filename = "predictions.csv")`**: Exports predictions to CSV.
+
+### Shiny Application
+
+- **`runEndoSignatureR()`**: Launches the Shiny application for interactive data exploration.
+
+## Data
+
+The package includes several datasets for examples and testing:
+
+### `gse201926_sample`
+
+The complete GSE201926 endometrial lesion RNA-seq dataset containing all genes across 12 samples (6 progestin-sensitive (PS) and 6 progestin-insensitive (PIS) patients). This is a list with three components:
+
+- **`counts`**: Matrix of raw read counts (39,368 genes × 12 samples). Rows are genes (numeric GeneIDs), columns are samples (GSM IDs).
+- **`pheno`**: Data frame with sample metadata containing `sample_id`, `group` (PS/PIS), and `title` columns.
+- **`annot`**: Data frame with gene annotation containing `GeneID`, `Symbol`, `Description`, `GeneType`, `EnsemblGeneID`, and other annotation fields.
+
+### `gse201926_trainmini`
+
+A medium-sized training subset of the GSE201926 dataset containing 800-1500 genes across 12 samples, designed for fast nested cross-validation in vignettes and tests. Structure is the same as `gse201926_sample` but with fewer genes selected based on variance.
+
+### `gse201926_annot_min`
+
+A minimal gene annotation table for GSE201926 containing essential fields (`gene_id`, `symbol`, `biotype`) for mapping and display.
+
+### `gse201926_pheno_min`
+
+A minimal phenotype/metadata table for GSE201926 containing sample identifiers, group labels (PS/PIS), and optional batch information.
+
+### `folds_demo`
+
+Pre-computed cross-validation splits with fixed seeds for reproducible examples. Contains outer and inner CV splits for nested cross-validation workflows.
+
+All datasets are derived from the GSE201926 study investigating progestin sensitivity in endometrial lesions. Source: <https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE201926>
 
 ## References
 
 - Allaire, J. J., Xie, Y., Dervieux, C., McPherson, J., Luraschi, J., Ushey, K., Atkins, A., Wickham, H., Cheng, J., Chang, W., & Iannone, R. (2024). rmarkdown: Dynamic documents for R. R package. <https://CRAN.R-project.org/package=rmarkdown>.
 
 - Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression Omnibus: NCBI gene expression and hybridization array data repository. Nucleic Acids Research, 30(1), 207–210. <https://doi.org/10.1093/nar/30.1.207>.
-
 
 - GitHub & OpenAI. (2025). GitHub Copilot: AI-powered code completion assistant. GitHub, Inc., San Francisco, USA. <https://github.com/features/copilot>.
 
@@ -175,6 +303,10 @@ Contributions from generative AI tool(s) for each function: GitHub Copilot was u
 
 - Xie, Y. (2025). knitr: A general-purpose package for dynamic report generation in R. R package. <https://CRAN.R-project.org/package=knitr>.
 
+## Acknowledgements
+
+This package was developed as part of an assessment for 2025 BCB410H: Applied Bioinformatics course at the University of Toronto, Toronto, CANADA. `EndoSignatureR` welcomes issues, enhancement requests, and other contributions. To submit an issue, use the GitHub issues page for your repository.
+
 ## Other Topics
 
 ### Statistical Assumptions
@@ -195,9 +327,13 @@ The signature creation process in `EndoSignatureR` relies on several statistical
 
 These assumptions are important for proper interpretation of signature results and should be considered when applying the package to new datasets.
 
-### Acknowledgements
+### Contributions
 
-This package was developed as part of an assessment for 2025 BCB410H: Applied Bioinformatics course at the University of Toronto, Toronto, CANADA. `EndoSignatureR` welcomes issues, enhancement requests, and other contributions. To submit an issue, use the GitHub issues page for your repository.
+The author of the package is Andrew Wong. The author designed and implemented the endometrial-specific workflows and functions listed above, integrating established methods (DE screening, LASSO via glmnet, nested cross-validation) into a cohesive package for PS vs PIS classification and validation.
+
+Contributions from other packages/sources for each function: The core analysis functions (`esr_trainEndometrialSignature`, `esr_validateEndometrial`, `esr_analyzeDifferentialExpression`) build upon `glmnet` (Friedman et al., 2010) for LASSO regularization, `limma` (Ritchie et al., 2015) for differential expression analysis, and `rsample` (Frick et al., 2025) for cross-validation resampling. The plotting functions (`plotEndometrial*`) use `ggplot2` (Wickham, 2016) for base graphics, `ComplexHeatmap` (Gu et al., 2016) for heatmap visualization, and `circlize` (Gu et al., 2014) for circular visualizations. The data loading functions (`endo_load_*`, `esr_load*`) use `readr` (Wickham et al., 2024) for file I/O and `jsonlite` (Ooms, 2014) for JSON parsing. The calibration functions (`calibrate_*`, `compute_*`) implement established methods (Platt scaling, isotonic regression) using base R `stats` functions. The export functions (`esr_export*`, `export_*`) use `jsonlite` for JSON export and base R for CSV export.
+
+Contributions from generative AI tool(s) for each function: GitHub Copilot was used extensively throughout the test suite (`tests/testthat/test-*.R`) for generating test cases, assertions, and test fixtures. It was also used for code completions in R source files, particularly for repetitive patterns in plotting functions and data validation logic. ChatGPT was used for commenting and proofreading documentation (roxygen comments), README sections, and vignettes. It was also used for brainstorming function signatures and workflow design in early development stages. All outputs from AI tools were reviewed, validated, and modified by the author before inclusion. No AI-generated code was used verbatim without review.
 
 ### SessionInfo
 
