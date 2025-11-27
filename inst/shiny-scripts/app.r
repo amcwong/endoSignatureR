@@ -146,7 +146,14 @@ ui <- fluidPage(
                     br(), br(),
 
                     # Status messages
-                    verbatimTextOutput("statusMessageMode1")
+                    verbatimTextOutput("statusMessageMode1"),
+                    br(), br(),
+                    hr(),
+
+                    # Refresh/Reset button
+                    h4("Reset Mode"),
+                    p("Clear all data and results to start over with new data:"),
+                    actionButton("resetMode1", "Reset Mode 1", class = "btn-warning")
                 ),
                 mainPanel(
                     tabsetPanel(
@@ -357,7 +364,14 @@ ui <- fluidPage(
                     br(), br(),
 
                     # Status messages
-                    verbatimTextOutput("statusMessageMode2")
+                    verbatimTextOutput("statusMessageMode2"),
+                    br(), br(),
+                    hr(),
+
+                    # Refresh/Reset button
+                    h4("Reset Mode"),
+                    p("Clear all data and results to start over with new data:"),
+                    actionButton("resetMode2", "Reset Mode 2", class = "btn-warning")
                 ),
                 mainPanel(
                     tabsetPanel(
@@ -749,7 +763,14 @@ ui <- fluidPage(
                     br(),
 
                     # Status messages
-                    verbatimTextOutput("statusMessageMode3")
+                    verbatimTextOutput("statusMessageMode3"),
+                    br(), br(),
+                    hr(),
+
+                    # Refresh/Reset button
+                    h4("Reset Mode"),
+                    p("Clear all data and results to start over with new data:"),
+                    actionButton("resetMode3", "Reset Mode 3", class = "btn-warning")
                 ),
                 mainPanel(
                     uiOutput("mode3TabsUI")
@@ -929,6 +950,53 @@ server <- function(input, output, session) {
 
     observeEvent(input$navToMode3, {
         updateTabsetPanel(session, "modeTabs", selected = "Mode 3: Visualization & Analysis")
+    })
+
+    # Reset/Refresh observers for each mode
+    observeEvent(input$resetMode1, {
+        # Reset Mode 1 data and results
+        values$counts_mode1 <- NULL
+        values$annot_mode1 <- NULL
+        values$predictions <- NULL
+        values$mode1_completed <- FALSE
+        values$classificationRun <- FALSE
+        # Clear status messages
+        output$dataStatusMode1 <- renderText("")
+        output$statusMessageMode1 <- renderText("Mode 1 has been reset. You can now upload new data.")
+    })
+
+    observeEvent(input$resetMode2, {
+        # Reset Mode 2 data and results
+        values$counts_mode2 <- NULL
+        values$pheno_mode2 <- NULL
+        values$annot_mode2 <- NULL
+        values$trainingResult <- NULL
+        values$mode2_completed <- FALSE
+        values$trainingRun <- FALSE
+        # Clear status messages
+        output$dataStatusMode2 <- renderText("")
+        output$statusMessageMode2 <- renderText("Mode 2 has been reset. You can now upload new data.")
+    })
+
+    observeEvent(input$resetMode3, {
+        # Reset Mode 3 data and results
+        values$counts <- NULL
+        values$pheno <- NULL
+        values$annot <- NULL
+        values$counts_t <- NULL
+        values$qc_metrics <- NULL
+        values$de_table <- NULL
+        values$selected_genes <- NULL
+        values$bundle <- NULL
+        values$dataLoaded <- FALSE
+        values$deRun <- FALSE
+        # Reset plot generation flags
+        values$maPlotGenerated <- FALSE
+        values$volcanoPlotGenerated <- FALSE
+        values$heatmapPlotGenerated <- FALSE
+        # Clear status messages
+        output$dataStatusMode3 <- renderText("")
+        output$statusMessageMode3 <- renderText("Mode 3 has been reset. You can now upload new data.")
     })
 
     # Reactive values to store data
@@ -2545,7 +2613,7 @@ server <- function(input, output, session) {
                     ggplot2::ggplot() +
                         ggplot2::annotate("text",
                             x = 0.5, y = 0.5,
-                            label = "Stability frequency data not available.\nAll frequency values are missing or invalid.",
+                            label = "Stability frequency data not available.\nAll frequency values are missing or invalid. Note: The Stability Selection toggle is required to generate the stability bars plot.",
                             size = 5, hjust = 0.5, vjust = 0.5
                         ) +
                         ggplot2::theme_void() +
@@ -2698,7 +2766,7 @@ server <- function(input, output, session) {
                         ggplot2::ggplot() +
                             ggplot2::annotate("text",
                                 x = 0.5, y = 0.5,
-                                label = "Stability frequency data not available.\nAll frequency values are missing or invalid. Note: Stability Selection is required to generate the stability bars plot.",
+                                label = "Stability frequency data not available.\nAll frequency values are missing or invalid. Note: The stability selection toggle is required to generate the stability bars plot.",
                                 size = 5, hjust = 0.5, vjust = 0.5
                             ) +
                             ggplot2::theme_void() +
