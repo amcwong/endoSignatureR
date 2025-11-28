@@ -58,7 +58,9 @@
 #' @importFrom shiny shinyApp
 #' @export
 runEndoSignatureR <- function() {
-    app_file <- system.file("shiny-scripts", "app.r", package = "endoSignatureR")
+    app_file <- system.file(
+      "shiny-scripts", "app.r", package = "endoSignatureR"
+    )
 
     if (!file.exists(app_file)) {
         stop("Shiny app file not found. Expected location: ", app_file)

@@ -39,7 +39,9 @@
 #' computing. R Foundation for Statistical Computing, Vienna, Austria.
 #' <https://www.R-project.org/>.
 #' @export
-esr_computeQCMetrics <- function(counts, mat_t = NULL, pheno = NULL, group_col = "group") {
+esr_computeQCMetrics <- function(
+  counts, mat_t = NULL, pheno = NULL, group_col = "group"
+) {
     # Convert counts to matrix if needed
     if (!is.matrix(counts)) {
         counts <- as.matrix(counts)
@@ -123,7 +125,10 @@ esr_computeQCMetrics <- function(counts, mat_t = NULL, pheno = NULL, group_col =
             if (nrow(pheno) == nrow(qc_metrics)) {
                 qc_metrics$group <- pheno[[group_col]]
             } else {
-                warning("pheno row count doesn't match qc_metrics; skipping group merge")
+                warning(
+                    "pheno row count doesn't match qc_metrics; ",
+                    "skipping group merge"
+                )
             }
         }
     }
@@ -208,10 +213,12 @@ esr_computeQCMetrics <- function(counts, mat_t = NULL, pheno = NULL, group_col =
 #' computing. R Foundation for Statistical Computing, Vienna, Austria.
 #' <https://www.R-project.org/>.
 #' @export
-esr_createAnalysisBundle <- function(counts_t, de_table = NULL, selected_genes = NULL,
-                                     qc_metrics = NULL, pheno = NULL, annot = NULL,
-                                     transform_params = NULL, de_params = NULL,
-                                     validation_issues = NULL, ...) {
+esr_createAnalysisBundle <- function(
+  counts_t, de_table = NULL, selected_genes = NULL,
+  qc_metrics = NULL, pheno = NULL, annot = NULL,
+  transform_params = NULL, de_params = NULL,
+  validation_issues = NULL, ...
+) {
     # Validate required input
     if (missing(counts_t) || is.null(counts_t)) {
         stop("counts_t is required")
@@ -254,10 +261,15 @@ esr_createAnalysisBundle <- function(counts_t, de_table = NULL, selected_genes =
             qc_sample_ids <- qc_metrics$sample_id
             common_samples_qc <- intersect(sample_ids_counts, qc_sample_ids)
             if (length(common_samples_qc) == 0) {
-                warning("No matching sample IDs found between counts_t rownames and qc_metrics$sample_id")
+                warning(
+                    "No matching sample IDs found between counts_t rownames ",
+                    "and qc_metrics$sample_id"
+                )
             } else if (length(common_samples_qc) < length(sample_ids_counts) ||
                 length(common_samples_qc) < length(qc_sample_ids)) {
-                warning("Some sample IDs don't match between counts_t and qc_metrics")
+                warning(
+                    "Some sample IDs don't match between counts_t and qc_metrics"
+                )
             }
         }
     }
@@ -268,12 +280,19 @@ esr_createAnalysisBundle <- function(counts_t, de_table = NULL, selected_genes =
         }
         if ("sample_id" %in% names(pheno)) {
             pheno_sample_ids <- pheno$sample_id
-            common_samples_pheno <- intersect(sample_ids_counts, pheno_sample_ids)
+            common_samples_pheno <- intersect(
+                sample_ids_counts, pheno_sample_ids
+            )
             if (length(common_samples_pheno) == 0) {
-                warning("No matching sample IDs found between counts_t rownames and pheno$sample_id")
+                warning(
+                    "No matching sample IDs found between counts_t rownames ",
+                    "and pheno$sample_id"
+                )
             } else if (length(common_samples_pheno) < length(sample_ids_counts) ||
                 length(common_samples_pheno) < length(pheno_sample_ids)) {
-                warning("Some sample IDs don't match between counts_t and pheno")
+                warning(
+                    "Some sample IDs don't match between counts_t and pheno"
+                )
             }
         }
     }
@@ -287,11 +306,17 @@ esr_createAnalysisBundle <- function(counts_t, de_table = NULL, selected_genes =
             de_gene_ids <- de_table$gene_id
             common_genes_de <- intersect(gene_ids_counts, de_gene_ids)
             if (length(common_genes_de) == 0) {
-                warning("No matching gene IDs found between counts_t colnames and de_table$gene_id")
+                warning(
+                    "No matching gene IDs found between counts_t colnames ",
+                    "and de_table$gene_id"
+                )
             } else if (length(common_genes_de) < length(de_gene_ids)) {
                 # It's OK if de_table has more genes (before filtering), but warn if none match
                 if (length(common_genes_de) == 0) {
-                    warning("No genes from de_table match counts_t colnames (may indicate filtering)")
+                    warning(
+                        "No genes from de_table match counts_t colnames ",
+                        "(may indicate filtering)"
+                    )
                 }
             }
         } else {
@@ -305,7 +330,10 @@ esr_createAnalysisBundle <- function(counts_t, de_table = NULL, selected_genes =
         }
         common_genes_selected <- intersect(gene_ids_counts, selected_genes)
         if (length(common_genes_selected) == 0) {
-            warning("No matching gene IDs found between counts_t colnames and selected_genes")
+            warning(
+                "No matching gene IDs found between counts_t colnames ",
+                "and selected_genes"
+            )
         } else if (length(common_genes_selected) < length(selected_genes)) {
             missing_genes <- setdiff(selected_genes, gene_ids_counts)
             warning(paste0(

@@ -33,7 +33,10 @@
 #' <https://www.R-project.org/>.
 #' @export
 endo_load_demo <- function() {
-    utils::data("gse201926_sample", package = "endoSignatureR", envir = environment())
+    utils::data(
+      "gse201926_sample", package = "endoSignatureR",
+      envir = environment()
+    )
     return(get("gse201926_sample", envir = environment()))
 }
 

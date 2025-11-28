@@ -30,8 +30,12 @@
 #' (2015). limma powers differential expression analyses for RNA-sequencing and
 #' microarray studies. Nucleic Acids Research, 43(7), e47.
 #' @export
-esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group") {
-    issues <- data.frame(type = character(), message = character(), stringsAsFactors = FALSE)
+esr_validateEndometrial <- function(
+    X, pheno, annot = NULL, label_col = "group") {
+    issues <- data.frame(
+      type = character(), message = character(),
+      stringsAsFactors = FALSE
+    )
 
     # Convert X to matrix if needed
     if (!is.matrix(X)) {

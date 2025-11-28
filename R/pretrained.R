@@ -37,13 +37,16 @@
 #' @export
 esr_loadPretrainedSignature <- function() {
   # Get paths to artifacts using system.file()
-  csv_path <- system.file("extdata", "pretrained-signature", "endometrial_signature.csv",
+  csv_path <- system.file(
+    "extdata", "pretrained-signature", "endometrial_signature.csv",
     package = "endoSignatureR"
   )
-  json_path <- system.file("extdata", "pretrained-signature", "endometrial_recipe.json",
+  json_path <- system.file(
+    "extdata", "pretrained-signature", "endometrial_recipe.json",
     package = "endoSignatureR"
   )
-  stability_path <- system.file("extdata", "pretrained-signature", "endometrial_stability.csv",
+  stability_path <- system.file(
+    "extdata", "pretrained-signature", "endometrial_stability.csv",
     package = "endoSignatureR"
   )
 
@@ -51,7 +54,10 @@ esr_loadPretrainedSignature <- function() {
   if (!nzchar(csv_path) || !file.exists(csv_path)) {
     stop(
       "Pre-trained signature CSV not found. ",
-      "Expected location: inst/extdata/pretrained-signature/endometrial_signature.csv. ",
+      paste0(
+        "Expected location: inst/extdata/pretrained-signature/",
+        "endometrial_signature.csv. "
+      ),
       "Please ensure the package is properly installed."
     )
   }
@@ -59,7 +65,10 @@ esr_loadPretrainedSignature <- function() {
   if (!nzchar(json_path) || !file.exists(json_path)) {
     stop(
       "Pre-trained signature JSON not found. ",
-      "Expected location: inst/extdata/pretrained-signature/endometrial_recipe.json. ",
+      paste0(
+        "Expected location: inst/extdata/pretrained-signature/",
+        "endometrial_recipe.json. "
+      ),
       "Please ensure the package is properly installed."
     )
   }
@@ -99,7 +108,9 @@ esr_loadPretrainedSignature <- function() {
   recipe_data <- jsonlite::read_json(json_path, simplifyVector = TRUE)
 
   # Validate recipe structure
-  required_sections <- c("preprocessing", "training", "signature", "reproducibility")
+  required_sections <- c(
+    "preprocessing", "training", "signature", "reproducibility"
+  )
   missing_sections <- setdiff(required_sections, names(recipe_data))
   if (length(missing_sections) > 0) {
     stop(
@@ -232,7 +243,9 @@ esr_loadPretrainedSignature <- function() {
     optimal_threshold <- as.numeric(coords$threshold[1])
 
     # Ensure threshold is in valid range
-    if (is.na(optimal_threshold) || optimal_threshold < 0 || optimal_threshold > 1) {
+    if (is.na(optimal_threshold) ||
+      optimal_threshold < 0 ||
+      optimal_threshold > 1) {
       warning("Invalid Youden threshold computed; using default 0.5")
       return(0.5)
     }
@@ -279,7 +292,9 @@ esr_loadPretrainedSignature <- function() {
     # If perfect separation, use threshold closest to 0.5
     if (best_j >= 1.0) {
       # Perfect separation - find threshold closest to 0.5
-      best_threshold <- unique_thresholds[which.min(abs(unique_thresholds - 0.5))]
+      best_threshold <- unique_thresholds[
+        which.min(abs(unique_thresholds - 0.5))
+      ]
     }
 
     return(best_threshold)
@@ -359,7 +374,10 @@ esr_loadPretrainedSignature <- function() {
 #' generalized linear models via coordinate descent. Journal of Statistical
 #' Software, 33(1), 1-22. <https://doi.org/10.18637/jss.v033.i01>.
 #' @export
-esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, confidence = TRUE, y_new = NULL) {
+esr_classifyEndometrial <- function(
+  X_new, signature = NULL, threshold = 0.5,
+  confidence = TRUE, y_new = NULL
+) {
   # Load signature if not provided
   if (is.null(signature)) {
     signature <- esr_loadPretrainedSignature()
@@ -463,7 +481,13 @@ esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, co
       if (length(missing_genes) > 10) " ..." else ""
     )
     warning(warning_msg)
-    severity <- if (missing_pct > 0.2) "high" else if (missing_pct > 0.1) "medium" else "low"
+    severity <- if (missing_pct > 0.2) {
+      "high"
+    } else if (missing_pct > 0.1) {
+      "medium"
+    } else {
+      "low"
+    }
     alerts <- rbind(alerts, data.frame(
       type = "warning",
       message = warning_msg,
@@ -545,12 +569,17 @@ esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, co
   if (is.character(threshold) && threshold == "youden") {
     # Youden threshold requires labeled validation data
     if (is.null(y_new)) {
-      warning("Youden threshold requires labeled validation data (y_new). Using default threshold 0.5.")
+      warning(
+        "Youden threshold requires labeled validation data (y_new). ",
+        "Using default threshold 0.5."
+      )
       threshold <- 0.5
     } else {
       # Compute Youden threshold using validation labels
       # Note: probabilities are computed after calibration, so use them for threshold selection
-      youden_threshold <- .select_threshold_youden(probabilities = probabilities, labels = y_new)
+      youden_threshold <- .select_threshold_youden(
+        probabilities = probabilities, labels = y_new
+      )
       threshold <- youden_threshold
       if (threshold != 0.5) {
         message(paste("Optimal Youden threshold:", round(threshold, 3)))
