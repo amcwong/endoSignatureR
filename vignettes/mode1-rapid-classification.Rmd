@@ -5,6 +5,7 @@ vignette: >
   %\VignetteIndexEntry{Mode 1: Rapid Classification Using Pre-trained Signature}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+bibliography: references.bib
 ---
 
 ```{r, include = FALSE}
@@ -522,3 +523,10 @@ For more information, see:
 ```{r sessionInfo}
 sessionInfo()
 ```
+
+## References
+
+This vignette uses the following packages and methods:
+
+- Visualization: @ggplot22016 for base graphics and @complexheatmap2016 for heatmap visualizations
+- Code assistance: @copilot2025 for AI-powered code completions in this vignette

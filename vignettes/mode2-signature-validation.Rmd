@@ -5,6 +5,7 @@ vignette: >
   %\VignetteIndexEntry{Mode 2: Signature Validation}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+bibliography: references.bib
 ---
 
 ```{r, include = FALSE}
@@ -963,3 +964,12 @@ Phases 2.1-2.5 establish core training, calibration, stability, visualization, a
 ```{r sessionInfo}
 sessionInfo()
 ```
+
+## References
+
+This vignette uses the following packages and methods:
+
+- Cross-validation: @rsample2025 for general resampling infrastructure
+- Differential expression: @limma2015 for differential expression analyses
+- LASSO regularization: @lasso2015 for behavior of LASSO with small sample sizes
+- Code assistance: @copilot2025 for AI-powered code completions in this vignette

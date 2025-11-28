@@ -346,7 +346,7 @@ progestin sensitivity in endometrial lesions. Source:
 
 - Allaire, J. J., Xie, Y., Dervieux, C., McPherson, J., Luraschi, J.,
   Ushey, K., Atkins, A., Wickham, H., Cheng, J., Chang, W., &
-  Iannone, R. (2024). rmarkdown: Dynamic documents for R. R package.
+  Iannone, R. (2025). rmarkdown: Dynamic documents for R. R package.
   <https://CRAN.R-project.org/package=rmarkdown>.
 
 - Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression
@@ -367,7 +367,7 @@ progestin sensitivity in endometrial lesions. Source:
   patterns and correlations in multidimensional genomic data.
   Bioinformatics. <doi:10.1093/bioinformatics/btw313>
 
-- Gu, Z., Gu, T., Eils, R., Schlesner, M., & Brors, B. (2014). circlize
+- Gu, Z., Gu, L., Eils, R., Schlesner, M., & Brors, B. (2014). circlize
   implements and enhances circular visualization in R. Bioinformatics,
   30(19), 2811–2812.
 
@@ -413,11 +413,11 @@ progestin sensitivity in endometrial lesions. Source:
   functions for visualization. R package.
   <https://CRAN.R-project.org/package=scales>.
 
-- Wickham, H., Hester, J., & Chang, W. (2024). devtools: Tools to Make
-  Developing R Packages Easier. R package.
+- Wickham, H., Hester, J., Chang, W., & Bryan, J. (2025). devtools:
+  Tools to Make Developing R Packages Easier. R package.
   <https://CRAN.R-project.org/package=devtools>.
 
-- Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+- Wickham, H., Hester, J., & Bryan, J. (2025). readr: Read rectangular
   text data. R package. <https://CRAN.R-project.org/package=readr>.
 
 - Xie, Y. (2025). knitr: A general-purpose package for dynamic report

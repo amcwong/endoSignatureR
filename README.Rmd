@@ -263,7 +263,7 @@ All datasets are derived from the GSE201926 study investigating progestin sensit
 
 ## References
 
-- Allaire, J. J., Xie, Y., Dervieux, C., McPherson, J., Luraschi, J., Ushey, K., Atkins, A., Wickham, H., Cheng, J., Chang, W., & Iannone, R. (2024). rmarkdown: Dynamic documents for R. R package. <https://CRAN.R-project.org/package=rmarkdown>.
+- Allaire, J. J., Xie, Y., Dervieux, C., McPherson, J., Luraschi, J., Ushey, K., Atkins, A., Wickham, H., Cheng, J., Chang, W., & Iannone, R. (2025). rmarkdown: Dynamic documents for R. R package. <https://CRAN.R-project.org/package=rmarkdown>.
 
 - Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression Omnibus: NCBI gene expression and hybridization array data repository. Nucleic Acids Research, 30(1), 207–210. <https://doi.org/10.1093/nar/30.1.207>.
 
@@ -273,7 +273,7 @@ All datasets are derived from the GSE201926 study investigating progestin sensit
 
 - Gu, Z., Eils, R., & Schlesner, M. (2016). Complex heatmaps reveal patterns and correlations in multidimensional genomic data. Bioinformatics. doi:10.1093/bioinformatics/btw313
 
-- Gu, Z., Gu, T., Eils, R., Schlesner, M., & Brors, B. (2014). circlize implements and enhances circular visualization in R. Bioinformatics, 30(19), 2811–2812.
+- Gu, Z., Gu, L., Eils, R., Schlesner, M., & Brors, B. (2014). circlize implements and enhances circular visualization in R. Bioinformatics, 30(19), 2811–2812.
 
 - Frick, H., Chow, F., Kuhn, M., Mahoney, M., Silge, J., & Wickham, H. (2025). rsample: General resampling infrastructure. R package. <https://CRAN.R-project.org/package=rsample>.
 
@@ -297,9 +297,9 @@ All datasets are derived from the GSE201926 study investigating progestin sensit
 
 - Wickham, H., Pedersen, T., & Seidel, D. (2025). scales: Scale functions for visualization. R package. <https://CRAN.R-project.org/package=scales>.
 
-- Wickham, H., Hester, J., & Chang, W. (2024). devtools: Tools to Make Developing R Packages Easier. R package. <https://CRAN.R-project.org/package=devtools>.
+- Wickham, H., Hester, J., Chang, W., & Bryan, J. (2025). devtools: Tools to Make Developing R Packages Easier. R package. <https://CRAN.R-project.org/package=devtools>.
 
-- Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular text data. R package. <https://CRAN.R-project.org/package=readr>.
+- Wickham, H., Hester, J., & Bryan, J. (2025). readr: Read rectangular text data. R package. <https://CRAN.R-project.org/package=readr>.
 
 - Xie, Y. (2025). knitr: A general-purpose package for dynamic report generation in R. R package. <https://CRAN.R-project.org/package=knitr>.
 

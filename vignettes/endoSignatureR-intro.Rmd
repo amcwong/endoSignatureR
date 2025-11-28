@@ -5,6 +5,7 @@ vignette: >
   %\VignetteIndexEntry{endoSignatureR-intro}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+bibliography: references.bib
 ---
 
 ```{r, include = FALSE}
@@ -305,3 +306,11 @@ These warnings help identify potential data compatibility issues. The function w
 ```{r sessionInfo}
 sessionInfo()
 ```
+
+## References
+
+This vignette uses the following packages and methods:
+
+- Data loading: @readr2024 for reading rectangular text data
+- JSON parsing: @jsonlite2014 for parsing JSON-formatted preprocessing recipes
+- Code assistance: @copilot2025 for AI-powered code completions in this vignette

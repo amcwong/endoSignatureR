@@ -5,6 +5,7 @@ vignette: >
   %\VignetteIndexEntry{Exploring and Visualizing Endometrial Data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+bibliography: references.bib
 ---
 
 ```{r, include = FALSE}
@@ -600,3 +601,11 @@ This workflow enables quality assessment and exploratory analysis before proceed
 ```{r sessionInfo}
 sessionInfo()
 ```
+
+## References
+
+This vignette uses the following packages and methods:
+
+- Differential expression: @limma2015 for differential expression analyses for RNA-sequencing studies
+- Visualization: @ggplot22016 for elegant graphics and @complexheatmap2016 for complex heatmap visualizations
+- Code assistance: @copilot2025 for AI-powered code completions in this vignette
