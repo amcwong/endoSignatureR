@@ -72,7 +72,7 @@ test_that("split artifacts maintain class balance", {
     )
 
     # Check class balance in each fold
-    for (i in 1:nrow(splits)) {
+    for (i in seq_len(nrow(splits))) {
         train_data <- rsample::training(splits$splits[[i]])
         test_data <- rsample::testing(splits$splits[[i]])
 
@@ -107,7 +107,7 @@ test_that("split contracts are valid (can extract training/test indices)", {
     )
 
     # Test that we can extract training/test indices
-    for (i in 1:nrow(splits)) {
+    for (i in seq_len(nrow(splits))) {
         train_data <- rsample::training(splits$splits[[i]])
         test_data <- rsample::testing(splits$splits[[i]])
 
@@ -171,3 +171,5 @@ test_that("folds_demo inner_splits structure is valid", {
         expect_true(all(inner_train %in% outer_train))
     }
 })
+
+# [END]

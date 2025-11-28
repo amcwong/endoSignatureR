@@ -123,3 +123,4 @@ test_that("Mode 3 DE analysis can inform Mode 2 training", {
     expect_true("signature" %in% names(result))
 })
 
+# [END]

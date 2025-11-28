@@ -14,7 +14,10 @@ suppressPackageStartupMessages({
 # Check if gse201926_trainmini exists
 if (!exists("gse201926_trainmini")) {
     # Try to load it
-    if (file.exists("data/gse201926_trainmini.rda")) {
+    if (file.exists("data/gse201926_trainmini.rds")) {
+        gse201926_trainmini <- readRDS("data/gse201926_trainmini.rds")
+    } else if (file.exists("data/gse201926_trainmini.rda")) {
+        # Fallback for legacy .rda files
         load("data/gse201926_trainmini.rda")
     } else {
         # Create it first by sourcing the build script
@@ -56,7 +59,7 @@ message("Created ", nrow(outer_splits), " outer CV splits")
 # Inner splits will be used for hyperparameter tuning within each outer fold
 message("Creating inner CV splits for each outer fold with seed ", inner_seed, "...")
 
-inner_splits_list <- lapply(1:nrow(outer_splits), function(i) {
+inner_splits_list <- lapply(seq_len(nrow(outer_splits)), function(i) {
     # Get training data for this outer fold
     outer_train <- rsample::training(outer_splits$splits[[i]])
     outer_train_pheno <- outer_train
@@ -103,3 +106,5 @@ message("  - Inner seed: ", folds_demo$inner_seed)
 # Save as package data
 usethis::use_data(folds_demo, overwrite = TRUE, compress = "xz")
 message("Saved folds_demo to data/")
+
+# [END]

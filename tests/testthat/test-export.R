@@ -365,3 +365,4 @@ test_that("esr_exportSignature includes bootstrap frequencies when available", {
   }
 })
 
+# [END]

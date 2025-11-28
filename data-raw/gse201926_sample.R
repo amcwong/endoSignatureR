@@ -94,3 +94,5 @@ gse201926_sample <- list(
 
 # Save as package data
 usethis::use_data(gse201926_sample, overwrite = TRUE, compress = "xz")
+
+# [END]

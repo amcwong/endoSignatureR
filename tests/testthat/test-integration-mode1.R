@@ -60,3 +60,4 @@ test_that("Mode 1 full pipeline: data → signature → classify → visualize �
     expect_true(file.exists(export_path))
 })
 
+# [END]

@@ -65,3 +65,5 @@ gse201926_annot_min <- annot_df %>%
 
 message("Saving data object: gse201926_annot_min (", nrow(gse201926_annot_min), " rows)")
 usethis::use_data(gse201926_annot_min, overwrite = TRUE, compress = "xz")
+
+# [END]

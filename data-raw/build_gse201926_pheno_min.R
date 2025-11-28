@@ -52,3 +52,5 @@ gse201926_pheno_min <- pheno %>%
 
 message("Saving data object: gse201926_pheno_min (", nrow(gse201926_pheno_min), " rows)")
 usethis::use_data(gse201926_pheno_min, overwrite = TRUE, compress = "xz")
+
+# [END]

@@ -973,3 +973,5 @@ This vignette uses the following packages and methods:
 - Differential expression: @limma2015 for differential expression analyses
 - LASSO regularization: @lasso2015 for behavior of LASSO with small sample sizes
 - Code assistance: @copilot2025 for AI-powered code completions in this vignette
+
+# [END]

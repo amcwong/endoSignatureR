@@ -132,3 +132,5 @@ test_that("esr_analyzeDifferentialExpression works with gse201926_sample", {
   # Check that p-values are in valid range [0, 1]
   expect_true(all(de_table$pvalue >= 0 & de_table$pvalue <= 1))
 })
+
+# [END]

@@ -237,3 +237,5 @@ message("  - Annot: ", nrow(annot_trainmini), " genes")
 # Save as package data
 usethis::use_data(gse201926_trainmini, overwrite = TRUE, compress = "xz")
 message("Saved gse201926_trainmini to data/")
+
+# [END]

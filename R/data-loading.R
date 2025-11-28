@@ -786,3 +786,5 @@ esr_loadFromFiles <- function(counts_file, pheno_file = NULL, annot_file = NULL,
 
     return(result)
 }
+
+# [END]

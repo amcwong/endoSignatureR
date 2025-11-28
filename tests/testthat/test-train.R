@@ -639,3 +639,5 @@ test_that("calibration works with isotonic regression", {
         expect_true(all(result$metrics$predictions$prob_calibrated <= 1))
     }
 })
+
+# [END]

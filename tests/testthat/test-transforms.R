@@ -76,3 +76,5 @@ test_that("esr_transform_log1p_cpm handles data.frame input", {
   expect_true(is.matrix(mat_t))
   expect_equal(nrow(mat_t), ncol(X_df))
 })
+
+# [END]

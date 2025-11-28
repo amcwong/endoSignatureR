@@ -254,3 +254,5 @@ test_that("in-fold preprocessing produces deterministic outputs with fixed seed"
     # Results should be identical
     expect_equal(selected1, selected2)
 })
+
+# [END]

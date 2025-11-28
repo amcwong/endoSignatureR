@@ -10,3 +10,5 @@ library(testthat)
 library(endoSignatureR)
 
 test_check("endoSignatureR")
+
+# [END]

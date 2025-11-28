@@ -168,3 +168,5 @@ test_that("esr_loadFromFiles validates data when validate=TRUE", {
   expect_true("issues" %in% names(user_data))
   expect_true(is.data.frame(user_data$issues))
 })
+
+# [END]

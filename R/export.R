@@ -212,7 +212,7 @@ export_signature_csv <- function(signature, stability = NULL, dir = "export",
 
   # Build data frame
   if (!is.null(bootstrap_freq_vec)) {
-    df <- data.frame(
+    signature_tbl <- data.frame(
       gene_id = panel,
       coefficient = coef_vec,
       selection_frequency = freq_vec,
@@ -220,7 +220,7 @@ export_signature_csv <- function(signature, stability = NULL, dir = "export",
       stringsAsFactors = FALSE
     )
   } else {
-    df <- data.frame(
+    signature_tbl <- data.frame(
       gene_id = panel,
       coefficient = coef_vec,
       selection_frequency = freq_vec,
@@ -229,7 +229,7 @@ export_signature_csv <- function(signature, stability = NULL, dir = "export",
   }
 
   # Sort by absolute coefficient magnitude (descending)
-  df <- df[order(abs(df$coefficient), decreasing = TRUE), , drop = FALSE]
+  signature_tbl <- signature_tbl[order(abs(signature_tbl$coefficient), decreasing = TRUE), , drop = FALSE]
 
   # Add intercept row if requested
   if (include_intercept && !is.null(signature$intercept)) {
@@ -245,12 +245,12 @@ export_signature_csv <- function(signature, stability = NULL, dir = "export",
       intercept_row$bootstrap_frequency <- NA_real_
     }
     # Intercept at the end
-    df <- rbind(df, intercept_row)
+    signature_tbl <- rbind(signature_tbl, intercept_row)
   }
 
   # Write CSV
   csv_path <- file.path(dir, "endometrial_signature.csv")
-  readr::write_csv(df, csv_path)
+  readr::write_csv(signature_tbl, csv_path)
 
   return(csv_path)
 }

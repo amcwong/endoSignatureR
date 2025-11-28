@@ -378,3 +378,5 @@ loaded via a namespace (and not attached):
 [81] evaluate_1.0.5 lattice_0.22-7 readr_2.1.5 png_0.1-8 memoise_2.0.1  
 [86] Rcpp_1.1.0 xfun_0.53 fs_1.6.6 usethis_3.2.1 pkgconfig_2.0.3  
 [91] GlobalOptions_0.1.2
+
+# [END]

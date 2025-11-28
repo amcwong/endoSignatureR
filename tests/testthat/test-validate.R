@@ -94,3 +94,4 @@ test_that("esr_validateEndometrial handles non-numeric X with error", {
   expect_gt(nrow(error_issues), 0)
 })
 
+# [END]

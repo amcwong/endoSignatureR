@@ -79,3 +79,4 @@ test_that("Mode 2 full pipeline: data → validate → train → evaluate → vi
     expect_true(all(file.exists(export_paths)))
 })
 
+# [END]
