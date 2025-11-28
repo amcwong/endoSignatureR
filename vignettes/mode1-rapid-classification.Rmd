@@ -2,7 +2,7 @@
 title: "Mode 1: Rapid Classification Using Pre-trained Signature"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{mode1-rapid-classification}
+  %\VignetteIndexEntry{Mode 1: Rapid Classification Using Pre-trained Signature}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

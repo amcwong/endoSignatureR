@@ -2,7 +2,7 @@
 title: "Exploring and Visualizing Endometrial Data"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{mode3-visualization-analysis}
+  %\VignetteIndexEntry{Exploring and Visualizing Endometrial Data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
