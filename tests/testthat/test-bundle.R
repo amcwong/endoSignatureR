@@ -247,6 +247,76 @@ test_that("complete Mode 3 workflow produces valid bundle", {
   expect_true(is.data.frame(bundle$qc_metrics))
 })
 
+test_that("Mode 3 full pipeline with visualization: validate → transform → QC → DE → visualize → bundle", {
+  data(gse201926_sample)
+
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # 1. Validation
+  validation_result <- esr_validateEndometrial(
+    gse201926_sample$counts,
+    gse201926_sample$pheno,
+    annot = gse201926_sample$annot
+  )
+
+  # 2. Transformation
+  mat_t <- esr_transform_log1p_cpm(validation_result$X)
+
+  # 3. QC metrics
+  qc_metrics <- esr_computeQCMetrics(
+    counts = validation_result$X,
+    mat_t = mat_t,
+    pheno = validation_result$pheno
+  )
+
+  # 4. DE analysis
+  de_table <- esr_analyzeDifferentialExpression(
+    mat_t,
+    validation_result$pheno,
+    seed = 123
+  )
+
+  # 5. Gene selection
+  selected_genes <- esr_selectTopGenes(
+    de_table = de_table,
+    n = 10,
+    by = "de"
+  )
+
+  # 6. Visualize (all Mode 3 plots)
+  p1 <- plotEndometrialPCA(mat_t, pheno = validation_result$pheno)
+  p2 <- plotEndometrialMA(de_table)
+  p3 <- plotEndometrialVolcano(de_table)
+  p4 <- plotEndometrialHeatmap(
+    mat_t,
+    genes = selected_genes,
+    pheno = validation_result$pheno
+  )
+
+  # 7. Create bundle
+  bundle <- esr_createAnalysisBundle(
+    counts_t = mat_t,
+    de_table = de_table,
+    selected_genes = selected_genes,
+    qc_metrics = qc_metrics,
+    pheno = validation_result$pheno,
+    annot = validation_result$annot
+  )
+
+  # Verify all steps completed successfully
+  expect_true(is.matrix(mat_t))
+  expect_true(is.data.frame(de_table))
+  expect_true(is.character(selected_genes))
+  expect_true(is.data.frame(qc_metrics))
+  expect_true(inherits(p1, "ggplot"))
+  expect_true(inherits(p2, "ggplot"))
+  expect_true(inherits(p3, "ggplot"))
+  expect_true(inherits(p4, "Heatmap"))
+  expect_true(is.list(bundle))
+  expect_true("esr_analysis_bundle" %in% class(bundle))
+})
+
 test_that("bundle components are reproducible with fixed seed", {
   data(gse201926_sample)
 
