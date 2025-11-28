@@ -72,3 +72,11 @@ p <- plotEndometrialHeatmap(mat_t,
 )
 ComplexHeatmap::draw(p)
 }
+\references{
+Gu, Z., Eils, R., & Schlesner, M. (2016). Complex heatmaps reveal patterns
+and correlations in multidimensional genomic data. Bioinformatics, 32(18),
+2847-2849.
+
+Gu, Z., Gu, T., Eils, R., Schlesner, M., & Brors, B. (2014). circlize implements
+and enhances circular visualization in R. Bioinformatics, 30(19), 2811-2812.
+}

@@ -62,3 +62,8 @@ read.csv(export_path)
 }
 
 }
+\references{
+R Core Team (2025). R: A language and environment for statistical
+computing. R Foundation for Statistical Computing, Vienna, Austria.
+\url{https://www.R-project.org/}.
+}

@@ -33,3 +33,9 @@ if (nzchar(pheno_file_gz) && file.exists(pheno_file_gz)) {
 }
 
 }
+\references{
+Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression
+Omnibus: NCBI gene expression and hybridization array data repository.
+Nucleic Acids Research, 30(1), 207-210.
+\url{https://doi.org/10.1093/nar/30.1.207}.
+}

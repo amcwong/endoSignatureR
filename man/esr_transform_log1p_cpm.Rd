@@ -26,3 +26,8 @@ data(gse201926_sample)
 mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
 dim(mat_t) # samples x genes
 }
+\references{
+R Core Team (2025). R: A language and environment for statistical
+computing. R Foundation for Statistical Computing, Vienna, Austria.
+\url{https://www.R-project.org/}.
+}

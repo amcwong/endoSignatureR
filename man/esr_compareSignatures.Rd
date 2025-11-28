@@ -17,3 +17,26 @@ A list with comparison metrics (placeholder).
 \description{
 Compares performance between a pre-trained and a newly trained signature.
 }
+\examples{
+\dontrun{
+# Load pre-trained signature results
+pretrained_result <- esr_loadPretrainedSignature()
+
+# Train a new signature
+data(gse201926_trainmini)
+new_result <- esr_trainEndometrialSignature(
+  X = gse201926_trainmini$counts,
+  pheno = gse201926_trainmini$pheno
+)
+
+# Compare signatures
+comparison <- esr_compareSignatures(pretrained_result, new_result)
+comparison
+}
+
+}
+\references{
+Friedman, J., Hastie, T., & Tibshirani, R. (2010). Regularization paths for
+generalized linear models via coordinate descent. Journal of Statistical
+Software, 33(1), 1-22. \url{https://doi.org/10.18637/jss.v033.i01}
+}

@@ -149,3 +149,16 @@ result$metrics$auc
 result$metrics$accuracy
 }
 }
+\references{
+Friedman, J., Hastie, T., & Tibshirani, R. (2010). Regularization paths for
+generalized linear models via coordinate descent. Journal of Statistical
+Software, 33(1), 1-22. \url{https://doi.org/10.18637/jss.v033.i01}.
+
+Frick, H., Chow, F., Kuhn, M., Mahoney, M., Silge, J., & Wickham, H.
+(2025). rsample: General resampling infrastructure. R package.
+\url{https://CRAN.R-project.org/package=rsample}.
+
+Ritchie, M. E., Phipson, B., Wu, D., Hu, Y., Law, C. W., Shi, W., & Smyth, G. K.
+(2015). limma powers differential expression analyses for RNA-sequencing and
+microarray studies. Nucleic Acids Research, 43(7), e47.
+}

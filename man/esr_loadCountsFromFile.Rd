@@ -54,3 +54,7 @@ counts <- esr_loadCountsFromFile("my_counts.csv.gz", gene_id_col = "EnsemblID")
 }
 
 }
+\references{
+Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+text data. R package. \url{https://CRAN.R-project.org/package=readr}.
+}

@@ -62,3 +62,8 @@ dim(result$mat_t_train)
 dim(result$mat_t_test)
 }
 }
+\references{
+Ritchie, M. E., Phipson, B., Wu, D., Hu, Y., Law, C. W., Shi, W., & Smyth, G. K.
+(2015). limma powers differential expression analyses for RNA-sequencing and
+microarray studies. Nucleic Acids Research, 43(7), e47.
+}

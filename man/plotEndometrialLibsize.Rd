@@ -42,3 +42,7 @@ Visualizes library size (total read counts) distribution across samples.
 data(gse201926_sample)
 plotEndometrialLibsize(gse201926_sample$counts, pheno = gse201926_sample$pheno)
 }
+\references{
+Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+Springer-Verlag New York. ISBN 978-3-319-24277-4.
+}

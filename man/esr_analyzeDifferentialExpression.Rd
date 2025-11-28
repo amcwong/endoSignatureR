@@ -51,3 +51,8 @@ mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
 de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
 head(de_table)
 }
+\references{
+Ritchie, M. E., Phipson, B., Wu, D., Hu, Y., Law, C. W., Shi, W., & Smyth, G. K.
+(2015). limma powers differential expression analyses for RNA-sequencing and
+microarray studies. Nucleic Acids Research, 43(7), e47.
+}

@@ -25,6 +25,10 @@
 #'     annot = gse201926_sample$annot
 #' )
 #' result$issues
+#' @references
+#' Ritchie, M. E., Phipson, B., Wu, D., Hu, Y., Law, C. W., Shi, W., & Smyth, G. K.
+#' (2015). limma powers differential expression analyses for RNA-sequencing and
+#' microarray studies. Nucleic Acids Research, 43(7), e47.
 #' @export
 esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group") {
     issues <- data.frame(type = character(), message = character(), stringsAsFactors = FALSE)
@@ -197,6 +201,10 @@ esr_validateEndometrial <- function(X, pheno, annot = NULL, label_col = "group")
 #' data(gse201926_sample)
 #' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
 #' dim(mat_t) # samples x genes
+#' @references
+#' R Core Team (2025). R: A language and environment for statistical
+#' computing. R Foundation for Statistical Computing, Vienna, Austria.
+#' <https://www.R-project.org/>.
 #' @export
 esr_transform_log1p_cpm <- function(X, cpm_min = 1, cpm_min_samples = 4) {
     # Convert to matrix if needed
@@ -253,6 +261,10 @@ esr_transform_log1p_cpm <- function(X, cpm_min = 1, cpm_min_samples = 4) {
 #' de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
 #' head(de_table)
 #' @importFrom utils head
+#' @references
+#' Ritchie, M. E., Phipson, B., Wu, D., Hu, Y., Law, C. W., Shi, W., & Smyth, G. K.
+#' (2015). limma powers differential expression analyses for RNA-sequencing and
+#' microarray studies. Nucleic Acids Research, 43(7), e47.
 #' @export
 esr_analyzeDifferentialExpression <- function(mat_t, pheno, group_col = "group",
                                               transform = "log1p-cpm",
@@ -394,6 +406,10 @@ esr_analyzeDifferentialExpression <- function(mat_t, pheno, group_col = "group",
 #' cm$metrics
 #' }
 #'
+#' @references
+#' R Core Team (2025). R: A language and environment for statistical
+#' computing. R Foundation for Statistical Computing, Vienna, Austria.
+#' <https://www.R-project.org/>.
 #' @export
 esr_computeConfusionMatrix <- function(predictions, labels, threshold = 0.5) {
     # Validate inputs
@@ -514,6 +530,10 @@ esr_computeConfusionMatrix <- function(predictions, labels, threshold = 0.5) {
 #' print(comparison)
 #' }
 #'
+#' @references
+#' R Core Team (2025). R: A language and environment for statistical
+#' computing. R Foundation for Statistical Computing, Vienna, Austria.
+#' <https://www.R-project.org/>.
 #' @export
 esr_compareThresholds <- function(predictions, labels, thresholds = seq(0.1, 0.9, 0.1)) {
     # Validate inputs
@@ -559,7 +579,6 @@ esr_compareThresholds <- function(predictions, labels, thresholds = seq(0.1, 0.9
 
     return(comparison_df)
 }
-
 
 
 # Compute Confusion Matrix and Performance Metrics

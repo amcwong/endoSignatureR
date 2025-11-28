@@ -63,6 +63,13 @@
 #'   dir = tempdir()
 #' )
 #' }
+#' @references
+#' Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+#' text data. R package. <https://CRAN.R-project.org/package=readr>.
+#'
+#' Ooms, J. (2014). The jsonlite package: A practical and consistent
+#' mapping between JSON data and R objects. arXiv:1403.2805.
+#' <https://arxiv.org/abs/1403.2805>.
 #' @export
 esr_exportSignature <- function(signature, result = NULL, dir = "export",
                                 formats = c("csv", "json", "md"),
@@ -754,6 +761,10 @@ export_predictions_csv <- function(predictions, dir = "export",
 #' read.csv(export_path)
 #' }
 #'
+#' @references
+#' R Core Team (2025). R: A language and environment for statistical
+#' computing. R Foundation for Statistical Computing, Vienna, Austria.
+#' <https://www.R-project.org/>.
 #' @export
 esr_exportPredictions <- function(predictions, dir = "export",
                                   formats = "csv", filename = NULL, ...) {

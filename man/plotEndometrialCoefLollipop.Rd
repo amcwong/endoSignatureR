@@ -70,3 +70,7 @@ print(p_coef_annot)
 }
 
 }
+\references{
+Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+Springer-Verlag New York. ISBN 978-3-319-24277-4.
+}

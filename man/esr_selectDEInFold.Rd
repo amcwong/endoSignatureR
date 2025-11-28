@@ -59,3 +59,12 @@ selected <- esr_selectDEInFold(splits$splits[[1]],
 length(selected)
 }
 }
+\references{
+Ritchie, M. E., Phipson, B., Wu, D., Hu, Y., Law, C. W., Shi, W., & Smyth, G. K.
+(2015). limma powers differential expression analyses for RNA-sequencing and
+microarray studies. Nucleic Acids Research, 43(7), e47.
+
+Frick, H., Chow, F., Kuhn, M., Mahoney, M., Silge, J., & Wickham, H.
+(2025). rsample: General resampling infrastructure. R package.
+\url{https://CRAN.R-project.org/package=rsample}.
+}

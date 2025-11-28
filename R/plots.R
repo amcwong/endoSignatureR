@@ -21,6 +21,9 @@
 #' data(gse201926_sample)
 #' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
 #' plotEndometrialPCA(mat_t, pheno = gse201926_sample$pheno)
+#' @references
+#' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+#' Springer-Verlag New York. ISBN 978-3-319-24277-4.
 #' @export
 plotEndometrialPCA <- function(mat_t, pheno = NULL, group_col = "group",
                                point_size = 4, point_alpha = 0.8,
@@ -126,6 +129,9 @@ plotEndometrialPCA <- function(mat_t, pheno = NULL, group_col = "group",
 #' @examples
 #' data(gse201926_sample)
 #' plotEndometrialLibsize(gse201926_sample$counts, pheno = gse201926_sample$pheno)
+#' @references
+#' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+#' Springer-Verlag New York. ISBN 978-3-319-24277-4.
 #' @export
 plotEndometrialLibsize <- function(counts, pheno = NULL, group_col = "group",
                                    point_size = 2, point_alpha = 0.6, bins = 30,
@@ -261,6 +267,9 @@ plotEndometrialLibsize <- function(counts, pheno = NULL, group_col = "group",
 #' data(gse201926_sample)
 #' plotEndometrialZeros(gse201926_sample$counts, by = "gene")
 #' plotEndometrialZeros(gse201926_sample$counts, by = "sample")
+#' @references
+#' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+#' Springer-Verlag New York. ISBN 978-3-319-24277-4.
 #' @export
 plotEndometrialZeros <- function(counts, by = c("gene", "sample"),
                                  bins = 30, theme = c("bw", "classic", "minimal", "light", "dark")) {
@@ -394,6 +403,13 @@ plotEndometrialZeros <- function(counts, by = c("gene", "sample"),
 #' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
 #' de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
 #' plotEndometrialMA(de_table)
+#' @references
+#' Ritchie, M. E., Phipson, B., Wu, D., Hu, Y., Law, C. W., Shi, W., & Smyth, G. K.
+#' (2015). limma powers differential expression analyses for RNA-sequencing and
+#' microarray studies. Nucleic Acids Research, 43(7), e47.
+#'
+#' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+#' Springer-Verlag New York. ISBN 978-3-319-24277-4.
 #' @export
 plotEndometrialMA <- function(de_table, fdr_threshold = 0.05,
                               log2fc_threshold = 1,
@@ -541,6 +557,13 @@ plotEndometrialMA <- function(de_table, fdr_threshold = 0.05,
 #' mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
 #' de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
 #' plotEndometrialVolcano(de_table)
+#' @references
+#' Ritchie, M. E., Phipson, B., Wu, D., Hu, Y., Law, C. W., Shi, W., & Smyth, G. K.
+#' (2015). limma powers differential expression analyses for RNA-sequencing and
+#' microarray studies. Nucleic Acids Research, 43(7), e47.
+#'
+#' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+#' Springer-Verlag New York. ISBN 978-3-319-24277-4.
 #' @export
 plotEndometrialVolcano <- function(de_table, fdr_threshold = 0.05,
                                    log2fc_threshold = 1,
@@ -731,6 +754,10 @@ plotEndometrialVolcano <- function(de_table, fdr_threshold = 0.05,
 #' top_de <- esr_selectTopGenes(de_table = de_table, n = 10, by = "de")
 #' head(top_de)
 #' @importFrom stats var
+#' @references
+#' Ritchie, M. E., Phipson, B., Wu, D., Hu, Y., Law, C. W., Shi, W., & Smyth, G. K.
+#' (2015). limma powers differential expression analyses for RNA-sequencing and
+#' microarray studies. Nucleic Acids Research, 43(7), e47.
 #' @export
 esr_selectTopGenes <- function(mat_t = NULL, de_table = NULL, n = 50,
                                by = c("variance", "de", "custom"), sort_col = NULL) {
@@ -878,6 +905,13 @@ esr_selectTopGenes <- function(mat_t = NULL, de_table = NULL, n = 50,
 #' )
 #' ComplexHeatmap::draw(p)
 #' @importFrom utils head
+#' @references
+#' Gu, Z., Eils, R., & Schlesner, M. (2016). Complex heatmaps reveal patterns
+#' and correlations in multidimensional genomic data. Bioinformatics, 32(18),
+#' 2847-2849.
+#'
+#' Gu, Z., Gu, T., Eils, R., Schlesner, M., & Brors, B. (2014). circlize implements
+#' and enhances circular visualization in R. Bioinformatics, 30(19), 2811-2812.
 #' @export
 plotEndometrialHeatmap <- function(mat_t, genes = NULL, pheno = NULL,
                                    group_col = "group", annot_cols = NULL,
@@ -1069,6 +1103,13 @@ plotEndometrialHeatmap <- function(mat_t, genes = NULL, pheno = NULL,
 #' p_roc_cal <- plotEndometrialROC(result$metrics$predictions, use_calibrated = TRUE)
 #' }
 #'
+#' @references
+#' Robin, X., et al. (2011). pROC: an open-source package for R and S+ to
+#' analyze and compare ROC curves. BMC Bioinformatics, 12, 77.
+#' <https://doi.org/10.1186/1471-2105-12-77>.
+#'
+#' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+#' Springer-Verlag New York. ISBN 978-3-319-24277-4.
 #' @export
 plotEndometrialROC <- function(predictions, use_calibrated = FALSE, show_auc = TRUE,
                                show_ci = FALSE, color_palette = NULL, ...) {
@@ -1250,6 +1291,13 @@ plotEndometrialROC <- function(predictions, use_calibrated = FALSE, show_auc = T
 #' p_pr_cal <- plotEndometrialPR(result$metrics$predictions, use_calibrated = TRUE)
 #' }
 #'
+#' @references
+#' Robin, X., et al. (2011). pROC: an open-source package for R and S+ to
+#' analyze and compare ROC curves. BMC Bioinformatics, 12, 77.
+#' <https://doi.org/10.1186/1471-2105-12-77>.
+#'
+#' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+#' Springer-Verlag New York. ISBN 978-3-319-24277-4.
 #' @export
 plotEndometrialPR <- function(predictions, use_calibrated = FALSE, show_auc = TRUE,
                               color_palette = NULL, ...) {
@@ -1422,6 +1470,9 @@ plotEndometrialPR <- function(predictions, use_calibrated = FALSE, show_auc = TR
 #' p_cal_cal <- plotEndometrialCalibration(result$metrics$predictions, use_calibrated = TRUE)
 #' }
 #'
+#' @references
+#' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+#' Springer-Verlag New York. ISBN 978-3-319-24277-4.
 #' @export
 plotEndometrialCalibration <- function(predictions, use_calibrated = FALSE, n_bins = 10,
                                        show_brier = TRUE, show_ece = TRUE,
@@ -1600,6 +1651,9 @@ plotEndometrialCalibration <- function(predictions, use_calibrated = FALSE, n_bi
 #' )
 #' }
 #'
+#' @references
+#' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+#' Springer-Verlag New York. ISBN 978-3-319-24277-4.
 #' @export
 plotEndometrialComparison <- function(pretrained_result = NULL, new_result,
                                       metrics_to_plot = c("roc", "pr", "calibration"),
@@ -1822,6 +1876,9 @@ plotEndometrialComparison <- function(pretrained_result = NULL, new_result,
 #' print(p_coef_annot)
 #' }
 #'
+#' @references
+#' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+#' Springer-Verlag New York. ISBN 978-3-319-24277-4.
 #' @export
 plotEndometrialCoefLollipop <- function(signature, annot = NULL, top_n = NULL,
                                         order_by = c("magnitude", "value", "gene"),
@@ -2064,6 +2121,9 @@ plotEndometrialCoefLollipop <- function(signature, annot = NULL, top_n = NULL,
 #' }
 #' }
 #'
+#' @references
+#' Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+#' Springer-Verlag New York. ISBN 978-3-319-24277-4.
 #' @export
 plotEndometrialStabilityBars <- function(signature, annot = NULL,
                                          frequency_type = c("bootstrap", "selection", "both"),

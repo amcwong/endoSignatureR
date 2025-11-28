@@ -27,6 +27,10 @@
 #' head(demo_data$counts[, 1:3])
 #' demo_data$pheno
 #'
+#' @references
+#' R Core Team (2025). R: A language and environment for statistical
+#' computing. R Foundation for Statistical Computing, Vienna, Austria.
+#' <https://www.R-project.org/>.
 #' @export
 endo_load_demo <- function() {
     utils::data("gse201926_sample", package = "endoSignatureR", envir = environment())
@@ -53,6 +57,14 @@ endo_load_demo <- function() {
 #' dim(full_data$counts)
 #' head(full_data$pheno)
 #'
+#' @references
+#' Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+#' text data. R package. <https://CRAN.R-project.org/package=readr>.
+#'
+#' Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression
+#' Omnibus: NCBI gene expression and hybridization array data repository.
+#' Nucleic Acids Research, 30(1), 207-210.
+#' <https://doi.org/10.1093/nar/30.1.207>.
 #' @export
 endo_load_gse201926 <- function(sample_only = FALSE) {
     if (isTRUE(sample_only)) {
@@ -116,6 +128,11 @@ endo_load_gse201926 <- function(sample_only = FALSE) {
 #'     head(pheno)
 #' }
 #'
+#' @references
+#' Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression
+#' Omnibus: NCBI gene expression and hybridization array data repository.
+#' Nucleic Acids Research, 30(1), 207-210.
+#' <https://doi.org/10.1093/nar/30.1.207>.
 #' @export
 endo_parse_metadata <- function(file_path) {
     # Check if file exists (gzipped or plain)
@@ -193,6 +210,9 @@ endo_parse_metadata <- function(file_path) {
 #' cols <- intersect(c("GeneID", "Symbol", "Description"), names(annot))
 #' head(annot[, cols, drop = FALSE])
 #'
+#' @references
+#' Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+#' text data. R package. <https://CRAN.R-project.org/package=readr>.
 #' @export
 endo_load_annotation <- function(minimal = TRUE) {
     if (isTRUE(minimal)) {
@@ -234,6 +254,9 @@ endo_load_annotation <- function(minimal = TRUE) {
 #' dim(tpm_data)
 #' head(tpm_data[, 1:3])
 #'
+#' @references
+#' Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+#' text data. R package. <https://CRAN.R-project.org/package=readr>.
 #' @export
 endo_load_tpm <- function() {
     pick_extdata <- function(name) {
@@ -286,6 +309,9 @@ endo_load_tpm <- function() {
 #' }
 #'
 #' @import readr
+#' @references
+#' Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+#' text data. R package. <https://CRAN.R-project.org/package=readr>.
 #' @export
 esr_loadCountsFromFile <- function(file_path, gene_id_col = "GeneID",
                                    sample_id_col = NULL, transpose = FALSE, ...) {
@@ -395,6 +421,14 @@ esr_loadCountsFromFile <- function(file_path, gene_id_col = "GeneID",
 #' )
 #' }
 #'
+#' @references
+#' Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression
+#' Omnibus: NCBI gene expression and hybridization array data repository.
+#' Nucleic Acids Research, 30(1), 207-210.
+#' <https://doi.org/10.1093/nar/30.1.207>.
+#'
+#' Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+#' text data. R package. <https://CRAN.R-project.org/package=readr>.
 #' @export
 esr_loadPhenoFromFile <- function(file_path, sample_id_col = NULL, group_col = NULL,
                                   format = c("auto", "series_matrix", "tsv", "csv"), ...) {
@@ -537,6 +571,9 @@ esr_loadPhenoFromFile <- function(file_path, sample_id_col = NULL, group_col = N
 #' annot <- esr_loadAnnotFromFile("my_annotation.csv", gene_id_col = "EnsemblID")
 #' }
 #'
+#' @references
+#' Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+#' text data. R package. <https://CRAN.R-project.org/package=readr>.
 #' @export
 esr_loadAnnotFromFile <- function(file_path, gene_id_col = "GeneID", ...) {
     # Check if file exists
@@ -625,6 +662,14 @@ esr_loadAnnotFromFile <- function(file_path, gene_id_col = "GeneID", ...) {
 #' }
 #' }
 #'
+#' @references
+#' Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+#' text data. R package. <https://CRAN.R-project.org/package=readr>.
+#'
+#' Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression
+#' Omnibus: NCBI gene expression and hybridization array data repository.
+#' Nucleic Acids Research, 30(1), 207-210.
+#' <https://doi.org/10.1093/nar/30.1.207>.
 #' @export
 esr_loadFromFiles <- function(counts_file, pheno_file = NULL, annot_file = NULL,
                               counts_gene_id_col = "GeneID",

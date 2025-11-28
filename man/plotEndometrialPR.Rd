@@ -50,3 +50,11 @@ p_pr_cal <- plotEndometrialPR(result$metrics$predictions, use_calibrated = TRUE)
 }
 
 }
+\references{
+Robin, X., et al. (2011). pROC: an open-source package for R and S+ to
+analyze and compare ROC curves. BMC Bioinformatics, 12, 77.
+\url{https://doi.org/10.1186/1471-2105-12-77}.
+
+Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+Springer-Verlag New York. ISBN 978-3-319-24277-4.
+}

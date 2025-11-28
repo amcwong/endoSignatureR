@@ -36,3 +36,11 @@ head(signature$coefficients)
 signature$recipe$preprocessing
 
 }
+\references{
+Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+text data. R package. \url{https://CRAN.R-project.org/package=readr}.
+
+Ooms, J. (2014). The jsonlite package: A practical and consistent
+mapping between JSON data and R objects. arXiv:1403.2805.
+\url{https://arxiv.org/abs/1403.2805}.
+}

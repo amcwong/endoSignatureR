@@ -35,3 +35,7 @@ cols <- intersect(c("GeneID", "Symbol", "Description"), names(annot))
 head(annot[, cols, drop = FALSE])
 
 }
+\references{
+Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+text data. R package. \url{https://CRAN.R-project.org/package=readr}.
+}

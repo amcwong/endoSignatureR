@@ -20,3 +20,7 @@ dim(tpm_data)
 head(tpm_data[, 1:3])
 
 }
+\references{
+Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+text data. R package. \url{https://CRAN.R-project.org/package=readr}.
+}

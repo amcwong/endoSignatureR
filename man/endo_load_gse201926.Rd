@@ -30,3 +30,12 @@ dim(full_data$counts)
 head(full_data$pheno)
 
 }
+\references{
+Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+text data. R package. \url{https://CRAN.R-project.org/package=readr}.
+
+Edgar, R., Domrachev, M., & Lash, A. E. (2002). Gene Expression
+Omnibus: NCBI gene expression and hybridization array data repository.
+Nucleic Acids Research, 30(1), 207-210.
+\url{https://doi.org/10.1093/nar/30.1.207}.
+}

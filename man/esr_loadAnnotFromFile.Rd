@@ -40,3 +40,7 @@ annot <- esr_loadAnnotFromFile("my_annotation.csv", gene_id_col = "EnsemblID")
 }
 
 }
+\references{
+Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+text data. R package. \url{https://CRAN.R-project.org/package=readr}.
+}

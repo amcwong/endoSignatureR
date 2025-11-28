@@ -40,3 +40,7 @@ data(gse201926_sample)
 mat_t <- esr_transform_log1p_cpm(gse201926_sample$counts)
 plotEndometrialPCA(mat_t, pheno = gse201926_sample$pheno)
 }
+\references{
+Wickham, H. (2016). ggplot2: Elegant Graphics for Data Analysis.
+Springer-Verlag New York. ISBN 978-3-319-24277-4.
+}

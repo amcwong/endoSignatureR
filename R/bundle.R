@@ -34,6 +34,10 @@
 #' )
 #' head(qc_metrics)
 #' @importFrom utils head
+#' @references
+#' R Core Team (2025). R: A language and environment for statistical
+#' computing. R Foundation for Statistical Computing, Vienna, Austria.
+#' <https://www.R-project.org/>.
 #' @export
 esr_computeQCMetrics <- function(counts, mat_t = NULL, pheno = NULL, group_col = "group") {
     # Convert counts to matrix if needed
@@ -199,6 +203,10 @@ esr_computeQCMetrics <- function(counts, mat_t = NULL, pheno = NULL, group_col =
 #' bundle$de_table
 #' bundle$selected_genes
 #' @importFrom utils head
+#' @references
+#' R Core Team (2025). R: A language and environment for statistical
+#' computing. R Foundation for Statistical Computing, Vienna, Austria.
+#' <https://www.R-project.org/>.
 #' @export
 esr_createAnalysisBundle <- function(counts_t, de_table = NULL, selected_genes = NULL,
                                      qc_metrics = NULL, pheno = NULL, annot = NULL,

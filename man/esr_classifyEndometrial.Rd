@@ -89,3 +89,8 @@ head(predictions)
 table(predictions$prediction)
 
 }
+\references{
+Friedman, J., Hastie, T., & Tibshirani, R. (2010). Regularization paths for
+generalized linear models via coordinate descent. Journal of Statistical
+Software, 33(1), 1-22. \url{https://doi.org/10.18637/jss.v033.i01}.
+}

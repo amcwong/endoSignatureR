@@ -53,3 +53,8 @@ de_table <- esr_analyzeDifferentialExpression(mat_t, gse201926_sample$pheno)
 top_de <- esr_selectTopGenes(de_table = de_table, n = 10, by = "de")
 head(top_de)
 }
+\references{
+Ritchie, M. E., Phipson, B., Wu, D., Hu, Y., Law, C. W., Shi, W., & Smyth, G. K.
+(2015). limma powers differential expression analyses for RNA-sequencing and
+microarray studies. Nucleic Acids Research, 43(7), e47.
+}

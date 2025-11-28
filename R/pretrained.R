@@ -27,6 +27,13 @@
 #' head(signature$coefficients)
 #' signature$recipe$preprocessing
 #'
+#' @references
+#' Wickham, H., Hester, J., & Bryan, J. (2024). readr: Read rectangular
+#' text data. R package. <https://CRAN.R-project.org/package=readr>.
+#'
+#' Ooms, J. (2014). The jsonlite package: A practical and consistent
+#' mapping between JSON data and R objects. arXiv:1403.2805.
+#' <https://arxiv.org/abs/1403.2805>.
 #' @export
 esr_loadPretrainedSignature <- function() {
   # Get paths to artifacts using system.file()
@@ -347,6 +354,10 @@ esr_loadPretrainedSignature <- function() {
 #' head(predictions)
 #' table(predictions$prediction)
 #'
+#' @references
+#' Friedman, J., Hastie, T., & Tibshirani, R. (2010). Regularization paths for
+#' generalized linear models via coordinate descent. Journal of Statistical
+#' Software, 33(1), 1-22. <https://doi.org/10.18637/jss.v033.i01>.
 #' @export
 esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, confidence = TRUE, y_new = NULL) {
   # Load signature if not provided
@@ -439,7 +450,6 @@ esr_classifyEndometrial <- function(X_new, signature = NULL, threshold = 0.5, co
       stringsAsFactors = FALSE
     ))
   }
-
 
 
   # Check for missing genes and add alert
