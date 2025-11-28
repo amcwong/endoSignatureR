@@ -63,6 +63,28 @@ The package will be developed and tested on a recent R version and
 platform; see the SessionInfo section below for exact versions captured
 during validation.
 
+## Overview
+
+The package provides three complementary workflows for endometrial
+RNA-seq analysis:
+
+<figure>
+<img src="inst/extdata/mode_1.png" alt="Mode 1: Rapid Classification" />
+<figcaption aria-hidden="true">Mode 1: Rapid Classification</figcaption>
+</figure>
+
+<figure>
+<img src="inst/extdata/mode_2.png" alt="Mode 2: Signature Validation" />
+<figcaption aria-hidden="true">Mode 2: Signature Validation</figcaption>
+</figure>
+
+<figure>
+<img src="inst/extdata/mode_3.png"
+alt="Mode 3: Visualization &amp; Analysis" />
+<figcaption aria-hidden="true">Mode 3: Visualization &amp;
+Analysis</figcaption>
+</figure>
+
 ## Installation
 
 To install the latest version of the package:
@@ -567,3 +589,5 @@ vroom_1.6.6
 memoise_2.0.1  
 \[86\] Rcpp_1.1.0 xfun_0.53 fs_1.6.6 usethis_3.2.1 pkgconfig_2.0.3  
 \[91\] GlobalOptions_0.1.2
+
+# \[END\]
